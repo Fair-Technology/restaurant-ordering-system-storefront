@@ -102,6 +102,7 @@ const CheckoutPage: React.FC = () => {
       customerEmail: data.email,
       customerPhone: data.phone,
       customerNotes: data.notes || undefined,
+      fulfilmentMode: 'collection',
     });
     if ('data' in result && result.data) {
       setCheckoutData(result.data);

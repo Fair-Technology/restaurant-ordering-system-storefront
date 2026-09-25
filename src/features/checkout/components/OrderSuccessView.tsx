@@ -54,7 +54,7 @@ const OrderSuccessView: React.FC<OrderSuccessViewProps> = ({
             <div className="flex justify-between">
               <span className="text-gray-500">Status</span>
               <span className="capitalize font-medium text-green-600">
-                {orderData.status.replace('_', ' ')}
+                {orderData.displayState.replace(/_/g, ' ').toLowerCase()}
               </span>
             </div>
             <div className="flex justify-between">

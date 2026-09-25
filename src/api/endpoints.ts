@@ -882,6 +882,8 @@ export type CheckoutRequest = {
   customerPhone: string;
   /** Optional notes for the order */
   customerNotes?: string;
+  /** How the order will be fulfilled (defaults to collection when absent) */
+  fulfilmentMode?: 'collection' | 'delivery' | 'dine_in';
 };
 export type OrderItemResponse = {
   productId: string;
@@ -916,7 +918,32 @@ export type OrdersPageResponse = {
 export type OrderByPaymentIntentResponse = {
   orderId: string;
   orderRef: string;
-  status: 'pending_payment' | 'paid' | 'failed' | 'cancelled' | 'refunded';
+  state:
+    | 'PLACED'
+    | 'ACCEPTED'
+    | 'READY'
+    | 'OUT_FOR_DELIVERY'
+    | 'COMPLETED'
+    | 'REJECTED'
+    | 'CANCELLED';
+  displayState:
+    | 'PLACED'
+    | 'ACCEPTED'
+    | 'IN_PREPARATION'
+    | 'READY'
+    | 'OUT_FOR_DELIVERY'
+    | 'COMPLETED'
+    | 'REJECTED'
+    | 'CANCELLED';
+  fulfilmentMode: 'collection' | 'delivery' | 'dine_in';
+  paymentStatus:
+    | 'paid'
+    | 'refunded'
+    | 'partially_refunded'
+    | 'cash_due'
+    | 'cash_collected'
+    | 'refunded_in_cash';
+  readyAt: string | null;
   items: OrderItemResponse[];
   subtotalCents: number;
   currency: string;
