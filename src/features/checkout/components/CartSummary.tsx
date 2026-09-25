@@ -40,7 +40,7 @@ const CartSummary: React.FC<CartSummaryProps> = ({ slug, products }) => {
           <p className="text-gray-500">Your cart is empty.</p>
           <button
             className="text-sm font-medium underline"
-            style={{ color: 'var(--brand-primary)' }}
+            style={{ color: 'var(--brand-accent)' }}
             onClick={() => navigate(`/shops/${slug}`)}
           >
             Back to Menu
@@ -111,7 +111,7 @@ const CartSummary: React.FC<CartSummaryProps> = ({ slug, products }) => {
                   <div className="flex gap-2">
                     {product && (
                       <button
-                        className="text-xs text-[var(--brand-primary)] hover:underline"
+                        className="text-xs text-[var(--brand-accent)] hover:underline"
                         onClick={() => setEditingItem(item)}
                       >
                         Edit

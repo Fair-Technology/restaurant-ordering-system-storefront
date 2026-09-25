@@ -135,7 +135,7 @@ const CheckoutPage: React.FC = () => {
       <div className="flex-1 max-w-6xl w-full mx-auto px-4 py-8">
         <h1
           className="text-2xl font-bold mb-6"
-          style={{ color: resolvedBranding.colors.primary }}
+          style={{ color: resolvedBranding.accentColor }}
         >
           Checkout
         </h1>

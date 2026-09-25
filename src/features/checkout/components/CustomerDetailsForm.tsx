@@ -41,7 +41,7 @@ const CustomerDetailsForm: React.FC<CustomerDetailsFormProps> = ({
         <input
           type="text"
           required
-          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)]"
+          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand-accent)]"
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="Your full name"
@@ -55,7 +55,7 @@ const CustomerDetailsForm: React.FC<CustomerDetailsFormProps> = ({
         <input
           type="email"
           required
-          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)]"
+          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand-accent)]"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           placeholder="your@email.com"
@@ -69,7 +69,7 @@ const CustomerDetailsForm: React.FC<CustomerDetailsFormProps> = ({
         <input
           type="tel"
           required
-          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)]"
+          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand-accent)]"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
           placeholder="+1 (555) 000-0000"
@@ -83,7 +83,7 @@ const CustomerDetailsForm: React.FC<CustomerDetailsFormProps> = ({
         </label>
         <textarea
           rows={3}
-          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand-primary)] resize-none"
+          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand-accent)] resize-none"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           placeholder="Any special instructions for your order…"
@@ -94,7 +94,7 @@ const CustomerDetailsForm: React.FC<CustomerDetailsFormProps> = ({
 
       <button
         type="submit"
-        className="w-full bg-[var(--brand-primary)] hover:bg-[var(--brand-secondary)] text-white px-4 py-3 rounded-lg transition-colors font-medium disabled:opacity-50"
+        className="w-full bg-[var(--brand-accent)] hover:opacity-90 text-[var(--brand-on-accent)] px-4 py-3 rounded-lg transition-colors font-medium disabled:opacity-50"
         disabled={isCartEmpty || isLoading}
       >
         {isLoading ? 'Loading…' : 'Continue to Payment'}

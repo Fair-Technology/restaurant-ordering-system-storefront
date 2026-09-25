@@ -106,7 +106,7 @@ const CategoryFilterBar: React.FC<CategoryFilterBarProps> = ({ categories }) => 
             style={
               selected === cat.id
                 ? {
-                    backgroundColor: 'var(--brand-primary)',
+                    backgroundColor: 'var(--brand-accent)',
                     color: '#fff',
                     boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
                   }

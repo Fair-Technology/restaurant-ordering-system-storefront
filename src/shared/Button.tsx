@@ -16,7 +16,7 @@ const Button: React.FC<ButtonProps> = ({
   const base = 'px-4 py-2 rounded-full font-semibold transition-all duration-200 active:scale-95';
   const styles = {
     primary:
-      'bg-gray-900 text-white shadow-sm hover:bg-[var(--brand-primary)] hover:shadow-md',
+      'bg-gray-900 text-white shadow-sm hover:bg-[var(--brand-accent)] hover:shadow-md',
     secondary:
       'bg-gray-700 text-white shadow-sm hover:bg-gray-900',
     outline:

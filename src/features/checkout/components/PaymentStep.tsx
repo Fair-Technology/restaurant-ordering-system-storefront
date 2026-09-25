@@ -62,7 +62,7 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
       <PaymentElement onReady={() => setElementReady(true)} />
 
       <button
-        className="w-full bg-[var(--brand-primary)] hover:bg-[var(--brand-secondary)] text-white px-4 py-3 rounded-lg transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+        className="w-full bg-[var(--brand-accent)] hover:opacity-90 text-[var(--brand-on-accent)] px-4 py-3 rounded-lg transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
         onClick={handlePay}
         disabled={!isReady || paying}
       >

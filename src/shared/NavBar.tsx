@@ -101,7 +101,7 @@ const NavBar: React.FC<NavBarProps> = ({
             <img
               src={logoUrl}
               alt={shopName}
-              className="h-8 w-8 rounded object-cover ring-2 ring-[var(--brand-primary)]"
+              className="h-8 w-8 rounded object-cover ring-2 ring-[var(--brand-accent)]"
             />
             <span className="font-bold text-xl text-gray-900">{shopName}</span>
           </button>

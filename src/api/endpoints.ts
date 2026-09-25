@@ -411,16 +411,8 @@ export type ShopBranding = {
   logoUrl?: string | null;
   /** Hero image URL (must start with https://) */
   heroImageUrl?: string | null;
-  colors: {
-    /** Primary brand color (hex) */
-    primary: string;
-    /** Secondary brand color (hex) */
-    secondary: string;
-    /** Tertiary brand color (hex) */
-    tertiary: string;
-    /** Background color (hex) */
-    background: string;
-  };
+  /** Accent color (hex) */
+  accentColor?: string | null;
 } | null;
 export type OpeningTimeSlot = {
   /** Opening time (HH:mm, 24-hour) */
