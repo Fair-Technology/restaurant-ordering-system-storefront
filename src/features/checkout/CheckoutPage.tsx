@@ -17,7 +17,6 @@ import {
 import type { Product } from '../../types/Product';
 import { mapApiProductToProduct } from '../../utils/catalogMapper';
 import { resolveShopBranding, type ShopWithBranding } from '../../utils/branding';
-import { saveGuestOrder } from '../../utils/guestOrders';
 import { useBrandingStyle } from '../../hooks/useBrandingStyle';
 import CartSummary from './components/CartSummary';
 import CustomerDetailsForm, { type CustomerFormData } from './components/CustomerDetailsForm';
@@ -86,24 +85,8 @@ const CheckoutPage: React.FC = () => {
   useEffect(() => {
     if (isOrderSuccess && orderData) {
       setPolling(false);
-      saveGuestOrder({
-        orderId: orderData.orderId,
-        orderRef: orderData.orderRef,
-        status: orderData.status,
-        items: orderData.items.map((item) => ({
-          productName: item.productName,
-          quantity: item.quantity,
-          lineTotalCents: item.lineTotalCents,
-        })),
-        subtotalCents: orderData.subtotalCents,
-        currency: orderData.currency,
-        customerName: orderData.customerName,
-        createdAt: orderData.createdAt,
-        shopName,
-        shopSlug: slug ?? '',
-      });
     }
-  }, [isOrderSuccess, orderData, shopName, slug]);
+  }, [isOrderSuccess, orderData]);
 
   async function handleInfoSubmit(data: CustomerFormData) {
     if (cartItems.length === 0) return;

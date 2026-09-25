@@ -532,8 +532,6 @@ export type UpdateShopRequest = {
   pausedMessage?: string;
   /** Payment policy */
   paymentPolicy?: 'pay_online';
-  /** Allow guest checkout */
-  allowGuestCheckout?: boolean;
   /** Shop currency */
   currency?: string;
   /** Shop timezone */
