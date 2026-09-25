@@ -13,7 +13,7 @@ async function mockShop(page: Page, branding: Record<string, unknown> | null) {
       }),
     });
   });
-  await page.route('**/api/shops/shop-t/catalog', async (route) => {
+  await page.route('**/api/shops/shop-t/catalog**', async (route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
