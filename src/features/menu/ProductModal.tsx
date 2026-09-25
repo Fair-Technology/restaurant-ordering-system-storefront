@@ -5,8 +5,8 @@ import TickCheckbox from '../../shared/TickCheckbox';
 import { useAppDispatch } from '../../store/hooks';
 import { addItem, removeItem } from '../../store/slices/cartSlice';
 import { formatDollars } from '../../utils/money';
-import { ICON_MAP } from '../../utils/iconMap';
-import { SPECIAL_INFO_COLORS, DEFAULT_BADGE } from '../../utils/badgeColors';
+import { menuLabels } from '../../utils/menuLabels';
+import type { CatalogAdditive, CatalogLabel } from '../../types/Product';
 
 type VariantOption = {
   id: string;
@@ -31,7 +31,11 @@ export type Product = {
   price: number;
   variantTypes?: VariantGroup[];
   addons?: AddonGroup[];
-  specialInfo?: { icon?: string; name?: string }[];
+  allergens?: CatalogLabel[];
+  additives?: CatalogAdditive[];
+  dietaryTags?: CatalogLabel[];
+  spice?: CatalogLabel | null;
+  language?: string;
 };
 
 interface ProductModalProps {
@@ -191,25 +195,47 @@ const ProductModal: React.FC<ProductModalProps> = ({
           <div className="flex-1">
             <p className="text-sm text-gray-600 mb-4">{product.description}</p>
 
-            {/* Special info badges — icon + label side by side (full text shown) */}
-            {product.specialInfo && product.specialInfo.length > 0 && (
+            {/* Dietary tag and spiciness chips */}
+            {((product.dietaryTags?.length ?? 0) > 0 || product.spice) && (
               <div className="flex flex-wrap gap-2 mb-4">
-                {product.specialInfo.map((item, i) => {
-                  const IC = item.icon ? ICON_MAP[item.icon] : null;
-                  return (
-                    <span
-                      key={i}
-                      className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs ${
-                        item.icon ? (SPECIAL_INFO_COLORS[item.icon] ?? DEFAULT_BADGE) : DEFAULT_BADGE
-                      }`}
-                    >
-                      {IC && <IC className="h-3.5 w-3.5" />}
-                      {item.name}
-                    </span>
-                  );
-                })}
+                {product.dietaryTags?.map((tag) => (
+                  <span
+                    key={tag.id}
+                    className="rounded-full px-2 py-0.5 text-xs bg-gray-100 text-gray-700"
+                  >
+                    {tag.label}
+                  </span>
+                ))}
+                {product.spice && (
+                  <span className="rounded-full px-2 py-0.5 text-xs bg-orange-100 text-orange-700">
+                    {product.spice.label}
+                  </span>
+                )}
               </div>
             )}
+
+            {/* Mandatory allergen and additive declaration */}
+            {(() => {
+              const labels = menuLabels(product.language);
+              const allergens = product.allergens ?? [];
+              const additives = product.additives ?? [];
+              return (
+                <section className="mb-4 text-xs text-gray-600">
+                  <p>
+                    <span className="font-semibold">{labels.allergens}:</span>{' '}
+                    {allergens.length
+                      ? allergens.map((a) => a.label).join(', ')
+                      : labels.noAllergens}
+                  </p>
+                  <p>
+                    <span className="font-semibold">{labels.additives}:</span>{' '}
+                    {additives.length
+                      ? additives.map((a) => `${a.code} ${a.label}`).join(', ')
+                      : labels.noAdditives}
+                  </p>
+                </section>
+              );
+            })()}
 
             {/* Variant groups — single select per group */}
             {product.variantTypes?.map((group) => (

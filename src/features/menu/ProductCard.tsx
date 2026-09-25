@@ -4,8 +4,6 @@ import Button from '../../shared/Button';
 import ProductModal from './ProductModal';
 import { Product } from '../../types/Product';
 import { formatDollars } from '../../utils/money';
-import { ICON_MAP } from '../../utils/iconMap';
-import { SPECIAL_INFO_COLORS, DEFAULT_BADGE } from '../../utils/badgeColors';
 
 type AddToCartPayload = {
   id: string;
@@ -102,26 +100,21 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }) => {
             {product.description}
           </p>
 
-          {product.specialInfo && product.specialInfo.length > 0 && (
+          {(product.dietaryTags.length > 0 || product.spice) && (
             <div className="flex flex-wrap gap-1">
-              {product.specialInfo.map((item, i) => {
-                const IC = item.icon ? ICON_MAP[item.icon] : null;
-                return (
-                  // Each badge is its own named group so tooltips only appear
-                  // when hovering the specific badge, not the whole card.
-                  <span
-                    key={i}
-                    className={`relative group/badge inline-flex items-center justify-center rounded-full p-1.5 ${
-                      item.icon ? (SPECIAL_INFO_COLORS[item.icon] ?? DEFAULT_BADGE) : DEFAULT_BADGE
-                    }`}
-                  >
-                    {IC ? <IC className="h-3.5 w-3.5" /> : <span className="text-xs">{item.name}</span>}
-                    <span className={`pointer-events-none absolute bottom-full mb-1.5 whitespace-nowrap rounded bg-gray-800 px-2 py-0.5 text-xs text-white opacity-0 transition-opacity group-hover/badge:opacity-100 z-10 ${i === 0 ? 'left-0' : 'left-1/2 -translate-x-1/2'}`}>
-                      {item.name}
-                    </span>
-                  </span>
-                );
-              })}
+              {product.dietaryTags.map((tag) => (
+                <span
+                  key={tag.id}
+                  className="rounded-full px-2 py-0.5 text-xs bg-gray-100 text-gray-700"
+                >
+                  {tag.label}
+                </span>
+              ))}
+              {product.spice && (
+                <span className="rounded-full px-2 py-0.5 text-xs bg-orange-100 text-orange-700">
+                  {product.spice.label}
+                </span>
+              )}
             </div>
           )}
 

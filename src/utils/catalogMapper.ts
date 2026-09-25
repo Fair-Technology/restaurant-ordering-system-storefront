@@ -33,6 +33,7 @@ export const slugifyCategoryName = (name: string): string =>
 export const mapApiProductToProduct = (
   product: CatalogProductDto,
   category: CatalogCategoryDto,
+  language: string,
 ): Product => ({
   id: product.id ?? '',
   label: product.name ?? '',
@@ -43,10 +44,11 @@ export const mapApiProductToProduct = (
   isAvailable: product.isAvailable ?? true,
   price: centsToDollars(product.price ?? 0),
   categories: [{ id: category.id ?? '', name: category.name ?? '', icon: category.icon ?? undefined }],
-  specialInfo: (product.specialInfo ?? []).map((s) => ({
-    icon: s.icon,
-    name: s.name,
-  })),
+  allergens: product.allergens ?? [],
+  additives: product.additives ?? [],
+  dietaryTags: product.dietaryTags ?? [],
+  spice: product.spice ?? null,
+  language,
   // Variants and addons have a mismatch between API types and internal types,
   // so we cast them here. The shape is compatible at runtime.
   variantTypes: ((product.variants ?? []) as any[]).map((group) => ({

@@ -18,6 +18,7 @@ import type { Product } from '../../types/Product';
 import { mapApiProductToProduct } from '../../utils/catalogMapper';
 import { resolveShopBranding, type ShopWithBranding } from '../../utils/branding';
 import { useBrandingStyle } from '../../hooks/useBrandingStyle';
+import { initialMenuLanguage } from '../../utils/menuLanguage';
 import CartSummary from './components/CartSummary';
 import CustomerDetailsForm, { type CustomerFormData } from './components/CustomerDetailsForm';
 import OrderSuccessView from './components/OrderSuccessView';
@@ -43,14 +44,22 @@ const CheckoutPage: React.FC = () => {
   // Apply CSS custom properties and get page wrapper style
   const brandStyle = useBrandingStyle(resolvedBranding);
 
+  // Same lang the shop view resolved, so RTK Query shares the cached catalog response
+  const storedMenuLanguage = useAppSelector((state) => state.shop.menuLanguage);
+  const lang = storedMenuLanguage ?? initialMenuLanguage(navigator.language);
+
   // Fetch the product catalog so CartSummary can show variant/addon names and open the edit modal
-  const { data: catalogData } = useGetCatalogQuery(resolvedShopId, { skip: !resolvedShopId });
+  const { data: catalogData } = useGetCatalogQuery(
+    { shopId: resolvedShopId, lang },
+    { skip: !resolvedShopId },
+  );
+  const resolvedLanguage = catalogData?.language ?? lang;
   const products: Product[] = useMemo(
     () =>
       catalogData?.categories.flatMap(
-        (cat) => (cat.products ?? []).map((p) => mapApiProductToProduct(p, cat)),
+        (cat) => (cat.products ?? []).map((p) => mapApiProductToProduct(p, cat, resolvedLanguage)),
       ) ?? [],
-    [catalogData],
+    [catalogData, resolvedLanguage],
   );
 
   // Load cart from localStorage using the shop slug as the scope key
