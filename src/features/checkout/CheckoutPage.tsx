@@ -18,6 +18,8 @@ import type { Product } from '../../types/Product';
 import { mapApiProductToProduct } from '../../utils/catalogMapper';
 import { resolveShopBranding, type ShopWithBranding } from '../../utils/branding';
 import { useBrandingStyle } from '../../hooks/useBrandingStyle';
+import { useGetShopLegalQuery } from '../../api/legalEndpoints';
+import { legalCopy } from '../../utils/legalCopy';
 import { initialMenuLanguage } from '../../utils/menuLanguage';
 import CartSummary from './components/CartSummary';
 import CustomerDetailsForm, { type CustomerFormData } from './components/CustomerDetailsForm';
@@ -54,6 +56,10 @@ const CheckoutPage: React.FC = () => {
     { skip: !resolvedShopId },
   );
   const resolvedLanguage = catalogData?.language ?? lang;
+  const { data: legalData } = useGetShopLegalQuery(
+    { slug: slug ?? '', lang },
+    { skip: !slug },
+  );
   const products: Product[] = useMemo(
     () =>
       catalogData?.categories.flatMap(
@@ -168,6 +174,9 @@ const CheckoutPage: React.FC = () => {
                   isLoading={isInitiating}
                   isCartEmpty={cartItems.length === 0}
                   error={checkoutError}
+                  legal={legalData}
+                  copy={legalCopy(legalData?.language ?? resolvedLanguage)}
+                  slug={slug ?? ''}
                 />
               )}
 

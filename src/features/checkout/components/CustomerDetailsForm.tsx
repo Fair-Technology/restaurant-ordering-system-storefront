@@ -1,4 +1,7 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
+import type { PublicLegalPackDto } from '../../../api/legalEndpoints';
+import type { LegalCopy } from '../../../utils/legalCopy';
 
 export interface CustomerFormData {
   name: string;
@@ -12,6 +15,9 @@ interface CustomerDetailsFormProps {
   isLoading: boolean;
   isCartEmpty: boolean;
   error?: string;
+  legal?: PublicLegalPackDto;
+  copy: LegalCopy;
+  slug: string;
 }
 
 const CustomerDetailsForm: React.FC<CustomerDetailsFormProps> = ({
@@ -19,6 +25,9 @@ const CustomerDetailsForm: React.FC<CustomerDetailsFormProps> = ({
   isLoading,
   isCartEmpty,
   error,
+  legal,
+  copy,
+  slug,
 }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -76,19 +85,49 @@ const CustomerDetailsForm: React.FC<CustomerDetailsFormProps> = ({
         />
       </div>
 
+      {legal && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          {legal.seller.phone
+            ? copy.allergyLine(legal.seller.legalName, legal.seller.phone)
+            : copy.allergyLineNoPhone}
+        </div>
+      )}
+
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Order Notes
-          <span className="text-gray-400 font-normal ml-1">(optional)</span>
+          {copy.notesLabel}
         </label>
         <textarea
           rows={3}
           className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand-accent)] resize-none"
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
-          placeholder="Any special instructions for your order…"
+          placeholder={copy.notesPlaceholder}
         />
       </div>
+
+      {legal && (
+        <div className="space-y-2 text-xs text-gray-500">
+          <p data-testid="seller-statement">
+            {copy.sellerStatement(legal.seller.legalName, legal.platform.name)}
+          </p>
+          <p>
+            {copy.acceptPrefix(legal.seller.legalName)}
+            <Link to={`/shops/${slug}/legal/terms`} className="underline">
+              {copy.footerTerms}
+            </Link>
+            {copy.acceptMiddle(legal.seller.legalName)}
+            <Link to={`/shops/${slug}/legal/withdrawal`} className="underline">
+              {copy.footerWithdrawal}
+            </Link>
+            {copy.acceptAnd}
+            <Link to={`/shops/${slug}/legal/privacy`} className="underline">
+              {copy.footerPrivacy}
+            </Link>
+            {copy.acceptEnd}
+          </p>
+        </div>
+      )}
 
       {error && <p className="text-red-600 text-sm">{error}</p>}
 
