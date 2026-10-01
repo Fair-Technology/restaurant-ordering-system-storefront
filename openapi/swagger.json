@@ -1509,7 +1509,7 @@
           },
           "paymentPolicy": {
             "type": "string",
-            "enum": ["pay_online"],
+            "enum": ["pay_online", "pay_in_person"],
             "description": "Payment policy"
           },
           "address": {
@@ -1654,7 +1654,7 @@
           },
           "paymentPolicy": {
             "type": "string",
-            "enum": ["pay_online"],
+            "enum": ["pay_online", "pay_in_person"],
             "description": "Payment policy"
           },
           "allowGuestCheckout": {
