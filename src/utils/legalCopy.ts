@@ -44,7 +44,7 @@ const en: LegalCopy = {
   loadError: 'This page could not be loaded.',
   sellerStatement: (l, p) =>
     `This order is a contract between you and ${l}. ${p} provides the ordering software.`,
-  acceptPrefix: (l) => `By ordering you accept the `,
+  acceptPrefix: () => 'By ordering you accept the ',
   acceptMiddle: (l) => ` of ${l}. Please read the `,
   acceptAnd: ' and the ',
   acceptEnd: '.',

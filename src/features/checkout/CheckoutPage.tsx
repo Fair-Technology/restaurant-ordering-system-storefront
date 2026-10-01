@@ -201,7 +201,7 @@ const CheckoutPage: React.FC = () => {
         )}
       </div>
 
-      <Footer />
+      <Footer slug={slug} />
     </div>
   );
 };

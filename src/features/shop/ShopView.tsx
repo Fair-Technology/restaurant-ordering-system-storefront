@@ -197,7 +197,7 @@ const ShopView = () => {
           onAddToCart={() => {}}
         />
       </div>
-      <Footer />
+      <Footer slug={slug} />
     </div>
   );
 };
