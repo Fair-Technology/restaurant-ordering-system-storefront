@@ -495,7 +495,7 @@ export type CreateShopRequest = {
   /** Minimum order amount in cents */
   minOrderAmountCents: number;
   /** Payment policy */
-  paymentPolicy: 'pay_online';
+  paymentPolicy: 'pay_online' | 'pay_in_person';
   address: Address;
   /** Message when shop is paused (optional) */
   pausedMessage?: string;
@@ -531,7 +531,7 @@ export type UpdateShopRequest = {
   /** Message when shop is paused */
   pausedMessage?: string;
   /** Payment policy */
-  paymentPolicy?: 'pay_online';
+  paymentPolicy?: 'pay_online' | 'pay_in_person';
   /** Shop currency */
   currency?: string;
   /** Shop timezone */
