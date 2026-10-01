@@ -96,7 +96,7 @@ const CartDropdown: React.FC<CartDropdownProps> = ({
 
             <div className="flex gap-2 mt-3">
               <button
-                className="flex-1 bg-gray-900 hover:bg-[var(--brand-primary)] text-white px-4 py-2 rounded-full font-semibold shadow-sm hover:shadow-md transition-all duration-200"
+                className="flex-1 bg-gray-900 hover:bg-[var(--brand-accent)] text-white px-4 py-2 rounded-full font-semibold shadow-sm hover:shadow-md transition-all duration-200"
                 onClick={() => {
                   onClose();
                   onCheckout?.();

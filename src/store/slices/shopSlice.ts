@@ -2,10 +2,12 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 export interface ShopState {
   activeShopId: string | null;
+  menuLanguage: string | null;
 }
 
 const initialState: ShopState = {
   activeShopId: null,
+  menuLanguage: null,
 };
 
 const shopSlice = createSlice({
@@ -18,8 +20,11 @@ const shopSlice = createSlice({
     clearActiveShop(state) {
       state.activeShopId = null;
     },
+    setMenuLanguage(state, action: PayloadAction<string>) {
+      state.menuLanguage = action.payload;
+    },
   },
 });
 
-export const { setActiveShop, clearActiveShop } = shopSlice.actions;
+export const { setActiveShop, clearActiveShop, setMenuLanguage } = shopSlice.actions;
 export const shopReducer = shopSlice.reducer;

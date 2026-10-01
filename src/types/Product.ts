@@ -1,5 +1,5 @@
-import type { SpecialInfoItem } from '../api/endpoints';
-export type { SpecialInfoItem };
+import type { CatalogAdditive, CatalogLabel } from '../api/endpoints';
+export type { CatalogAdditive, CatalogLabel };
 
 export interface Product {
   id: string;
@@ -11,7 +11,12 @@ export interface Product {
   categories: Category[];
   variantTypes: VariantType[];
   addons: AddonGroup[];
-  specialInfo?: SpecialInfoItem[];
+  allergens: CatalogLabel[];
+  additives: CatalogAdditive[];
+  dietaryTags: CatalogLabel[];
+  spice: CatalogLabel | null;
+  /** Menu language this product's text is localized to (e.g. 'de', 'en') */
+  language: string;
 }
 
 export interface Category {

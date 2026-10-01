@@ -203,7 +203,10 @@ const injectedRtkApi = api
         invalidatesTags: ['Shop Logo'],
       }),
       getCatalog: build.query<GetCatalogApiResponse, GetCatalogApiArg>({
-        query: (queryArg) => ({ url: `/shops/${queryArg}/catalog` }),
+        query: (queryArg) => ({
+          url: `/shops/${queryArg.shopId}/catalog`,
+          params: queryArg.lang ? { lang: queryArg.lang } : undefined,
+        }),
         providesTags: ['Catalog'],
       }),
       createOrder: build.mutation<CreateOrderApiResponse, CreateOrderApiArg>({
@@ -372,7 +375,12 @@ export type SetShopLogoApiArg = {
 };
 export type GetCatalogApiResponse =
   /** status 200 Catalog retrieved successfully */ CatalogResponse;
-export type GetCatalogApiArg = /** Shop ID */ string;
+export type GetCatalogApiArg = {
+  /** Shop ID */
+  shopId: string;
+  /** Visitor's menu language (ISO 639-1); falls back to the shop's original language */
+  lang?: string;
+};
 export type CreateOrderApiResponse =
   /** status 200 Order created and PaymentIntent initiated */ CheckoutResponse;
 export type CreateOrderApiArg = CheckoutRequest;
@@ -411,16 +419,8 @@ export type ShopBranding = {
   logoUrl?: string | null;
   /** Hero image URL (must start with https://) */
   heroImageUrl?: string | null;
-  colors: {
-    /** Primary brand color (hex) */
-    primary: string;
-    /** Secondary brand color (hex) */
-    secondary: string;
-    /** Tertiary brand color (hex) */
-    tertiary: string;
-    /** Background color (hex) */
-    background: string;
-  };
+  /** Accent color (hex) */
+  accentColor?: string | null;
 } | null;
 export type OpeningTimeSlot = {
   /** Opening time (HH:mm, 24-hour) */
@@ -532,8 +532,6 @@ export type UpdateShopRequest = {
   pausedMessage?: string;
   /** Payment policy */
   paymentPolicy?: 'pay_online';
-  /** Allow guest checkout */
-  allowGuestCheckout?: boolean;
   /** Shop currency */
   currency?: string;
   /** Shop timezone */
@@ -611,12 +609,6 @@ export type ProductImageRef = {
   /** Whether this is the primary image */
   isPrimary?: boolean;
 };
-export type SpecialInfoItem = {
-  /** Label text */
-  name?: string;
-  /** Lucide icon name */
-  icon?: string;
-};
 export type VariantOption = {
   /** Option ID */
   id: string;
@@ -682,8 +674,6 @@ export type ProductResponse = {
   categories?: ProductCategory[];
   /** Product images */
   images?: ProductImageRef[];
-  /** Special info items (dietary labels, badges, etc.) */
-  specialInfo?: SpecialInfoItem[];
   /** Product variant groups (optional) */
   variantGroups?: VariantGroup[];
   /** Product addon groups (optional) */
@@ -694,8 +684,6 @@ export type ProductResponse = {
   isDeleted?: boolean;
   /** Optional availability schedule; null = no time restriction */
   schedule?: ProductSchedule | null;
-  /** Tax rate ID from the shop's taxRates list, or null */
-  taxRateId?: string | null;
   /** Creation timestamp */
   createdAt?: string;
   /** Last update timestamp */
@@ -714,8 +702,6 @@ export type CreateProductRequest = {
   /** Category IDs */
   categoryIds?: string[];
   images?: ProductImageRef[];
-  /** Special info items (dietary labels, badges, etc.) */
-  specialInfo?: SpecialInfoItem[];
   /** Whether product is available */
   isAvailable?: boolean;
   /** Optional availability schedule; null = no time restriction */
@@ -733,8 +719,6 @@ export type UpdateProductRequest = {
   /** Category IDs */
   categoryIds?: string[];
   images?: ProductImageRef[];
-  /** Special info items (dietary labels, badges, etc.) */
-  specialInfo?: SpecialInfoItem[];
   /** Whether product is available */
   isAvailable?: boolean;
   /** Variant groups (single-select per group, e.g. Size) */
@@ -810,6 +794,8 @@ export type CatalogImageRef = {
   alt?: string | null;
   sortOrder?: number;
 };
+export type CatalogLabel = { id: string; label: string };
+export type CatalogAdditive = { id: string; code: number; label: string };
 export type CatalogProductDto = {
   /** Product ID */
   id?: string;
@@ -825,14 +811,14 @@ export type CatalogProductDto = {
   /** Addon groups */
   addons?: AddonGroup[];
   isAvailable?: boolean;
-  /** Tax rate ID or null */
-  taxRateId?: string | null;
-  specialInfo?:
-    | {
-        name: string;
-        icon: string;
-      }[]
-    | null;
+  /** Declared allergens, localized to the response language */
+  allergens?: CatalogLabel[];
+  /** Declared additives, localized to the response language */
+  additives?: CatalogAdditive[];
+  /** Dietary tags, localized to the response language */
+  dietaryTags?: CatalogLabel[];
+  /** Spiciness, localized to the response language, or null */
+  spice?: CatalogLabel | null;
   createdAt?: string;
   updatedAt?: string;
 };
@@ -848,6 +834,10 @@ export type CatalogCategoryDto = {
   products?: CatalogProductDto[];
 };
 export type CatalogResponse = {
+  /** Language the categories and products are localized to */
+  language?: 'de' | 'en';
+  /** Menu languages the shop offers */
+  languages?: Array<'de' | 'en'>;
   /** Categories with their visible, in-schedule products */
   categories: CatalogCategoryDto[];
 };
@@ -884,6 +874,8 @@ export type CheckoutRequest = {
   customerPhone: string;
   /** Optional notes for the order */
   customerNotes?: string;
+  /** How the order will be fulfilled (defaults to collection when absent) */
+  fulfilmentMode?: 'collection' | 'delivery' | 'dine_in';
 };
 export type OrderItemResponse = {
   productId: string;
@@ -918,7 +910,32 @@ export type OrdersPageResponse = {
 export type OrderByPaymentIntentResponse = {
   orderId: string;
   orderRef: string;
-  status: 'pending_payment' | 'paid' | 'failed' | 'cancelled' | 'refunded';
+  state:
+    | 'PLACED'
+    | 'ACCEPTED'
+    | 'READY'
+    | 'OUT_FOR_DELIVERY'
+    | 'COMPLETED'
+    | 'REJECTED'
+    | 'CANCELLED';
+  displayState:
+    | 'PLACED'
+    | 'ACCEPTED'
+    | 'IN_PREPARATION'
+    | 'READY'
+    | 'OUT_FOR_DELIVERY'
+    | 'COMPLETED'
+    | 'REJECTED'
+    | 'CANCELLED';
+  fulfilmentMode: 'collection' | 'delivery' | 'dine_in';
+  paymentStatus:
+    | 'paid'
+    | 'refunded'
+    | 'partially_refunded'
+    | 'cash_due'
+    | 'cash_collected'
+    | 'refunded_in_cash';
+  readyAt: string | null;
   items: OrderItemResponse[];
   subtotalCents: number;
   currency: string;

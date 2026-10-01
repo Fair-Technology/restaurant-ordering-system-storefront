@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
-import { ShoppingBag, Receipt } from 'lucide-react';
+import { ShoppingBag } from 'lucide-react';
 import { Icon } from './Icon';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { loadCart, selectCartCount } from '../store/slices/cartSlice';
@@ -101,24 +101,12 @@ const NavBar: React.FC<NavBarProps> = ({
             <img
               src={logoUrl}
               alt={shopName}
-              className="h-8 w-8 rounded object-cover ring-2 ring-[var(--brand-primary)]"
+              className="h-8 w-8 rounded object-cover ring-2 ring-[var(--brand-accent)]"
             />
             <span className="font-bold text-xl text-gray-900">{shopName}</span>
           </button>
 
           <div className="flex items-center gap-4 relative">
-            <div className="relative group">
-              <button
-                className="relative text-gray-700"
-                onClick={() => navigate(`/shops/${shopId}/my-orders`)}
-                aria-label="My Orders"
-              >
-                {Icon(Receipt, { className: 'w-5 h-5' })}
-              </button>
-              <span className="pointer-events-none absolute top-full left-1/2 mt-1 -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100 z-10">
-                My Orders
-              </span>
-            </div>
             <div className="relative group">
               <button
                 ref={buttonRef}

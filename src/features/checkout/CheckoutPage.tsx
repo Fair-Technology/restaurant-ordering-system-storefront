@@ -17,8 +17,8 @@ import {
 import type { Product } from '../../types/Product';
 import { mapApiProductToProduct } from '../../utils/catalogMapper';
 import { resolveShopBranding, type ShopWithBranding } from '../../utils/branding';
-import { saveGuestOrder } from '../../utils/guestOrders';
 import { useBrandingStyle } from '../../hooks/useBrandingStyle';
+import { initialMenuLanguage } from '../../utils/menuLanguage';
 import CartSummary from './components/CartSummary';
 import CustomerDetailsForm, { type CustomerFormData } from './components/CustomerDetailsForm';
 import OrderSuccessView from './components/OrderSuccessView';
@@ -44,14 +44,22 @@ const CheckoutPage: React.FC = () => {
   // Apply CSS custom properties and get page wrapper style
   const brandStyle = useBrandingStyle(resolvedBranding);
 
+  // Same lang the shop view resolved, so RTK Query shares the cached catalog response
+  const storedMenuLanguage = useAppSelector((state) => state.shop.menuLanguage);
+  const lang = storedMenuLanguage ?? initialMenuLanguage(navigator.language);
+
   // Fetch the product catalog so CartSummary can show variant/addon names and open the edit modal
-  const { data: catalogData } = useGetCatalogQuery(resolvedShopId, { skip: !resolvedShopId });
+  const { data: catalogData } = useGetCatalogQuery(
+    { shopId: resolvedShopId, lang },
+    { skip: !resolvedShopId },
+  );
+  const resolvedLanguage = catalogData?.language ?? lang;
   const products: Product[] = useMemo(
     () =>
       catalogData?.categories.flatMap(
-        (cat) => (cat.products ?? []).map((p) => mapApiProductToProduct(p, cat)),
+        (cat) => (cat.products ?? []).map((p) => mapApiProductToProduct(p, cat, resolvedLanguage)),
       ) ?? [],
-    [catalogData],
+    [catalogData, resolvedLanguage],
   );
 
   // Load cart from localStorage using the shop slug as the scope key
@@ -86,24 +94,8 @@ const CheckoutPage: React.FC = () => {
   useEffect(() => {
     if (isOrderSuccess && orderData) {
       setPolling(false);
-      saveGuestOrder({
-        orderId: orderData.orderId,
-        orderRef: orderData.orderRef,
-        status: orderData.status,
-        items: orderData.items.map((item) => ({
-          productName: item.productName,
-          quantity: item.quantity,
-          lineTotalCents: item.lineTotalCents,
-        })),
-        subtotalCents: orderData.subtotalCents,
-        currency: orderData.currency,
-        customerName: orderData.customerName,
-        createdAt: orderData.createdAt,
-        shopName,
-        shopSlug: slug ?? '',
-      });
     }
-  }, [isOrderSuccess, orderData, shopName, slug]);
+  }, [isOrderSuccess, orderData]);
 
   async function handleInfoSubmit(data: CustomerFormData) {
     if (cartItems.length === 0) return;
@@ -119,6 +111,7 @@ const CheckoutPage: React.FC = () => {
       customerEmail: data.email,
       customerPhone: data.phone,
       customerNotes: data.notes || undefined,
+      fulfilmentMode: 'collection',
     });
     if ('data' in result && result.data) {
       setCheckoutData(result.data);
@@ -151,7 +144,7 @@ const CheckoutPage: React.FC = () => {
       <div className="flex-1 max-w-6xl w-full mx-auto px-4 py-8">
         <h1
           className="text-2xl font-bold mb-6"
-          style={{ color: resolvedBranding.colors.primary }}
+          style={{ color: resolvedBranding.accentColor }}
         >
           Checkout
         </h1>

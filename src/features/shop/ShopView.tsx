@@ -3,6 +3,7 @@ import { ShopPageSkeleton } from '../../shared/Skeletons';
 import { useParams, useNavigate } from 'react-router-dom';
 import HeroSection from '../../shared/HeroSection';
 import CategoryFilterBar from '../menu/CategoryFilterBar';
+import LanguageSwitcher from '../menu/LanguageSwitcher';
 import MenuList from '../menu/MenuList';
 import Footer from '../../shared/Footer';
 import {
@@ -13,13 +14,14 @@ import {
 import NavBar from '../../shared/NavBar';
 import { Product } from '../../types/Product';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { setActiveShop } from '../../store/slices/shopSlice';
+import { setActiveShop, setMenuLanguage } from '../../store/slices/shopSlice';
 import {
   resolveShopBranding,
   type ShopWithBranding,
 } from '../../utils/branding';
 import { slugifyCategoryName, mapApiProductToProduct } from '../../utils/catalogMapper';
 import { useBrandingStyle } from '../../hooks/useBrandingStyle';
+import { initialMenuLanguage } from '../../utils/menuLanguage';
 
 type CategoryOption = { id: string; label: string; count: number; icon?: string };
 
@@ -79,9 +81,13 @@ const ShopView = () => {
     }
   }, [dispatch, resolvedShopId]);
 
-  const { data: catalogData } = useGetCatalogQuery(resolvedShopId, {
-    skip: !resolvedShopId,
-  });
+  const storedMenuLanguage = useAppSelector((state) => state.shop.menuLanguage);
+  const lang = storedMenuLanguage ?? initialMenuLanguage(navigator.language);
+
+  const { data: catalogData } = useGetCatalogQuery(
+    { shopId: resolvedShopId, lang },
+    { skip: !resolvedShopId },
+  );
 
   // Filter out empty/unavailable categories and sort by sortOrder
   const visibleCategories = useMemo(
@@ -115,6 +121,8 @@ const ShopView = () => {
     [visibleCategories]
   );
 
+  const resolvedLanguage = catalogData?.language ?? lang;
+
   // Group available products by category slug, mapping API DTOs to Product type
   const groupedItems = useMemo<Record<string, Product[]>>(() => {
     const grouped: Record<string, Product[]> = {};
@@ -122,10 +130,10 @@ const ShopView = () => {
       const id = slugifyCategoryName(cat.name!);
       grouped[id] = (cat.products ?? [])
         .filter((p) => p.isAvailable !== false)
-        .map((p) => mapApiProductToProduct(p, cat));
+        .map((p) => mapApiProductToProduct(p, cat, resolvedLanguage));
     });
     return grouped;
-  }, [visibleCategories]);
+  }, [visibleCategories, resolvedLanguage]);
 
   const categoryLabels = useMemo(() => {
     return categories.reduce<Record<string, string>>((acc, category) => {
@@ -172,6 +180,13 @@ const ShopView = () => {
         />
       </div>
       <HeroSection heroImageUrl={resolvedBranding.heroImageUrl} />
+      <div className="max-w-7xl mx-auto px-6 pt-3 flex justify-end">
+        <LanguageSwitcher
+          languages={catalogData?.languages ?? []}
+          current={resolvedLanguage}
+          onChange={(l) => dispatch(setMenuLanguage(l))}
+        />
+      </div>
       <CategoryFilterBar categories={categories} />
       <div className="w-full flex items-center justify-center flex-col mt-4">
         <MenuList

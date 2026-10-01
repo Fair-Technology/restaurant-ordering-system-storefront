@@ -23,7 +23,7 @@ const OrderSuccessView: React.FC<OrderSuccessViewProps> = ({
       <div className="text-center space-y-3">
         <div
           className="w-20 h-20 rounded-full flex items-center justify-center mx-auto text-white text-4xl"
-          style={{ backgroundColor: 'var(--brand-primary)' }}
+          style={{ backgroundColor: 'var(--brand-accent)' }}
         >
           ✓
         </div>
@@ -39,7 +39,7 @@ const OrderSuccessView: React.FC<OrderSuccessViewProps> = ({
         <div className="flex flex-col items-center gap-3 py-8">
           <div
             className="w-8 h-8 border-4 border-gray-200 rounded-full animate-spin"
-            style={{ borderTopColor: 'var(--brand-primary)' }}
+            style={{ borderTopColor: 'var(--brand-accent)' }}
           />
           <p className="text-sm text-gray-400">Fetching your order details…</p>
         </div>
@@ -54,7 +54,7 @@ const OrderSuccessView: React.FC<OrderSuccessViewProps> = ({
             <div className="flex justify-between">
               <span className="text-gray-500">Status</span>
               <span className="capitalize font-medium text-green-600">
-                {orderData.status.replace('_', ' ')}
+                {orderData.displayState.replace(/_/g, ' ').toLowerCase()}
               </span>
             </div>
             <div className="flex justify-between">
@@ -92,7 +92,7 @@ const OrderSuccessView: React.FC<OrderSuccessViewProps> = ({
       ) : null}
 
       <button
-        className="w-full bg-[var(--brand-primary)] hover:bg-[var(--brand-secondary)] text-white px-6 py-3 rounded-lg transition-colors font-medium"
+        className="w-full bg-[var(--brand-accent)] hover:opacity-90 text-[var(--brand-on-accent)] px-6 py-3 rounded-lg transition-colors font-medium"
         onClick={() => navigate(`/shops/${slug}`)}
       >
         Back to Menu

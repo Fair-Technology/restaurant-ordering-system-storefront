@@ -25,7 +25,7 @@ const TickCheckbox: React.FC<TickCheckboxProps> = ({
       <span
         className={`flex items-center justify-center w-6 h-6 rounded border ${
           checked
-            ? 'bg-[var(--brand-primary)] border-transparent'
+            ? 'bg-[var(--brand-accent)] border-transparent'
             : 'bg-white border-gray-300'
         }`}
         onClick={() => onChange(!checked)}
