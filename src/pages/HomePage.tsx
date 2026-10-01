@@ -1,5 +1,6 @@
 import { Link } from 'react-router';
 import { useGetShopsQuery } from '../api/endpoints';
+import ShopLogo from '../shared/ShopLogo';
 import { resolveShopBranding } from '../utils/branding';
 
 const HomePage = () => {
@@ -60,10 +61,12 @@ const HomePage = () => {
                     data-testid="shop-card"
                     className="flex flex-col items-center rounded-xl border border-gray-200 bg-white p-6 shadow-sm transition hover:shadow-md"
                   >
-                    <img
-                      src={branding.logoUrl}
-                      alt={shop.name}
-                      className="h-16 w-16 rounded-full object-cover bg-gray-100"
+                    <ShopLogo
+                      name={shop.name ?? ''}
+                      logoUrl={branding.logoUrl}
+                      accentColor={branding.accentColor}
+                      className="h-16 w-16 rounded-full bg-gray-100"
+                      textClassName="text-lg"
                     />
                     {/* data-testid="shop-name" — lets tests check the shop name text */}
                     <span
