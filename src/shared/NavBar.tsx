@@ -6,11 +6,12 @@ import { Icon } from './Icon';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { loadCart, selectCartCount } from '../store/slices/cartSlice';
 import CartDropdown from './CartDropdown';
+import ShopLogo from './ShopLogo';
 
 interface NavBarProps {
   shopName: string;
   shopId: string;
-  logoUrl: string;
+  logoUrl: string | null;
   onCheckout?: () => void;
 }
 
@@ -98,10 +99,11 @@ const NavBar: React.FC<NavBarProps> = ({
             onClick={() => navigate(`/shops/${shopId}`)}
             aria-label={`Go to ${shopName}`}
           >
-            <img
-              src={logoUrl}
-              alt={shopName}
-              className="h-8 w-8 rounded object-cover ring-2 ring-[var(--brand-accent)]"
+            <ShopLogo
+              name={shopName}
+              logoUrl={logoUrl}
+              className="h-8 w-8 rounded ring-2 ring-[var(--brand-accent)]"
+              textClassName="text-xs"
             />
             <span className="font-bold text-xl text-gray-900">{shopName}</span>
           </button>

@@ -73,3 +73,16 @@ test.describe('Home Page — Empty State', () => {
     await expect(homePage.shopCards).toHaveCount(0);
   });
 });
+
+test.describe('Home Page - Shop without a logo', () => {
+  test('shows the first two letters of the name instead of an image', async ({ page }) => {
+    await mockShopsApi(page, {
+      shops: [{ ...firstMockShop, name: 'Ma Pasta', slug: 'mapasta', branding: { logoUrl: null } }],
+    } as typeof mockShops);
+    const homePage = new HomePage(page);
+    await homePage.goto();
+
+    const logo = page.getByRole('img', { name: 'Ma Pasta' });
+    await expect(logo).toHaveText('MA');
+  });
+});
