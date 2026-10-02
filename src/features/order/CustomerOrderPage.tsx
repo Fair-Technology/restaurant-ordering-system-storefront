@@ -20,7 +20,6 @@ const CustomerOrderPage: React.FC = () => {
   const { slug, orderId } = useParams<{ slug: string; orderId: string }>();
   const location = useLocation();
   const dispatch = useAppDispatch();
-  const money = useMoney();
   const token = new URLSearchParams(location.search).get('t') ?? '';
   const storedLanguage = useAppSelector((state) => state.shop.menuLanguage);
 
@@ -42,6 +41,8 @@ const CustomerOrderPage: React.FC = () => {
   const [cancelOrder, { data: cancelled, isLoading: isCancelling, isError: cancelFailed }] =
     useCancelCustomerOrderMutation();
   const order = cancelled ?? data;
+  // Prices in the language the diner ordered in, even when the page is opened fresh from the email link
+  const money = useMoney(order?.language);
 
   useEffect(() => {
     if (data) dispatch(setActiveShop({ shopId: data.shopSlug, currency: data.currency }));

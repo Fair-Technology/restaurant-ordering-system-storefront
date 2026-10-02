@@ -279,7 +279,9 @@ const CheckoutPage: React.FC = () => {
                   isLoading={isInitiating}
                   isCartEmpty={cartItems.length === 0}
                   error={placeError ?? (quoteFailed ? copy.orderFailed : undefined)}
-                  submitLabel={method === 'cash' ? copy.placeOrderCash : copy.continueToCard}
+                  submitLabel={
+                    method === null ? copy.loading : method === 'cash' ? copy.placeOrderCash : copy.continueToCard
+                  }
                   submitDisabled={!canSubmit}
                   paymentNote={method === 'cash' ? copy.payCashInfo : null}
                   legal={legalData}

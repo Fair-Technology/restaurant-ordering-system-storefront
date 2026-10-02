@@ -233,6 +233,17 @@ test.describe('Cash order', () => {
     expect(cancelBody).toEqual({ token: 'tok' });
   });
 
+  test('a German order opened fresh in an English browser shows German prices', async ({ page }) => {
+    await mockBackend(page);
+    await page.route('**/api/customer-orders/o1/view', (route) =>
+      route.fulfill(fulfil({ ...PLACED_ORDER, language: 'de' })),
+    );
+    await page.goto('/shops/test-shop/orders/o1?t=TT');
+
+    await expect(page.getByText(/10,50\s€/).first()).toBeVisible();
+    await expect(page.getByText('€10.50')).toHaveCount(0);
+  });
+
   test('the menu says collection only', async ({ page }) => {
     await mockBackend(page);
     await page.goto('/shops/test-shop');
