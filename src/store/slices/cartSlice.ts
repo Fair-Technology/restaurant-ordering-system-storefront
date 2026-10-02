@@ -152,6 +152,14 @@ const cartSlice = createSlice({
         persist(state);
       }
     },
+    // The server re-priced this line; adopt its price so the next quote matches
+    setItemPrice(state, action: PayloadAction<{ key: string; price: number }>) {
+      const it = state.items.find((i) => i.key === action.payload.key);
+      if (it) {
+        it.price = action.payload.price;
+        persist(state);
+      }
+    },
     clearCart(state) {
       state.items = [];
       persist(state);
@@ -166,6 +174,7 @@ export const {
   incrementItem,
   decrementItem,
   setQuantity,
+  setItemPrice,
   clearCart,
 } = cartSlice.actions;
 
