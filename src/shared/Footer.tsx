@@ -1,20 +1,55 @@
-const Footer = () => (
-  <footer className="w-full bg-gray-50 border-t border-gray-200 mt-12">
-    <div className="max-w-7xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
-      <div className="flex flex-col gap-1">
-        <span className="font-bold text-gray-900 text-base">Fair-Technology</span>
-        <span className="text-xs text-gray-400">Online ordering, made simple.</span>
+import { Link } from 'react-router-dom';
+import { useGetShopLegalQuery } from '../api/legalEndpoints';
+import { useAppSelector } from '../store/hooks';
+import { initialMenuLanguage } from '../utils/menuLanguage';
+import { legalCopy } from '../utils/legalCopy';
+
+const Footer = ({ slug }: { slug?: string }) => {
+  const storedLanguage = useAppSelector((state) => state.shop.menuLanguage);
+  const lang = storedLanguage ?? initialMenuLanguage(navigator.language);
+  const { data } = useGetShopLegalQuery({ slug: slug ?? '', lang }, { skip: !slug });
+  const copy = legalCopy(data?.language ?? lang);
+
+  const links = [
+    { doc: 'impressum', label: copy.footerImpressum },
+    { doc: 'terms', label: copy.footerTerms },
+    { doc: 'withdrawal', label: copy.footerWithdrawal },
+    { doc: 'privacy', label: copy.footerPrivacy },
+  ];
+
+  return (
+    <footer className="w-full bg-gray-50 border-t border-gray-200 mt-12">
+      <div className="max-w-7xl mx-auto px-6 py-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
+        {slug && (
+          <nav className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-gray-500">
+            {links.map(({ doc, label }) => (
+              <Link
+                key={doc}
+                to={`/shops/${slug}/legal/${doc}`}
+                className="hover:text-gray-900 transition-colors"
+              >
+                {label}
+              </Link>
+            ))}
+          </nav>
+        )}
+        {data && (
+          <p className="text-xs text-gray-400">
+            {data.platform.salesSiteUrl ? (
+              <a
+                href={data.platform.salesSiteUrl}
+                className="hover:text-gray-600 transition-colors"
+              >
+                {copy.orderingBy(data.platform.name)}
+              </a>
+            ) : (
+              copy.orderingBy(data.platform.name)
+            )}
+          </p>
+        )}
       </div>
-      <nav className="flex gap-6 text-sm text-gray-500">
-        <a href="#" className="hover:text-gray-900 transition-colors">Privacy</a>
-        <a href="#" className="hover:text-gray-900 transition-colors">Terms</a>
-        <a href="#" className="hover:text-gray-900 transition-colors">Contact</a>
-      </nav>
-    </div>
-    <div className="border-t border-gray-200 py-4 text-center text-xs text-gray-400">
-      &copy; {new Date().getFullYear()} Fair-Technology. All rights reserved.
-    </div>
-  </footer>
-);
+    </footer>
+  );
+};
 
 export default Footer;
