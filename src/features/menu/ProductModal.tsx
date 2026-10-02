@@ -6,6 +6,8 @@ import { useAppDispatch } from '../../store/hooks';
 import { addItem, removeItem } from '../../store/slices/cartSlice';
 import { useMoney } from '../../hooks/useMoney';
 import { menuLabels } from '../../utils/menuLabels';
+import { orderCopy } from '../../utils/orderCopy';
+import { toggleAddonSelection, unmetAddonGroups } from '../../utils/addonSelection';
 import type { CatalogAdditive, CatalogLabel } from '../../types/Product';
 
 type VariantOption = {
@@ -21,7 +23,13 @@ type AddonOption = {
   priceDelta?: number;
   imageURL?: string;
 };
-type AddonGroup = { id: string; label: string; options: AddonOption[] };
+type AddonGroup = {
+  id: string;
+  label: string;
+  minSelectable: number;
+  maxSelectable: number;
+  options: AddonOption[];
+};
 
 export type Product = {
   id: string;
@@ -133,13 +141,10 @@ const ProductModal: React.FC<ProductModalProps> = ({
   }, [product.price, selectedVariantId, selectedAddonIds, variantLookup, addonLookup]);
 
   function toggleAddon(id: string) {
-    setSelectedAddonIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
+    setSelectedAddonIds((prev) => toggleAddonSelection(product.addons ?? [], prev, id));
   }
+
+  const addonsIncomplete = unmetAddonGroups(product.addons ?? [], selectedAddonIds).length > 0;
 
   function handleAddToCart() {
     // In edit mode, remove the old cart item before adding the updated one
@@ -277,7 +282,14 @@ const ProductModal: React.FC<ProductModalProps> = ({
             {/* Addon groups — multi-select using TickCheckbox */}
             {product.addons?.map((group) => (
               <div key={group.id} className="mb-3">
-                <div className="font-medium text-sm mb-2">{group.label}</div>
+                <div className="font-medium text-sm mb-2">
+                  {group.label}
+                  {group.minSelectable > 0 && (
+                    <span className="ml-2 text-xs font-normal text-gray-500">
+                      {orderCopy(product.language ?? '').addonChooseAtLeast(group.minSelectable)}
+                    </span>
+                  )}
+                </div>
                 <div className="flex flex-col gap-2">
                   {group.options.map((option) => (
                     <TickCheckbox
@@ -325,7 +337,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
             </div>
 
             <div className="flex gap-2 mt-6">
-              <Button className="flex-1" onClick={handleAddToCart}>
+              <Button className="flex-1" onClick={handleAddToCart} disabled={addonsIncomplete}>
                 {editItemKey ? 'Update Order' : 'Add To Order'}
               </Button>
               <Button variant="outline" className="px-4" onClick={onClose}>

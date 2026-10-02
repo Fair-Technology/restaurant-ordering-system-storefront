@@ -65,6 +65,8 @@ export const mapApiProductToProduct = (
   addons: ((product.addons ?? []) as any[]).map((group) => ({
     id: group.id ?? '',
     label: group.name ?? '',
+    minSelectable: group.minSelectable ?? 0,
+    maxSelectable: group.maxSelectable ?? 99,
     options: (group.options ?? []).map((opt: any) => ({
       id: opt.id ?? '',
       label: opt.name ?? '',
