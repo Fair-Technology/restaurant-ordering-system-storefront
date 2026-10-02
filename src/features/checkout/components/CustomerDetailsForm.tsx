@@ -18,6 +18,9 @@ interface CustomerDetailsFormProps {
   legal?: PublicLegalPackDto;
   copy: LegalCopy;
   slug: string;
+  submitLabel: string;
+  submitDisabled: boolean;
+  paymentNote: string | null;
 }
 
 const CustomerDetailsForm: React.FC<CustomerDetailsFormProps> = ({
@@ -28,6 +31,9 @@ const CustomerDetailsForm: React.FC<CustomerDetailsFormProps> = ({
   legal,
   copy,
   slug,
+  submitLabel,
+  submitDisabled,
+  paymentNote,
 }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -129,14 +135,16 @@ const CustomerDetailsForm: React.FC<CustomerDetailsFormProps> = ({
         </div>
       )}
 
+      {paymentNote && <p className="text-sm text-gray-700">{paymentNote}</p>}
+
       {error && <p className="text-red-600 text-sm">{error}</p>}
 
       <button
         type="submit"
         className="w-full bg-[var(--brand-accent)] hover:opacity-90 text-[var(--brand-on-accent)] px-4 py-3 rounded-lg transition-colors font-medium disabled:opacity-50"
-        disabled={isCartEmpty || isLoading}
+        disabled={isCartEmpty || isLoading || submitDisabled}
       >
-        {isLoading ? 'Loading…' : 'Continue to Payment'}
+        {isLoading ? 'Loading…' : submitLabel}
       </button>
     </form>
   );

@@ -8,7 +8,7 @@ import {
   removeItem,
   clearCart,
 } from '../store/slices/cartSlice';
-import { formatDollars } from '../utils/money';
+import { useMoney } from '../hooks/useMoney';
 
 interface CartDropdownProps {
   dropdownRef: React.RefObject<HTMLDivElement | null>;
@@ -26,6 +26,7 @@ const CartDropdown: React.FC<CartDropdownProps> = ({
   const dispatch = useAppDispatch();
   const cartItems = useAppSelector(selectCartItems);
   const cartTotal = useAppSelector(selectCartTotal);
+  const money = useMoney();
 
   return (
     <div ref={dropdownRef} role="dialog" aria-label="Cart dropdown" style={style}>
@@ -57,8 +58,8 @@ const CartDropdown: React.FC<CartDropdownProps> = ({
                   <div className="flex-1 min-w-0">
                     <div className="font-medium truncate">{item.name}</div>
                     <div className="text-gray-500 text-xs">
-                      {item.quantity} × {formatDollars(item.price)} ={' '}
-                      {formatDollars(item.quantity * item.price)}
+                      {item.quantity} × {money.major(item.price)} ={' '}
+                      {money.major(item.quantity * item.price)}
                     </div>
                   </div>
 
@@ -91,7 +92,7 @@ const CartDropdown: React.FC<CartDropdownProps> = ({
 
             <div className="border-t pt-2 mt-2 flex items-center justify-between">
               <div className="font-semibold">Total</div>
-              <div className="font-semibold">{formatDollars(cartTotal)}</div>
+              <div className="font-semibold">{money.major(cartTotal)}</div>
             </div>
 
             <div className="flex gap-2 mt-3">

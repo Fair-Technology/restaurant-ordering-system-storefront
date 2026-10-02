@@ -42,6 +42,8 @@ export interface Variant {
 export interface AddonGroup {
   id: string;
   label: string;
+  minSelectable: number;
+  maxSelectable: number;
   options: AddonOption[];
 }
 
