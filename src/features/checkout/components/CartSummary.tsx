@@ -9,7 +9,7 @@ import {
   removeItem,
   type CartItem,
 } from '../../../store/slices/cartSlice';
-import { formatDollars } from '../../../utils/money';
+import { useMoney } from '../../../hooks/useMoney';
 import type { Product } from '../../../types/Product';
 import ProductModal from '../../menu/ProductModal';
 import ConfirmModal from '../../../shared/ConfirmModal';
@@ -24,6 +24,7 @@ const CartSummary: React.FC<CartSummaryProps> = ({ slug, products }) => {
   const navigate = useNavigate();
   const cartItems = useAppSelector(selectCartItems);
   const cartTotal = useAppSelector(selectCartTotal);
+  const money = useMoney();
 
   const [editingItem, setEditingItem] = useState<CartItem | null>(null);
   const [removingItem, setRemovingItem] = useState<CartItem | null>(null);
@@ -86,7 +87,7 @@ const CartSummary: React.FC<CartSummaryProps> = ({ slug, products }) => {
                   {customisationDetail && (
                     <div className="text-gray-400 text-xs mt-0.5 leading-relaxed">{customisationDetail}</div>
                   )}
-                  <div className="text-gray-500 text-xs mt-0.5">{formatDollars(item.price)} each</div>
+                  <div className="text-gray-500 text-xs mt-0.5">{money.major(item.price)} each</div>
                 </div>
 
                 <div className="flex flex-col items-end gap-1.5">
@@ -106,7 +107,7 @@ const CartSummary: React.FC<CartSummaryProps> = ({ slug, products }) => {
                     </button>
                   </div>
                   <div className="text-sm font-medium">
-                    {formatDollars(item.quantity * item.price)}
+                    {money.major(item.quantity * item.price)}
                   </div>
                   <div className="flex gap-2">
                     {product && (
@@ -131,7 +132,7 @@ const CartSummary: React.FC<CartSummaryProps> = ({ slug, products }) => {
 
           <div className="flex justify-between font-semibold pt-2 text-sm">
             <span>Total</span>
-            <span>{formatDollars(cartTotal)}</span>
+            <span>{money.major(cartTotal)}</span>
           </div>
         </div>
       )}

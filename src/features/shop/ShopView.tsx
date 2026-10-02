@@ -77,9 +77,9 @@ const ShopView = () => {
   // Persist the resolved shop ID to Redux so other pages can reference it
   useEffect(() => {
     if (resolvedShopId) {
-      dispatch(setActiveShop({ shopId: resolvedShopId }));
+      dispatch(setActiveShop({ shopId: resolvedShopId, currency: resolvedShopData?.currency }));
     }
-  }, [dispatch, resolvedShopId]);
+  }, [dispatch, resolvedShopId, resolvedShopData?.currency]);
 
   const storedMenuLanguage = useAppSelector((state) => state.shop.menuLanguage);
   const lang = storedMenuLanguage ?? initialMenuLanguage(navigator.language);

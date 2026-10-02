@@ -6,6 +6,7 @@ import { CheckoutPageSkeleton } from '../../shared/Skeletons';
 import NavBar from '../../shared/NavBar';
 import Footer from '../../shared/Footer';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
+import { setActiveShop } from '../../store/slices/shopSlice';
 import { loadCart, selectCartItems, clearCart } from '../../store/slices/cartSlice';
 import {
   useGetShopBySlugQuery,
@@ -67,6 +68,13 @@ const CheckoutPage: React.FC = () => {
       ) ?? [],
     [catalogData, resolvedLanguage],
   );
+
+  // Persist the shop's currency so money components format in it
+  useEffect(() => {
+    if (shopData?.id) {
+      dispatch(setActiveShop({ shopId: shopData.id, currency: shopData.currency }));
+    }
+  }, [dispatch, shopData?.id, shopData?.currency]);
 
   // Load cart from localStorage using the shop slug as the scope key
   useEffect(() => {

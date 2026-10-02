@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { type GetOrderByPaymentIntentApiResponse } from '../../../api/endpoints';
-import { formatDollars } from '../../../utils/money';
+import { useMoney } from '../../../hooks/useMoney';
 import { formatDate } from '../../../utils/formatting';
 
 interface OrderSuccessViewProps {
@@ -16,6 +16,7 @@ const OrderSuccessView: React.FC<OrderSuccessViewProps> = ({
   slug,
 }) => {
   const navigate = useNavigate();
+  const money = useMoney();
 
   return (
     <div className="max-w-lg mx-auto space-y-6 py-6">
@@ -74,7 +75,7 @@ const OrderSuccessView: React.FC<OrderSuccessViewProps> = ({
                   {item.productName} × {item.quantity}
                 </span>
                 <span className="font-medium">
-                  {formatDollars(item.lineTotalCents / 100)}
+                  {money.cents(item.lineTotalCents)}
                 </span>
               </div>
             ))}
@@ -85,7 +86,7 @@ const OrderSuccessView: React.FC<OrderSuccessViewProps> = ({
             <span>Total</span>
             <span>
               {orderData.currency.toUpperCase()}{' '}
-              {formatDollars(orderData.subtotalCents / 100)}
+              {money.cents(orderData.subtotalCents)}
             </span>
           </div>
         </div>

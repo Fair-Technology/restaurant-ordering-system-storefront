@@ -3,7 +3,7 @@ import { UtensilsCrossed } from 'lucide-react';
 import Button from '../../shared/Button';
 import ProductModal from './ProductModal';
 import { Product } from '../../types/Product';
-import { formatDollars } from '../../utils/money';
+import { useMoney } from '../../hooks/useMoney';
 
 type AddToCartPayload = {
   id: string;
@@ -30,6 +30,7 @@ type ProductCardProps = {
  * closes if a *different* card triggered the event.
  */
 const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }) => {
+  const money = useMoney();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const displayPrice =
     typeof product.price === 'number' && Number.isFinite(product.price)
@@ -94,7 +95,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }) => {
             {product.label}
           </h3>
           <p className="text-sm font-bold text-gray-900">
-            {formatDollars(displayPrice)}
+            {money.major(displayPrice)}
           </p>
           <p className="text-gray-500 text-xs sm:text-sm line-clamp-2">
             {product.description}

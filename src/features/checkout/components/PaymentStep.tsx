@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
-import { formatDollars } from '../../../utils/money';
+import { useAppSelector } from '../../../store/hooks';
+import { formatCents } from '../../../utils/money';
+import { initialMenuLanguage } from '../../../utils/menuLanguage';
 
 interface PaymentStepProps {
   subtotalCents: number;
@@ -15,6 +17,9 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
   onSuccess,
   onError,
 }) => {
+  const language =
+    useAppSelector((state) => state.shop.menuLanguage) ?? initialMenuLanguage(navigator.language);
+  const total = formatCents(subtotalCents, currency, language);
   const stripe = useStripe();
   const elements = useElements();
   const [paying, setPaying] = useState(false);
@@ -43,7 +48,7 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
       <div className="text-sm text-gray-500">
         Total:{' '}
         <span className="font-semibold text-gray-800">
-          {currency.toUpperCase()} {formatDollars(subtotalCents / 100)}
+          {total}
         </span>
       </div>
 
@@ -70,7 +75,7 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
           ? 'Processing…'
           : !isReady
             ? 'Loading…'
-            : `Pay ${currency.toUpperCase()} ${formatDollars(subtotalCents / 100)}`}
+            : `Pay ${total}`}
       </button>
     </div>
   );

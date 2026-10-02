@@ -4,7 +4,7 @@ import Button from '../../shared/Button';
 import TickCheckbox from '../../shared/TickCheckbox';
 import { useAppDispatch } from '../../store/hooks';
 import { addItem, removeItem } from '../../store/slices/cartSlice';
-import { formatDollars } from '../../utils/money';
+import { useMoney } from '../../hooks/useMoney';
 import { menuLabels } from '../../utils/menuLabels';
 import type { CatalogAdditive, CatalogLabel } from '../../types/Product';
 
@@ -72,6 +72,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
   initialQuantity: initialQuantityProp,
 }) => {
   const dispatch = useAppDispatch();
+  const money = useMoney();
 
   // Fall back to the slug segment from the URL if shopId is not provided
   const urlParts =
@@ -263,7 +264,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
                         <span>{variant.label}</span>
                         {variant.priceDelta ? (
                           <span className="text-xs text-gray-500">
-                            +{formatDollars(variant.priceDelta)}
+                            +{money.major(variant.priceDelta)}
                           </span>
                         ) : null}
                       </div>
@@ -286,7 +287,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
                       label={option.label}
                       hint={
                         option.priceDelta
-                          ? `+ ${formatDollars(option.priceDelta)}`
+                          ? `+ ${money.major(option.priceDelta)}`
                           : undefined
                       }
                     />
@@ -315,10 +316,10 @@ const ProductModal: React.FC<ProductModalProps> = ({
               <div className="ml-auto text-right">
                 <div className="text-sm text-gray-500">Unit</div>
                 <div className="text-xl font-semibold">
-                  {formatDollars(unitPrice)}
+                  {money.major(unitPrice)}
                 </div>
                 <div className="text-sm text-gray-500">
-                  Total {formatDollars(unitPrice * quantity)}
+                  Total {money.major(unitPrice * quantity)}
                 </div>
               </div>
             </div>
