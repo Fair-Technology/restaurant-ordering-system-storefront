@@ -14,7 +14,10 @@ import {
 import NavBar from '../../shared/NavBar';
 import { Product } from '../../types/Product';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { setActiveShop, setMenuLanguage } from '../../store/slices/shopSlice';
+import { setActiveShop, setMenuLanguage, setFulfilmentMode } from '../../store/slices/shopSlice';
+import FulfilmentModeBar from './FulfilmentModeBar';
+import { orderCopy } from '../../utils/orderCopy';
+import type { ShopFulfilment } from '../../api/orderEndpoints';
 import {
   resolveShopBranding,
   type ShopWithBranding,
@@ -123,6 +126,11 @@ const ShopView = () => {
 
   const resolvedLanguage = catalogData?.language ?? lang;
 
+  const fulfilment = (resolvedShopData as { fulfilment?: ShopFulfilment } | undefined)?.fulfilment;
+  const modes = fulfilment?.modes ?? ['collection'];
+  const storedMode = useAppSelector((state) => state.shop.fulfilmentMode);
+  const selectedMode = storedMode && modes.includes(storedMode) ? storedMode : modes[0];
+
   // Group available products by category slug, mapping API DTOs to Product type
   const groupedItems = useMemo<Record<string, Product[]>>(() => {
     const grouped: Record<string, Product[]> = {};
@@ -180,6 +188,13 @@ const ShopView = () => {
         />
       </div>
       <HeroSection heroImageUrl={resolvedBranding.heroImageUrl} />
+      <FulfilmentModeBar
+        modes={modes}
+        prepMinutes={fulfilment?.prepMinutes ?? { collection: 20, delivery: 45, dine_in: 20 }}
+        selected={selectedMode}
+        onSelect={(m) => dispatch(setFulfilmentMode(m))}
+        copy={orderCopy(resolvedLanguage)}
+      />
       <div className="max-w-7xl mx-auto px-6 pt-3 flex justify-end">
         <LanguageSwitcher
           languages={catalogData?.languages ?? []}
