@@ -17,8 +17,9 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
   onSuccess,
   onError,
 }) => {
-  const language =
-    useAppSelector((state) => state.shop.menuLanguage) ?? initialMenuLanguage(navigator.language);
+  const resolvedLanguage = useAppSelector((state) => state.shop.resolvedMenuLanguage);
+  const storedLanguage = useAppSelector((state) => state.shop.menuLanguage);
+  const language = resolvedLanguage ?? storedLanguage ?? initialMenuLanguage(navigator.language);
   const total = formatCents(subtotalCents, currency, language);
   const stripe = useStripe();
   const elements = useElements();

@@ -14,7 +14,7 @@ import {
 import NavBar from '../../shared/NavBar';
 import { Product } from '../../types/Product';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { setActiveShop, setMenuLanguage, setFulfilmentMode } from '../../store/slices/shopSlice';
+import { setActiveShop, setMenuLanguage, setResolvedMenuLanguage, setFulfilmentMode } from '../../store/slices/shopSlice';
 import FulfilmentModeBar from './FulfilmentModeBar';
 import { orderCopy } from '../../utils/orderCopy';
 import type { ShopFulfilment } from '../../api/orderEndpoints';
@@ -125,6 +125,11 @@ const ShopView = () => {
   );
 
   const resolvedLanguage = catalogData?.language ?? lang;
+
+  // Remember the language the menu actually came back in, for price formatting
+  useEffect(() => {
+    if (catalogData?.language) dispatch(setResolvedMenuLanguage(catalogData.language));
+  }, [dispatch, catalogData?.language]);
 
   const fulfilment = (resolvedShopData as { fulfilment?: ShopFulfilment } | undefined)?.fulfilment;
   const modes = fulfilment?.modes ?? ['collection'];

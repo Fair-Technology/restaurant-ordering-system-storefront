@@ -6,7 +6,7 @@ import { CheckoutPageSkeleton } from '../../shared/Skeletons';
 import NavBar from '../../shared/NavBar';
 import Footer from '../../shared/Footer';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { setActiveShop } from '../../store/slices/shopSlice';
+import { setActiveShop, setResolvedMenuLanguage } from '../../store/slices/shopSlice';
 import { loadCart, selectCartItems, clearCart, removeItem, setItemPrice } from '../../store/slices/cartSlice';
 import {
   useGetShopBySlugQuery,
@@ -68,6 +68,11 @@ const CheckoutPage: React.FC = () => {
     { skip: !resolvedShopId },
   );
   const resolvedLanguage = catalogData?.language ?? lang;
+
+  // Remember the language the menu actually came back in, for price formatting
+  useEffect(() => {
+    if (catalogData?.language) dispatch(setResolvedMenuLanguage(catalogData.language));
+  }, [dispatch, catalogData?.language]);
   const { data: legalData, refetch: refetchLegal } = useGetShopLegalQuery(
     { slug: slug ?? '', lang },
     { skip: !slug },
