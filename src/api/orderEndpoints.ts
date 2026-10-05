@@ -7,6 +7,8 @@ import type { FulfilmentMode } from '../store/slices/shopSlice';
 export const BASKET_CHANGED_ERROR = 'Your basket has changed. Please review it and try again.';
 export const LEGAL_CHANGED_ERROR =
   'The restaurant has updated its terms. Please review them and order again.';
+export const PAYMENT_CONFIRMING_ERROR = 'Your payment is being confirmed';
+export const ADDRESS_REQUIRED_ERROR = 'An address is required for orders over 250 €';
 
 export type PaymentMethod = 'cash' | 'card';
 export type LineStatus = 'ok' | 'price_changed' | 'unavailable' | 'invalid_options';
@@ -18,7 +20,39 @@ export type StoredOrderState =
   | 'REJECTED'
   | 'CANCELLED'
   | 'OUT_FOR_DELIVERY';
-export type RejectReason = 'too_busy' | 'item_unavailable' | 'closing_soon' | 'other' | 'no_response';
+export type PaymentStatus =
+  | 'authorized'
+  | 'paid'
+  | 'partially_refunded'
+  | 'refunded'
+  | 'canceled'
+  | 'not_paid_online';
+export type RejectReason =
+  | 'too_busy'
+  | 'item_unavailable'
+  | 'closing_soon'
+  | 'other'
+  | 'no_response'
+  | 'payment_failed';
+
+export interface CustomerAddress {
+  street: string;
+  postcode: string;
+  city: string;
+  country: string;
+}
+
+export interface OrderDocument {
+  id: string;
+  kind: 'invoice' | 'cancellation' | 'correction';
+  number: string;
+}
+
+export interface InvoiceFileDto {
+  fileName: string;
+  contentType: 'application/pdf';
+  contentBase64: string;
+}
 
 export interface CheckoutItemDto {
   productId: string;
@@ -56,6 +90,7 @@ export interface BasketQuoteDto {
   belowMinimum: boolean;
   openNow: boolean;
   paymentMethods: PaymentMethod[];
+  addressRequired: boolean;
   prepMinutes: number;
 }
 
@@ -68,6 +103,7 @@ export interface PlaceOrderRequest {
   customerNotes?: string;
   fulfilmentMode?: FulfilmentMode;
   paymentMethod?: PaymentMethod;
+  customerAddress?: CustomerAddress;
   idempotencyKey?: string;
   language?: string;
   legalRevisions?: { terms: number; withdrawal: number };
@@ -76,6 +112,8 @@ export interface PlaceOrderRequest {
 export interface CardCheckoutResult {
   kind: 'card';
   sessionId: string;
+  orderId: string;
+  accessToken: string;
   clientSecret: string;
   subtotalCents: number;
   currency: string;
@@ -93,6 +131,16 @@ export interface CashCheckoutResult {
   autoRejectAt: string;
 }
 
+export interface PlacedCheckoutResult {
+  kind: 'placed';
+  orderId: string;
+  orderRef: string;
+  accessToken: string;
+  subtotalCents: number;
+  currency: string;
+}
+
+// TODO(F2): add PlacedCheckoutResult here and drop CashCheckoutResult once CheckoutPage handles it.
 export type PlaceOrderResult = CardCheckoutResult | CashCheckoutResult;
 
 export interface CustomerOrderDto {
@@ -106,8 +154,11 @@ export interface CustomerOrderDto {
   state: StoredOrderState;
   displayState: string;
   fulfilmentMode: FulfilmentMode;
-  paymentMethod: PaymentMethod;
-  paymentStatus: string;
+  /** Removed by the backend in 4b; still read by the cash branch until F3 deletes it. */
+  paymentMethod?: PaymentMethod;
+  paymentStatus: PaymentStatus;
+  refundedCents: number;
+  documents: OrderDocument[];
   readyAt: string | null;
   items: Array<{
     productName: string;
@@ -127,6 +178,10 @@ export interface CustomerOrderDto {
 export interface CustomerOrderArg {
   orderId: string;
   token: string;
+}
+
+export interface CustomerDocumentArg extends CustomerOrderArg {
+  documentId: string;
 }
 
 /** What GET /shops/slug/{slug} adds for ordering; absent on older backends. */
@@ -151,6 +206,13 @@ export const orderApi = api.injectEndpoints({
       }),
       keepUnusedDataFor: 0,
     }),
+    getCustomerDocument: b.mutation<InvoiceFileDto, CustomerDocumentArg>({
+      query: ({ orderId, documentId, token }) => ({
+        url: `/customer-orders/${orderId}/documents/${documentId}`,
+        method: 'POST',
+        body: { token },
+      }),
+    }),
     cancelCustomerOrder: b.mutation<CustomerOrderDto, CustomerOrderArg>({
       query: ({ orderId, token }) => ({
         url: `/customer-orders/${orderId}/cancel`,
@@ -165,5 +227,6 @@ export const {
   useQuoteBasketQuery,
   usePlaceOrderMutation,
   useGetCustomerOrderQuery,
+  useGetCustomerDocumentMutation,
   useCancelCustomerOrderMutation,
 } = orderApi;
