@@ -3,6 +3,7 @@ import { PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js'
 import { useAppSelector } from '../../../store/hooks';
 import { formatCents } from '../../../utils/money';
 import { initialMenuLanguage } from '../../../utils/menuLanguage';
+import { orderCopy } from '../../../utils/orderCopy';
 
 interface PaymentStepProps {
   subtotalCents: number;
@@ -21,6 +22,7 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
   const storedLanguage = useAppSelector((state) => state.shop.menuLanguage);
   const language = resolvedLanguage ?? storedLanguage ?? initialMenuLanguage(navigator.language);
   const total = formatCents(subtotalCents, currency, language);
+  const copy = orderCopy(language);
   const stripe = useStripe();
   const elements = useElements();
   const [paying, setPaying] = useState(false);
@@ -36,8 +38,12 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
     });
     setPaying(false);
     if (result.error) {
-      onError(result.error.message ?? 'Payment failed');
-    } else if (result.paymentIntent?.status === 'succeeded') {
+      onError(result.error.message ?? copy.paymentFailed);
+    } else if (
+      result.paymentIntent &&
+      // The card is only reserved at checkout, so a successful reservation reads requires_capture.
+      ['requires_capture', 'succeeded', 'processing'].includes(result.paymentIntent.status)
+    ) {
       onSuccess(result.paymentIntent.id);
     }
   }
@@ -47,7 +53,7 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
   return (
     <div className="space-y-4">
       <div className="text-sm text-gray-500">
-        Total:{' '}
+        {copy.total}:{' '}
         <span className="font-semibold text-gray-800">
           {total}
         </span>
@@ -61,7 +67,7 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
             <div className="skeleton h-11 rounded-xl" />
             <div className="skeleton h-11 rounded-xl" />
           </div>
-          <p className="text-xs text-center text-gray-400">Loading payment form…</p>
+          <p className="text-xs text-center text-gray-400">{copy.loading}</p>
         </div>
       )}
 
@@ -72,11 +78,7 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
         onClick={handlePay}
         disabled={!isReady || paying}
       >
-        {paying
-          ? 'Processing…'
-          : !isReady
-            ? 'Loading…'
-            : `Pay ${total}`}
+        {paying ? copy.paying : !isReady ? copy.loading : copy.placeOrderCard}
       </button>
     </div>
   );
