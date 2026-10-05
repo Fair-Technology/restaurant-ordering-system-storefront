@@ -24,6 +24,7 @@ export interface OrderCopy {
   statusRejected: string;
   statusCancelled: string;
   notCharged: string;
+  reservationBankNote: string;
   rejectReason: Record<RejectReason, string>;
   cancelOrder: string;
   cancelConfirm: string;
@@ -31,7 +32,6 @@ export interface OrderCopy {
   callRestaurant: (phone: string) => string;
   orderNotFound: string;
   total: string;
-  paymentCash: string;
   loading: string;
   continueToPayment: string;
   payOnlineInfo: string;
@@ -91,6 +91,7 @@ const en: OrderCopy = {
   statusRejected: 'Your order was declined',
   statusCancelled: 'Cancelled',
   notCharged: 'You have not been charged. The reservation on your card has been released.',
+  reservationBankNote: 'Depending on your bank, the reservation may still show as pending for a few days.',
   rejectReason: {
     too_busy: 'The restaurant is too busy right now.',
     item_unavailable: 'An item in your order is no longer available.',
@@ -105,7 +106,6 @@ const en: OrderCopy = {
   callRestaurant: (p) => `Questions? Call ${p}.`,
   orderNotFound: 'We could not find this order. Please use the link from your email.',
   total: 'Total',
-  paymentCash: 'Payment: on collection',
   loading: 'Loading…',
   continueToPayment: 'Continue to payment',
   payOnlineInfo:
@@ -171,6 +171,8 @@ const de: OrderCopy = {
   statusRejected: 'Ihre Bestellung wurde abgelehnt',
   statusCancelled: 'Storniert',
   notCharged: 'Es wurde nichts abgebucht. Die Reservierung auf Ihrer Karte wurde aufgehoben.',
+  reservationBankNote:
+    'Je nach Bank kann die Reservierung noch einige Tage als vorgemerkt angezeigt werden.',
   rejectReason: {
     too_busy: 'Das Restaurant ist gerade zu ausgelastet.',
     item_unavailable: 'Ein Artikel Ihrer Bestellung ist nicht mehr verfügbar.',
@@ -187,7 +189,6 @@ const de: OrderCopy = {
   orderNotFound:
     'Diese Bestellung wurde nicht gefunden. Bitte nutzen Sie den Link aus Ihrer E-Mail.',
   total: 'Summe',
-  paymentCash: 'Zahlung: bei Abholung',
   loading: 'Wird geladen…',
   continueToPayment: 'Weiter zur Zahlung',
   payOnlineInfo:
