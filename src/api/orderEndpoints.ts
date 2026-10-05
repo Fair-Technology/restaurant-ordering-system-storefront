@@ -10,7 +10,7 @@ export const LEGAL_CHANGED_ERROR =
 export const PAYMENT_CONFIRMING_ERROR = 'Your payment is being confirmed';
 export const ADDRESS_REQUIRED_ERROR = 'An address is required for orders over 250 €';
 
-export type PaymentMethod = 'cash' | 'card';
+export type PaymentMethod = 'card';
 export type LineStatus = 'ok' | 'price_changed' | 'unavailable' | 'invalid_options';
 export type StoredOrderState =
   | 'PLACED'
@@ -120,17 +120,6 @@ export interface CardCheckoutResult {
   stripeConnectAccountId: string;
 }
 
-export interface CashCheckoutResult {
-  kind: 'cash';
-  orderId: string;
-  orderRef: string;
-  accessToken: string;
-  subtotalCents: number;
-  currency: string;
-  state: 'PLACED';
-  autoRejectAt: string;
-}
-
 export interface PlacedCheckoutResult {
   kind: 'placed';
   orderId: string;
@@ -140,8 +129,7 @@ export interface PlacedCheckoutResult {
   currency: string;
 }
 
-// TODO(F2): add PlacedCheckoutResult here and drop CashCheckoutResult once CheckoutPage handles it.
-export type PlaceOrderResult = CardCheckoutResult | CashCheckoutResult;
+export type PlaceOrderResult = CardCheckoutResult | PlacedCheckoutResult;
 
 export interface CustomerOrderDto {
   orderId: string;
@@ -154,8 +142,6 @@ export interface CustomerOrderDto {
   state: StoredOrderState;
   displayState: string;
   fulfilmentMode: FulfilmentMode;
-  /** Removed by the backend in 4b; still read by the cash branch until F3 deletes it. */
-  paymentMethod?: PaymentMethod;
   paymentStatus: PaymentStatus;
   refundedCents: number;
   documents: OrderDocument[];

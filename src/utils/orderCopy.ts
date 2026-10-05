@@ -6,9 +6,6 @@ export interface OrderCopy {
   modeDelivery: string;
   modeDineIn: string;
   chooseMode: string;
-  payCashInfo: string;
-  placeOrderCash: string;
-  continueToCard: string;
   basketChangedTitle: string;
   lineUnavailable: (name: string) => string;
   lineInvalidOptions: (name: string) => string;
@@ -36,6 +33,7 @@ export interface OrderCopy {
   total: string;
   paymentCash: string;
   loading: string;
+  continueToPayment: string;
   payOnlineInfo: string;
   placeOrderCard: string;
   paying: string;
@@ -73,9 +71,6 @@ const en: OrderCopy = {
   modeDelivery: 'Delivery',
   modeDineIn: 'Eat in',
   chooseMode: 'How would you like your order?',
-  payCashInfo: 'You pay at the restaurant when you collect your order.',
-  placeOrderCash: 'Order with obligation to pay',
-  continueToCard: 'Continue to payment',
   basketChangedTitle: 'Your basket has changed',
   lineUnavailable: (n) => `${n} is no longer available and will be removed.`,
   lineInvalidOptions: (n) => `${n} needs a different choice of extras — please add it again.`,
@@ -112,6 +107,7 @@ const en: OrderCopy = {
   total: 'Total',
   paymentCash: 'Payment: on collection',
   loading: 'Loading…',
+  continueToPayment: 'Continue to payment',
   payOnlineInfo:
     'You pay online now — by card, Apple Pay or Google Pay. The amount is only reserved; you are charged when the restaurant accepts.',
   placeOrderCard: 'Order with obligation to pay',
@@ -155,9 +151,6 @@ const de: OrderCopy = {
   modeDelivery: 'Lieferung',
   modeDineIn: 'Vor Ort',
   chooseMode: 'Wie möchten Sie bestellen?',
-  payCashInfo: 'Sie bezahlen bei der Abholung im Restaurant.',
-  placeOrderCash: 'Zahlungspflichtig bestellen',
-  continueToCard: 'Weiter zur Zahlung',
   basketChangedTitle: 'Ihr Warenkorb hat sich geändert',
   lineUnavailable: (n) => `${n} ist nicht mehr verfügbar und wird entfernt.`,
   lineInvalidOptions: (n) => `Für ${n} ist eine andere Auswahl nötig – bitte erneut hinzufügen.`,
@@ -196,6 +189,7 @@ const de: OrderCopy = {
   total: 'Summe',
   paymentCash: 'Zahlung: bei Abholung',
   loading: 'Wird geladen…',
+  continueToPayment: 'Weiter zur Zahlung',
   payOnlineInfo:
     'Sie bezahlen jetzt online – mit Karte, Apple Pay oder Google Pay. Der Betrag wird nur reserviert und erst abgebucht, wenn das Restaurant annimmt.',
   placeOrderCard: 'Zahlungspflichtig bestellen',

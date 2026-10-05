@@ -80,7 +80,7 @@ const CustomerOrderPage: React.FC = () => {
           {order.rejectionReason && (
             <p className="text-sm text-gray-600">{copy.rejectReason[order.rejectionReason]}</p>
           )}
-          {order.paymentMethod === 'cash' && (
+          {order.paymentStatus === 'canceled' && (
             <p className="text-sm text-gray-600">{copy.notCharged}</p>
           )}
         </>

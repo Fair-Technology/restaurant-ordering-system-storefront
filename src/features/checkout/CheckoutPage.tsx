@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { loadStripe } from '@stripe/stripe-js';
 import { Elements } from '@stripe/react-stripe-js';
 import { CheckoutPageSkeleton } from '../../shared/Skeletons';
 import NavBar from '../../shared/NavBar';
@@ -8,12 +7,9 @@ import Footer from '../../shared/Footer';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { setActiveShop, setResolvedMenuLanguage } from '../../store/slices/shopSlice';
 import { loadCart, selectCartItems, clearCart, removeItem, setItemPrice } from '../../store/slices/cartSlice';
+import { useGetShopBySlugQuery, useGetCatalogQuery } from '../../api/endpoints';
 import {
-  useGetShopBySlugQuery,
-  useGetCatalogQuery,
-  useGetOrderByPaymentIntentQuery,
-} from '../../api/endpoints';
-import {
+  ADDRESS_REQUIRED_ERROR,
   BASKET_CHANGED_ERROR,
   LEGAL_CHANGED_ERROR,
   usePlaceOrderMutation,
@@ -27,17 +23,19 @@ import { resolveShopBranding, type ShopWithBranding } from '../../utils/branding
 import { useBrandingStyle } from '../../hooks/useBrandingStyle';
 import { useMoney } from '../../hooks/useMoney';
 import { orderCopy } from '../../utils/orderCopy';
+import { stripeForAccount } from '../../utils/stripe';
 import QuoteNotice from './components/QuoteNotice';
 import { useGetShopLegalQuery } from '../../api/legalEndpoints';
 import { legalCopy } from '../../utils/legalCopy';
 import { initialMenuLanguage } from '../../utils/menuLanguage';
 import CartSummary from './components/CartSummary';
 import CustomerDetailsForm, { type CustomerFormData } from './components/CustomerDetailsForm';
-import OrderSuccessView from './components/OrderSuccessView';
 import PaymentStep from './components/PaymentStep';
 
-// Load Stripe at module level (required for PCI compliance and performance)
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY ?? '');
+/** The diner's order page; the access token in the link is what lets them see it. */
+function orderPath(slug: string | undefined, orderId: string, accessToken: string): string {
+  return `/shops/${slug}/orders/${orderId}?t=${accessToken}`;
+}
 
 const CheckoutPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -99,13 +97,10 @@ const CheckoutPage: React.FC = () => {
   }, [dispatch, slug]);
 
   // Checkout flow state
-  type Step = 'info' | 'payment' | 'success';
+  type Step = 'info' | 'payment';
   const [step, setStep] = useState<Step>('info');
   const [checkoutData, setCheckoutData] = useState<CardCheckoutResult | null>(null);
   const [paymentError, setPaymentError] = useState<string | null>(null);
-  const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null);
-  // Controls order polling — true until the backend confirms the order
-  const [polling, setPolling] = useState(false);
 
   const [placeOrder, { isLoading: isInitiating }] = usePlaceOrderMutation();
   const [placeError, setPlaceError] = useState<string | undefined>(undefined);
@@ -158,23 +153,6 @@ const CheckoutPage: React.FC = () => {
     setPlaceError(undefined);
   }
 
-  // Poll every 2 s after payment succeeds to wait for Stripe webhook processing.
-  // The backend creates/updates the order asynchronously after receiving the
-  // Stripe webhook, so the first poll may return 404. pollingInterval keeps
-  // retrying until isSuccess is true, then we stop polling and show the order.
-  const { data: orderData, isSuccess: isOrderSuccess } =
-    useGetOrderByPaymentIntentQuery(paymentIntentId ?? '', {
-      skip: !paymentIntentId,
-      pollingInterval: polling ? 2000 : 0,
-    });
-
-  // Stop polling and persist the order locally once confirmed
-  useEffect(() => {
-    if (isOrderSuccess && orderData) {
-      setPolling(false);
-    }
-  }, [isOrderSuccess, orderData]);
-
   async function handleInfoSubmit(data: CustomerFormData) {
     if (cartItems.length === 0 || method === null) return;
     setPlaceError(undefined);
@@ -185,6 +163,7 @@ const CheckoutPage: React.FC = () => {
       customerPhone: data.phone,
       customerNotes: data.notes || undefined,
       paymentMethod: method,
+      customerAddress: data.customerAddress,
       idempotencyKey,
       legalRevisions:
         legalData?.terms && legalData?.withdrawal
@@ -192,11 +171,9 @@ const CheckoutPage: React.FC = () => {
           : undefined,
     });
     if ('data' in res && res.data) {
-      if (res.data.kind === 'cash') {
+      if (res.data.kind === 'placed') {
         dispatch(clearCart());
-        navigate(`/shops/${slug}/orders/${res.data.orderId}?t=${res.data.accessToken}`, {
-          replace: true,
-        });
+        navigate(orderPath(slug, res.data.orderId, res.data.accessToken), { replace: true });
       } else {
         setCheckoutData(res.data);
         setStep('payment');
@@ -212,17 +189,24 @@ const CheckoutPage: React.FC = () => {
       setIdempotencyKey(crypto.randomUUID());
       refetchLegal();
       setPlaceError(copy.termsChanged);
+    } else if (msg === ADDRESS_REQUIRED_ERROR) {
+      setPlaceError(copy.addressNeeded);
     } else {
       setPlaceError(msg ?? copy.orderFailed);
     }
   }
 
-  function handlePaymentSuccess(piId: string) {
+  // The order page waits for the backend to confirm the reservation, so go there at once.
+  function handlePaymentSuccess() {
+    if (!checkoutData) return;
     dispatch(clearCart());
-    setPaymentIntentId(piId);
-    setPolling(true);
-    setStep('success');
+    navigate(orderPath(slug, checkoutData.orderId, checkoutData.accessToken), { replace: true });
   }
+
+  const stripePromise = useMemo(
+    () => (checkoutData ? stripeForAccount(checkoutData.stripeConnectAccountId) : null),
+    [checkoutData],
+  );
 
   if (isShopLoading) return <CheckoutPageSkeleton />;
 
@@ -240,13 +224,6 @@ const CheckoutPage: React.FC = () => {
           Checkout
         </h1>
 
-        {step === 'success' ? (
-          <OrderSuccessView
-            orderData={orderData}
-            isOrderSuccess={isOrderSuccess}
-            slug={slug ?? ''}
-          />
-        ) : (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
             {/* Left — editable cart summary */}
             <CartSummary slug={slug ?? ''} products={products} />
@@ -266,6 +243,9 @@ const CheckoutPage: React.FC = () => {
                     />
                   </div>
                 )}
+                {quote && quote.paymentMethods.length === 0 && (
+                  <p className="mb-4 text-sm text-red-600">{copy.noOnlinePayment}</p>
+                )}
                 {quote && !quote.openNow && (
                   <p className="mb-4 text-sm text-red-600">{copy.closedNow}</p>
                 )}
@@ -280,10 +260,13 @@ const CheckoutPage: React.FC = () => {
                   isCartEmpty={cartItems.length === 0}
                   error={placeError ?? (quoteFailed ? copy.orderFailed : undefined)}
                   submitLabel={
-                    method === null ? copy.loading : method === 'cash' ? copy.placeOrderCash : copy.continueToCard
+                    method === null ? copy.loading : copy.continueToPayment
                   }
                   submitDisabled={!canSubmit}
-                  paymentNote={method === 'cash' ? copy.payCashInfo : null}
+                  paymentNote={copy.payOnlineInfo}
+                  addressRequired={quote?.addressRequired ?? false}
+                  addressCopy={copy}
+                  defaultCountry={resolvedLanguage === 'de' ? 'Deutschland' : 'Germany'}
                   legal={legalData}
                   copy={legalCopy(legalData?.language ?? resolvedLanguage)}
                   slug={slug ?? ''}
@@ -291,12 +274,15 @@ const CheckoutPage: React.FC = () => {
                 </>
               )}
 
-              {step === 'payment' && checkoutData && (
+              {step === 'payment' && checkoutData && stripePromise && (
                 <div className="space-y-4">
-                  <h2 className="text-lg font-semibold">Payment</h2>
+                  <h2 className="text-lg font-semibold">{copy.paymentTitle}</h2>
                   <Elements
                     stripe={stripePromise}
-                    options={{ clientSecret: checkoutData.clientSecret }}
+                    options={{
+                      clientSecret: checkoutData.clientSecret,
+                      locale: resolvedLanguage === 'de' ? 'de' : 'en',
+                    }}
                   >
                     <PaymentStep
                       subtotalCents={checkoutData.subtotalCents}
@@ -312,13 +298,12 @@ const CheckoutPage: React.FC = () => {
                     className="w-full text-sm text-gray-500 hover:text-gray-700 underline"
                     onClick={() => setStep('info')}
                   >
-                    Back to details
+                    {copy.backToDetails}
                   </button>
                 </div>
               )}
             </div>
           </div>
-        )}
       </div>
 
       <Footer slug={slug} />
