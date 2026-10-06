@@ -230,8 +230,8 @@ const CheckoutPage: React.FC = () => {
 
             {/* Right — customer info form + payment */}
             <div className="lg:sticky lg:top-24 bg-white rounded-xl shadow-md p-6">
-              {step === 'info' && (
-                <>
+              {/* Stays mounted (only hidden) on the payment step, so "back to details" keeps what was typed */}
+              <div hidden={step !== 'info'}>
                 {quote && !allOk && (
                   <div className="mb-4">
                     <QuoteNotice
@@ -271,8 +271,7 @@ const CheckoutPage: React.FC = () => {
                   copy={legalCopy(legalData?.language ?? resolvedLanguage)}
                   slug={slug ?? ''}
                 />
-                </>
-              )}
+              </div>
 
               {step === 'payment' && checkoutData && stripePromise && (
                 <div className="space-y-4">

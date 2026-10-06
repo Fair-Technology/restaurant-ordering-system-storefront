@@ -225,6 +225,30 @@ test.describe('Card order', () => {
     expect(calls.confirmParams?.return_url).toContain('/shops/test-shop/checkout');
   });
 
+  test('going back from the card step keeps the details', async ({ page }) => {
+    await mockBackend(page);
+    await seedCart(page);
+    await page.route('**/api/orders', (route) => route.fulfill(fulfil(CARD_RESULT)));
+    await page.goto('/shops/test-shop/checkout');
+    await fillDetails(page);
+    await fillAddress(page, {
+      'Street and number': 'Musterstraße 1',
+      Postcode: '10115',
+      City: 'Berlin',
+    });
+    await page.getByRole('button', { name: 'Continue to payment' }).click();
+    await expect(page.getByTestId('fake-card')).toBeVisible();
+
+    await page.getByRole('button', { name: /Back to/ }).click();
+
+    await expect(page.getByPlaceholder('Your full name')).toHaveValue('Test Diner');
+    await expect(page.getByPlaceholder('your@email.com')).toHaveValue('diner@example.com');
+    await expect(page.getByPlaceholder('+1 (555) 000-0000')).toHaveValue('0301234567');
+    await expect(page.getByLabel('Street and number')).toHaveValue('Musterstraße 1');
+    await expect(page.getByLabel('Postcode')).toHaveValue('10115');
+    await expect(page.getByLabel('City')).toHaveValue('Berlin');
+  });
+
   test('a changed price needs one confirmation', async ({ page }) => {
     await mockBackend(page, {
       quote: (body) => {
