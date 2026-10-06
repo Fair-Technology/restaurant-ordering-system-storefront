@@ -100,6 +100,7 @@ const CustomerOrderPage: React.FC = () => {
 
   let status: React.ReactNode = null;
   if (order) {
+    const dineIn = order.fulfilmentMode === 'dine_in';
     if (order.state === 'PLACED') {
       status = (
         <>
@@ -119,13 +120,15 @@ const CustomerOrderPage: React.FC = () => {
     } else if (order.state === 'CANCELLED') {
       status = <p className="text-lg font-medium">{copy.statusCancelled}</p>;
     } else if (order.state === 'COMPLETED') {
-      status = <p className="text-lg font-medium">{copy.statusCompleted}</p>;
+      status = <p className="text-lg font-medium">{dineIn ? copy.statusCompletedDineIn : copy.statusCompleted}</p>;
     } else if (order.state === 'READY') {
-      status = <p className="text-lg font-medium">{copy.statusReady}</p>;
+      status = <p className="text-lg font-medium">{dineIn ? copy.statusReadyDineIn : copy.statusReady}</p>;
     } else {
       status = (
         <p className="text-lg font-medium">
-          {copy.statusAccepted(timeIn(order.readyAt, order.timezone))}
+          {dineIn
+            ? copy.statusAcceptedDineIn(timeIn(order.readyAt, order.timezone))
+            : copy.statusAccepted(timeIn(order.readyAt, order.timezone))}
         </p>
       );
     }
@@ -172,6 +175,7 @@ const CustomerOrderPage: React.FC = () => {
             <h1 className="text-2xl font-bold" style={{ color: branding.accentColor }}>
               {copy.yourOrder(order.orderRef)}
             </h1>
+            {order.table && <p className="text-base font-semibold">{copy.tableLine(order.table.label)}</p>}
             <div className="space-y-1">{status}</div>
 
             <ul className="divide-y text-sm">
