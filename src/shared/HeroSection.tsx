@@ -7,6 +7,7 @@ interface HeroSectionProps {
 const HeroSection: React.FC<HeroSectionProps> = ({ heroImageUrl }) => {
   return (
     <section
+      data-testid="shop-hero"
       className="relative h-72 md:h-96 bg-center bg-cover"
       style={{ backgroundImage: `url('${heroImageUrl}')` }}
     >

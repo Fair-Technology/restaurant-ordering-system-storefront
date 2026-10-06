@@ -1,4 +1,5 @@
 import type { ShopResponse } from '../api/endpoints';
+import defaultCoverUrl from '../assets/default-cover.jpg';
 
 export type ShopBranding = {
   logoUrl?: string | null;
@@ -12,10 +13,7 @@ export type ShopWithBranding = ShopResponse & {
 
 export const DEFAULT_ACCENT = '#C2410C';
 
-export const DEFAULT_BRANDING = {
-  heroImageUrl:
-    'https://images.unsplash.com/photo-1600891964599-f61ba0e24092?auto=format&fit=crop&w=1600&q=80',
-};
+export const DEFAULT_BRANDING = { heroImageUrl: defaultCoverUrl };
 
 export type ResolvedBranding = {
   // null when no logo is uploaded — render <ShopLogo> to show initials instead
