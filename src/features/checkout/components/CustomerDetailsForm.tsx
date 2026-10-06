@@ -62,8 +62,12 @@ const CustomerDetailsForm: React.FC<CustomerDetailsFormProps> = ({
     street: '',
     postcode: '',
     city: '',
-    country: defaultCountry,
+    country: '',
   });
+  // Until the diner edits the country, it follows the default, which can change once the shop's
+  // language has loaded (Germany → Deutschland). Captured once, a stale default looked like typed input.
+  const [countryEdited, setCountryEdited] = useState(false);
+  const country = countryEdited ? address.country : defaultCountry;
   const [addressError, setAddressError] = useState<string | null>(null);
 
   function handleSubmit(e: React.FormEvent) {
@@ -73,8 +77,8 @@ const CustomerDetailsForm: React.FC<CustomerDetailsFormProps> = ({
       !address.street.trim() &&
       !address.postcode.trim() &&
       !address.city.trim() &&
-      address.country === defaultCountry;
-    const parsed = untouched && !addressRequired ? null : addressFromForm(address);
+      country === defaultCountry;
+    const parsed = untouched && !addressRequired ? null : addressFromForm({ ...address, country });
     if (parsed === 'incomplete') {
       setAddressError(addressCopy.addressIncomplete);
       return;
@@ -166,8 +170,11 @@ const CustomerDetailsForm: React.FC<CustomerDetailsFormProps> = ({
           aria-label={addressCopy.addressCountry}
           placeholder={addressCopy.addressCountry}
           className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand-accent)]"
-          value={address.country}
-          onChange={(e) => setAddress({ ...address, country: e.target.value })}
+          value={country}
+          onChange={(e) => {
+            setCountryEdited(true);
+            setAddress({ ...address, country: e.target.value });
+          }}
         />
         {addressError && <p className="text-red-600 text-sm">{addressError}</p>}
       </fieldset>

@@ -399,6 +399,36 @@ test.describe('Card order', () => {
     expect(bodies).toEqual([{ token: 'tok' }, { token: 'tok' }]);
   });
 
+  test('an untouched address stays empty when the shop language loads late', async ({ page }) => {
+    // English browser, German shop: the form first prefills "Germany", then the menu arrives in German
+    await mockBackend(page, { language: 'de' });
+    await page.route('**/api/shops/shop-t/catalog**', async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+      await route.fulfill(
+        fulfil({
+          language: 'de',
+          languages: ['de'],
+          categories: [{ id: 'c1', name: 'Pasta', sortOrder: 1, products: [baseProduct] }],
+        }),
+      );
+    });
+    await seedCart(page);
+    let placed: Json | null = null;
+    await page.route('**/api/orders', async (route) => {
+      placed = route.request().postDataJSON() as Json;
+      await route.fulfill(fulfil(CARD_RESULT));
+    });
+    await page.goto('/shops/test-shop/checkout');
+    await expect(page.getByPlaceholder('Your full name')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Weiter zur Zahlung' })).toBeVisible();
+
+    await fillDetails(page);
+    await page.getByRole('button', { name: 'Weiter zur Zahlung' }).click();
+
+    await expect(page.getByTestId('fake-card')).toBeVisible();
+    expect((placed as unknown as Json).customerAddress).toBeUndefined();
+  });
+
   test('an order over €250 asks for an address', async ({ page }) => {
     await mockBackend(page, { quote: () => ({ ...okQuote, subtotalCents: 25200, addressRequired: true }) });
     await seedCart(page);
