@@ -1,6 +1,6 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { ShopPageSkeleton } from '../../shared/Skeletons';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import HeroSection from '../../shared/HeroSection';
 import CategoryFilterBar from '../menu/CategoryFilterBar';
 import LanguageSwitcher from '../menu/LanguageSwitcher';
@@ -25,6 +25,8 @@ import {
 import { slugifyCategoryName, mapApiProductToProduct } from '../../utils/catalogMapper';
 import { useBrandingStyle } from '../../hooks/useBrandingStyle';
 import { initialMenuLanguage } from '../../utils/menuLanguage';
+import { useTableSession } from '../../hooks/useTableSession';
+import { normaliseTableNumber } from '../../utils/tableSession';
 
 type CategoryOption = { id: string; label: string; count: number; icon?: string };
 
@@ -132,9 +134,29 @@ const ShopView = () => {
   }, [dispatch, catalogData?.language]);
 
   const fulfilment = (resolvedShopData as { fulfilment?: ShopFulfilment } | undefined)?.fulfilment;
-  const modes = fulfilment?.modes ?? ['collection'];
+  // Dine in is never offered as a choice: it only exists once a table QR code was scanned.
+  const visibleModes = (fulfilment?.modes ?? ['collection']).filter((m) => m !== 'dine_in');
+  const dineInOn = (fulfilment?.modes ?? []).includes('dine_in');
   const storedMode = useAppSelector((state) => state.shop.fulfilmentMode);
-  const selectedMode = storedMode && modes.includes(storedMode) ? storedMode : modes[0];
+  const selectedMode =
+    storedMode && visibleModes.includes(storedMode) ? storedMode : visibleModes[0] ?? 'collection';
+  const [searchParams] = useSearchParams();
+  const scanned = searchParams.get('t');
+  const { table, bind, unbind } = useTableSession(slug, dineInOn);
+  const [tableInvalid, setTableInvalid] = useState(false);
+  useEffect(() => {
+    if (!slug || scanned === null || !fulfilment || !dineInOn) return; // dine-in off: ?t= is ignored
+    const label = normaliseTableNumber(scanned);
+    if (label) {
+      bind(label);
+      setTableInvalid(false);
+    } else {
+      unbind();
+      setTableInvalid(true);
+    }
+    navigate(`/shops/${slug}`, { replace: true }); // the tab session is the one source of truth
+  }, [slug, scanned, fulfilment, dineInOn, bind, unbind, navigate]);
+  const copy = orderCopy(resolvedLanguage);
 
   // Group available products by category slug, mapping API DTOs to Product type
   const groupedItems = useMemo<Record<string, Product[]>>(() => {
@@ -193,13 +215,29 @@ const ShopView = () => {
         />
       </div>
       <HeroSection heroImageUrl={resolvedBranding.heroImageUrl} />
-      <FulfilmentModeBar
-        modes={modes}
-        prepMinutes={fulfilment?.prepMinutes ?? { collection: 20, delivery: 45, dine_in: 20 }}
-        selected={selectedMode}
-        onSelect={(m) => dispatch(setFulfilmentMode(m))}
-        copy={orderCopy(resolvedLanguage)}
-      />
+      {tableInvalid && (
+        <p role="status" className="max-w-7xl mx-auto px-6 pt-3 text-sm text-amber-800">
+          {copy.tableInvalid}
+        </p>
+      )}
+      {table ? (
+        <div className="max-w-7xl mx-auto px-6 pt-3 flex flex-wrap items-center gap-3">
+          <span className="inline-block rounded-full bg-white border border-gray-200 px-3 py-1 text-sm font-semibold text-gray-900">
+            {copy.tableBanner(table)}
+          </span>
+          <button type="button" onClick={unbind} className="text-sm text-gray-600 underline">
+            {copy.leaveTable}
+          </button>
+        </div>
+      ) : (
+        <FulfilmentModeBar
+          modes={visibleModes}
+          prepMinutes={fulfilment?.prepMinutes ?? { collection: 20, delivery: 45, dine_in: 20 }}
+          selected={selectedMode}
+          onSelect={(m) => dispatch(setFulfilmentMode(m))}
+          copy={copy}
+        />
+      )}
       <div className="max-w-7xl mx-auto px-6 pt-3 flex justify-end">
         <LanguageSwitcher
           languages={catalogData?.languages ?? []}
