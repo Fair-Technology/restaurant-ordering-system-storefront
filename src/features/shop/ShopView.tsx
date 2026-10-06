@@ -14,7 +14,7 @@ import {
 import NavBar from '../../shared/NavBar';
 import { Product } from '../../types/Product';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { setActiveShop, setMenuLanguage, setResolvedMenuLanguage, setFulfilmentMode } from '../../store/slices/shopSlice';
+import { setActiveShop, setMenuLanguage, setResolvedMenuLanguage, setFulfilmentMode, type FulfilmentMode } from '../../store/slices/shopSlice';
 import FulfilmentModeBar from './FulfilmentModeBar';
 import { orderCopy } from '../../utils/orderCopy';
 import type { ShopFulfilment } from '../../api/orderEndpoints';
@@ -135,7 +135,7 @@ const ShopView = () => {
 
   const fulfilment = (resolvedShopData as { fulfilment?: ShopFulfilment } | undefined)?.fulfilment;
   // Dine in is never offered as a choice: it only exists once a table QR code was scanned.
-  const visibleModes = (fulfilment?.modes ?? ['collection']).filter((m) => m !== 'dine_in');
+  const visibleModes: FulfilmentMode[] = (fulfilment?.modes ?? ['collection']).filter((m) => m !== 'dine_in');
   const dineInOn = (fulfilment?.modes ?? []).includes('dine_in');
   const storedMode = useAppSelector((state) => state.shop.fulfilmentMode);
   const selectedMode =
