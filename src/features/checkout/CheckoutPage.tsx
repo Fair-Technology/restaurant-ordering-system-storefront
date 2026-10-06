@@ -5,13 +5,15 @@ import { CheckoutPageSkeleton } from '../../shared/Skeletons';
 import NavBar from '../../shared/NavBar';
 import Footer from '../../shared/Footer';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { setActiveShop, setResolvedMenuLanguage } from '../../store/slices/shopSlice';
+import { setActiveShop, setResolvedMenuLanguage, type FulfilmentMode } from '../../store/slices/shopSlice';
 import { loadCart, selectCartItems, clearCart, removeItem, setItemPrice } from '../../store/slices/cartSlice';
 import { useGetShopBySlugQuery, useGetCatalogQuery } from '../../api/endpoints';
 import {
   ADDRESS_REQUIRED_ERROR,
   BASKET_CHANGED_ERROR,
   LEGAL_CHANGED_ERROR,
+  MODE_NOT_OFFERED_ERROR,
+  TABLE_INVALID_ERROR,
   usePlaceOrderMutation,
   useQuoteBasketQuery,
   type CardCheckoutResult,
@@ -23,6 +25,8 @@ import { resolveShopBranding, type ShopWithBranding } from '../../utils/branding
 import { useBrandingStyle } from '../../hooks/useBrandingStyle';
 import { useMoney } from '../../hooks/useMoney';
 import { orderCopy } from '../../utils/orderCopy';
+import { useTableSession } from '../../hooks/useTableSession';
+import { readTableSession } from '../../utils/tableSession';
 import { stripeForAccount } from '../../utils/stripe';
 import QuoteNotice from './components/QuoteNotice';
 import { useGetShopLegalQuery } from '../../api/legalEndpoints';
@@ -108,11 +112,16 @@ const CheckoutPage: React.FC = () => {
   // Ask the server to re-price the basket; it flags changed prices, sold-out
   // dishes, closing time and which payment method this restaurant offers.
   const fulfilment = (resolvedShopData as { fulfilment?: ShopFulfilment } | undefined)?.fulfilment;
+  const dineInOn = (fulfilment?.modes ?? []).includes('dine_in');
+  const { table, unbind } = useTableSession(slug, dineInOn);
+  const [tableNotice, setTableNotice] = useState<string | null>(null);
+  const visibleModes: FulfilmentMode[] = (fulfilment?.modes ?? ['collection']).filter((m) => m !== 'dine_in');
   const storedMode = useAppSelector((state) => state.shop.fulfilmentMode);
-  const mode =
-    storedMode && (fulfilment?.modes ?? ['collection']).includes(storedMode)
+  const mode: FulfilmentMode = table
+    ? 'dine_in'
+    : storedMode && visibleModes.includes(storedMode)
       ? storedMode
-      : fulfilment?.modes[0] ?? 'collection';
+      : visibleModes[0] ?? 'collection';
   const copy = orderCopy(resolvedLanguage);
   const quoteArg = {
     shopId: resolvedShopId,
@@ -155,9 +164,16 @@ const CheckoutPage: React.FC = () => {
 
   async function handleInfoSubmit(data: CustomerFormData) {
     if (cartItems.length === 0 || method === null) return;
+    if (mode === 'dine_in' && !(slug && readTableSession(slug, Date.now()))) {
+      unbind();
+      setTableNotice(copy.tableExpired);
+      return;
+    }
+    setTableNotice(null);
     setPlaceError(undefined);
     const res = await placeOrder({
       ...quoteArg,
+      ...(table ? { table } : {}),
       customerName: data.name,
       customerEmail: data.email,
       customerPhone: data.phone,
@@ -191,6 +207,10 @@ const CheckoutPage: React.FC = () => {
       setPlaceError(copy.termsChanged);
     } else if (msg === ADDRESS_REQUIRED_ERROR) {
       setPlaceError(copy.addressNeeded);
+    } else if (msg === MODE_NOT_OFFERED_ERROR || msg === TABLE_INVALID_ERROR) {
+      setIdempotencyKey(crypto.randomUUID());
+      unbind();
+      setTableNotice(msg === MODE_NOT_OFFERED_ERROR ? copy.dineInOff : copy.tableInvalid);
     } else {
       setPlaceError(msg ?? copy.orderFailed);
     }
@@ -232,6 +252,8 @@ const CheckoutPage: React.FC = () => {
             <div className="lg:sticky lg:top-24 bg-white rounded-xl shadow-md p-6">
               {/* Stays mounted (only hidden) on the payment step, so "back to details" keeps what was typed */}
               <div hidden={step !== 'info'}>
+                {tableNotice && <p className="mb-4 text-sm text-amber-800">{tableNotice}</p>}
+                {table && <p className="mb-4 text-sm font-medium">{copy.orderingForTable(table)}</p>}
                 {quote && !allOk && (
                   <div className="mb-4">
                     <QuoteNotice
