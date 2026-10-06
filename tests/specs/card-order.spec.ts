@@ -331,12 +331,12 @@ test.describe('Card order', () => {
     await expect(page.getByText('Collection · ready in about 20 min')).toBeVisible();
   });
 
-  test('with two modes the diner picks one before the menu', async ({ page }) => {
+  test('dine-in is never offered without a table', async ({ page }) => {
     await mockBackend(page, { modes: ['collection', 'dine_in'] });
     await page.goto('/shops/test-shop');
-    await expect(page.getByText('How would you like your order?')).toBeVisible();
-    await page.getByRole('button', { name: 'Eat in' }).click();
-    await expect(page.getByRole('button', { name: 'Eat in' })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByText('Collection · ready in about 20 min')).toBeVisible();
+    await expect(page.getByText('How would you like your order?')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Dine in' })).toHaveCount(0);
   });
 
   test('the order page waits while the payment is confirmed', async ({ page }) => {
@@ -498,5 +498,137 @@ test.describe('Card order in German', () => {
 
     await expect(page.getByTestId('fake-card')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Zahlungspflichtig bestellen' })).toBeEnabled();
+  });
+});
+
+function bindTable(page: Page, label = '7', ageMs = 0) {
+  return page.addInitScript(
+    ([l, age]) =>
+      sessionStorage.setItem(
+        'table_session_v1:test-shop',
+        JSON.stringify({ slug: 'test-shop', label: l, boundAt: Date.now() - age }),
+      ),
+    [label, ageMs] as const,
+  );
+}
+
+const COLLECTION_PILL = 'Collection · ready in about 20 min';
+
+test.describe('Table order', () => {
+  test.use({ locale: 'en-US' });
+
+  test('a table link opens the menu for that table', async ({ page }) => {
+    await mockBackend(page, { modes: ['collection', 'dine_in'] });
+    await page.goto('/shops/test-shop?t=7');
+    await expect(page.getByText('Table 7 · Dine in')).toBeVisible();
+    await expect(page).toHaveURL(/\/shops\/test-shop$/);
+    await expect(page.getByText('How would you like your order?')).toHaveCount(0);
+  });
+
+  test('a table order is sent with its table', async ({ page }) => {
+    await mockBackend(page, { modes: ['collection', 'dine_in'] });
+    await seedCart(page);
+    const quotes: Json[] = [];
+    let placed: Json | null = null;
+    await page.route('**/api/orders/quote', async (route) => {
+      quotes.push(route.request().postDataJSON() as Json);
+      await route.fulfill(fulfil({ ...okQuote, fulfilmentMode: 'dine_in' }));
+    });
+    await page.route('**/api/orders', async (route) => {
+      placed = route.request().postDataJSON() as Json;
+      await route.fulfill(fulfil(CARD_RESULT));
+    });
+    await page.goto('/shops/test-shop?t=Terrasse%203');
+    await expect(page.getByText('Table Terrasse 3 · Dine in')).toBeVisible();
+    await page.goto('/shops/test-shop/checkout');
+    await expect(page.getByText('Ordering for table Terrasse 3')).toBeVisible();
+    await fillDetails(page);
+    await page.getByRole('button', { name: 'Continue to payment' }).click();
+    await expect(page.getByTestId('fake-card')).toBeVisible();
+
+    expect(quotes[quotes.length - 1].fulfilmentMode).toBe('dine_in');
+    const body = placed as unknown as Json;
+    expect(body.fulfilmentMode).toBe('dine_in');
+    expect(body.table).toBe('Terrasse 3');
+    expect(body.paymentMethod).toBe('card');
+  });
+
+  test('a badly formed table link shows the normal menu', async ({ page }) => {
+    await mockBackend(page, { modes: ['collection', 'dine_in'] });
+    await page.goto('/shops/test-shop?t=Bar%201%20Links%20hinten');
+    await expect(
+      page.getByText('This table QR code is not valid. Please ask a member of staff.'),
+    ).toBeVisible();
+    await expect(page.getByText(COLLECTION_PILL)).toBeVisible();
+  });
+
+  test('with dine-in off a table link is ignored', async ({ page }) => {
+    await mockBackend(page);
+    await page.goto('/shops/test-shop?t=7');
+    await expect(page.getByText(COLLECTION_PILL)).toBeVisible();
+    await expect(page.getByText('Table 7')).toHaveCount(0);
+  });
+
+  test('a table session expires after two hours', async ({ page }) => {
+    await mockBackend(page, { modes: ['collection', 'dine_in'] });
+    await bindTable(page, '7', 7_260_000);
+    await page.goto('/shops/test-shop');
+    await expect(page.getByText(COLLECTION_PILL)).toBeVisible();
+    await expect(page.getByText('Table 7 · Dine in')).toHaveCount(0);
+  });
+
+  test('not at the table switches back to collection', async ({ page }) => {
+    await mockBackend(page, { modes: ['collection', 'dine_in'] });
+    await page.goto('/shops/test-shop?t=7');
+    await page.getByRole('button', { name: 'Not at this table? Order for collection instead' }).click();
+    await expect(page.getByText('Table 7 · Dine in')).toHaveCount(0);
+    await expect(page.getByText(COLLECTION_PILL)).toBeVisible();
+  });
+
+  test('dine-in switched off mid-checkout forgets the table', async ({ page }) => {
+    await mockBackend(page, { modes: ['collection', 'dine_in'] });
+    await bindTable(page);
+    await seedCart(page);
+    await page.route('**/api/orders', (route) =>
+      route.fulfill(fulfil({ error: 'This restaurant is not taking orders this way right now' }, 400)),
+    );
+    await page.goto('/shops/test-shop/checkout');
+    await fillDetails(page);
+    await page.getByRole('button', { name: 'Continue to payment' }).click();
+    await expect(
+      page.getByText('This restaurant is not taking table orders right now. You can order for collection.'),
+    ).toBeVisible();
+    await expect(page.getByText('Ordering for table 7')).toHaveCount(0);
+  });
+
+  test('the diner order page shows the table', async ({ page }) => {
+    await mockBackend(page, {
+      order: {
+        fulfilmentMode: 'dine_in',
+        table: { label: '7' },
+        state: 'ACCEPTED',
+        displayState: 'ACCEPTED',
+        paymentStatus: 'paid',
+        canCancel: false,
+        readyAt: '2026-10-05T10:20:00.000Z',
+      },
+    });
+    await page.goto(ORDER_URL);
+    await expect(page.getByText('Table 7')).toBeVisible();
+    await expect(page.getByText('Confirmed — ready at 12:20')).toBeVisible();
+    await expect(page.getByText(/ready for collection/)).toHaveCount(0);
+  });
+});
+
+test.describe('Table order in German', () => {
+  test.use({ locale: 'de-DE' });
+
+  test('German table wording', async ({ page }) => {
+    await mockBackend(page, { language: 'de', modes: ['collection', 'dine_in'] });
+    await seedCart(page);
+    await page.goto('/shops/test-shop?t=7');
+    await expect(page.getByText('Tisch 7 · Vor Ort')).toBeVisible();
+    await page.goto('/shops/test-shop/checkout');
+    await expect(page.getByText('Bestellung für Tisch 7')).toBeVisible();
   });
 });
