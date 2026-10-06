@@ -63,13 +63,23 @@ export interface OrderCopy {
   cancelConfirmYes: string;
   cancelConfirmNo: string;
   addonChooseAtLeast: (n: number) => string;
+  tableBanner: (label: string) => string;
+  leaveTable: string;
+  tableInvalid: string;
+  orderingForTable: (label: string) => string;
+  tableExpired: string;
+  dineInOff: string;
+  tableLine: (label: string) => string;
+  statusAcceptedDineIn: (time: string) => string;
+  statusReadyDineIn: string;
+  statusCompletedDineIn: string;
 }
 
 const en: OrderCopy = {
   modeCollection: (min) => `Collection · ready in about ${min} min`,
   modeCollectionShort: 'Collection',
   modeDelivery: 'Delivery',
-  modeDineIn: 'Eat in',
+  modeDineIn: 'Dine in',
   chooseMode: 'How would you like your order?',
   basketChangedTitle: 'Your basket has changed',
   lineUnavailable: (n) => `${n} is no longer available and will be removed.`,
@@ -143,6 +153,16 @@ const en: OrderCopy = {
   cancelConfirmYes: 'Yes, cancel order',
   cancelConfirmNo: 'Keep order',
   addonChooseAtLeast: (n) => `Choose at least ${n}`,
+  tableBanner: (l) => `Table ${l} · Dine in`,
+  leaveTable: 'Not at this table? Order for collection instead',
+  tableInvalid: 'This table QR code is not valid. Please ask a member of staff.',
+  orderingForTable: (l) => `Ordering for table ${l}`,
+  tableExpired: 'Your table session has expired. Please scan the QR code on your table again.',
+  dineInOff: 'This restaurant is not taking table orders right now. You can order for collection.',
+  tableLine: (l) => `Table ${l}`,
+  statusAcceptedDineIn: (t) => `Confirmed — ready at ${t}`,
+  statusReadyDineIn: 'Your order is ready',
+  statusCompletedDineIn: 'Enjoy your meal!',
 };
 
 const de: OrderCopy = {
@@ -227,6 +247,16 @@ const de: OrderCopy = {
   cancelConfirmYes: 'Ja, stornieren',
   cancelConfirmNo: 'Bestellung behalten',
   addonChooseAtLeast: (n) => `Mindestens ${n} wählen`,
+  tableBanner: (l) => `Tisch ${l} · Vor Ort`,
+  leaveTable: 'Nicht an diesem Tisch? Stattdessen abholen',
+  tableInvalid: 'Dieser Tisch-QR-Code ist ungültig. Bitte wenden Sie sich an das Personal.',
+  orderingForTable: (l) => `Bestellung für Tisch ${l}`,
+  tableExpired: 'Ihre Tischsitzung ist abgelaufen. Bitte scannen Sie den QR-Code auf Ihrem Tisch erneut.',
+  dineInOff: 'Dieses Restaurant nimmt gerade keine Tischbestellungen an. Sie können zur Abholung bestellen.',
+  tableLine: (l) => `Tisch ${l}`,
+  statusAcceptedDineIn: (t) => `Bestätigt – fertig um ${t}`,
+  statusReadyDineIn: 'Ihre Bestellung ist fertig',
+  statusCompletedDineIn: 'Guten Appetit!',
 };
 
 export function orderCopy(lang: string): OrderCopy {

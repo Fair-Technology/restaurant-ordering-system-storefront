@@ -7,6 +7,8 @@ import type { FulfilmentMode } from '../store/slices/shopSlice';
 export const BASKET_CHANGED_ERROR = 'Your basket has changed. Please review it and try again.';
 export const LEGAL_CHANGED_ERROR =
   'The restaurant has updated its terms. Please review them and order again.';
+export const MODE_NOT_OFFERED_ERROR = 'This restaurant is not taking orders this way right now';
+export const TABLE_INVALID_ERROR = 'Please scan the QR code on your table again';
 export const PAYMENT_CONFIRMING_ERROR = 'Your payment is being confirmed';
 export const ADDRESS_REQUIRED_ERROR = 'An address is required for orders over 250 €';
 
@@ -104,6 +106,7 @@ export interface PlaceOrderRequest {
   fulfilmentMode?: FulfilmentMode;
   paymentMethod?: PaymentMethod;
   customerAddress?: CustomerAddress;
+  table?: string;
   idempotencyKey?: string;
   language?: string;
   legalRevisions?: { terms: number; withdrawal: number };
@@ -142,6 +145,7 @@ export interface CustomerOrderDto {
   state: StoredOrderState;
   displayState: string;
   fulfilmentMode: FulfilmentMode;
+  table?: { label: string } | null;
   paymentStatus: PaymentStatus;
   refundedCents: number;
   documents: OrderDocument[];
