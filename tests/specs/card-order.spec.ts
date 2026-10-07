@@ -95,6 +95,7 @@ interface MockOptions {
   modes?: string[];
   quote?: (requestBody: Json) => Json;
   order?: Json;
+  orderLimitReached?: boolean;
 }
 
 async function mockBackend(page: Page, opts: MockOptions = {}) {
@@ -111,6 +112,7 @@ async function mockBackend(page: Page, opts: MockOptions = {}) {
           modes: opts.modes ?? ['collection'],
           prepMinutes: { collection: 20, delivery: 45, dine_in: 20 },
         },
+        orderLimitReached: opts.orderLimitReached ?? false,
         branding: null,
       }),
     ),
@@ -630,5 +632,54 @@ test.describe('Table order in German', () => {
     await expect(page.getByText('Tisch 7 · Vor Ort')).toBeVisible();
     await page.goto('/shops/test-shop/checkout');
     await expect(page.getByText('Bestellung für Tisch 7')).toBeVisible();
+  });
+});
+
+test.describe('Ordering paused', () => {
+  test.use({ locale: 'en-US' });
+
+  test('the menu says ordering is paused when the order limit is reached', async ({ page }) => {
+    await mockBackend(page, { orderLimitReached: true });
+    await page.goto('/shops/test-shop');
+    await expect(
+      page.getByText('Online ordering is paused at the moment.', { exact: false }),
+    ).toBeVisible();
+  });
+
+  test('checkout cannot continue while ordering is paused', async ({ page }) => {
+    await mockBackend(page, { quote: () => ({ ...okQuote, orderLimitReached: true }) });
+    await seedCart(page);
+    await page.goto('/shops/test-shop/checkout');
+    await fillDetails(page);
+    await expect(
+      page.getByText('Online ordering is paused at the moment.', { exact: false }),
+    ).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Continue to payment' })).toBeDisabled();
+  });
+
+  test('a limit reached during checkout shows the paused message', async ({ page }) => {
+    await mockBackend(page);
+    await page.route('**/api/orders', (route) =>
+      route.fulfill(fulfil({ error: 'This restaurant has paused online ordering for now' }, 400)),
+    );
+    await seedCart(page);
+    await page.goto('/shops/test-shop/checkout');
+    await fillDetails(page);
+    await page.getByRole('button', { name: 'Continue to payment' }).click();
+    await expect(
+      page.getByText('Online ordering is paused at the moment.', { exact: false }),
+    ).toBeVisible();
+  });
+});
+
+test.describe('Ordering paused in German', () => {
+  test.use({ locale: 'de-DE' });
+
+  test('the German menu says ordering is paused', async ({ page }) => {
+    await mockBackend(page, { language: 'de', orderLimitReached: true });
+    await page.goto('/shops/test-shop');
+    await expect(
+      page.getByText('Online-Bestellungen sind im Moment pausiert.', { exact: false }),
+    ).toBeVisible();
   });
 });
