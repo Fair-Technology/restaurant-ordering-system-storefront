@@ -13,6 +13,7 @@ import {
   BASKET_CHANGED_ERROR,
   LEGAL_CHANGED_ERROR,
   MODE_NOT_OFFERED_ERROR,
+  ORDER_LIMIT_REACHED_ERROR,
   TABLE_INVALID_ERROR,
   usePlaceOrderMutation,
   useQuoteBasketQuery,
@@ -146,7 +147,8 @@ const CheckoutPage: React.FC = () => {
   const method = quote?.paymentMethods[0] ?? null;
   const allOk = !!quote && quote.lines.every((l) => l.status === 'ok');
   const canSubmit =
-    !!quote && allOk && quote.openNow && !quote.belowMinimum && method !== null && !quoting;
+    !!quote && allOk && quote.openNow && !quote.belowMinimum && method !== null && !quoting &&
+    !quote.orderLimitReached;
 
   function applyQuoteChanges() {
     if (!quote) return;
@@ -211,6 +213,9 @@ const CheckoutPage: React.FC = () => {
       setIdempotencyKey(crypto.randomUUID());
       unbind();
       setTableNotice(msg === MODE_NOT_OFFERED_ERROR ? copy.dineInOff : copy.tableInvalid);
+    } else if (msg === ORDER_LIMIT_REACHED_ERROR) {
+      requote();
+      setPlaceError(copy.orderingPaused);
     } else {
       setPlaceError(msg ?? copy.orderFailed);
     }
@@ -267,6 +272,9 @@ const CheckoutPage: React.FC = () => {
                 )}
                 {quote && quote.paymentMethods.length === 0 && (
                   <p className="mb-4 text-sm text-red-600">{copy.noOnlinePayment}</p>
+                )}
+                {quote?.orderLimitReached && (
+                  <p className="mb-4 text-sm text-red-600">{copy.orderingPaused}</p>
                 )}
                 {quote && !quote.openNow && (
                   <p className="mb-4 text-sm text-red-600">{copy.closedNow}</p>
