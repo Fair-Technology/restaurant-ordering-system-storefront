@@ -134,6 +134,8 @@ const ShopView = () => {
   }, [dispatch, catalogData?.language]);
 
   const fulfilment = (resolvedShopData as { fulfilment?: ShopFulfilment } | undefined)?.fulfilment;
+  const orderLimitReached =
+    (resolvedShopData as { orderLimitReached?: boolean } | undefined)?.orderLimitReached === true;
   // Dine in is never offered as a choice: it only exists once a table QR code was scanned.
   const visibleModes: FulfilmentMode[] = (fulfilment?.modes ?? ['collection']).filter((m) => m !== 'dine_in');
   const dineInOn = (fulfilment?.modes ?? []).includes('dine_in');
@@ -215,6 +217,11 @@ const ShopView = () => {
         />
       </div>
       <HeroSection heroImageUrl={resolvedBranding.heroImageUrl} />
+      {orderLimitReached && (
+        <p role="status" className="max-w-7xl mx-auto px-6 pt-3 text-sm font-medium text-red-700">
+          {copy.orderingPaused}
+        </p>
+      )}
       {tableInvalid && (
         <p role="status" className="max-w-7xl mx-auto px-6 pt-3 text-sm text-amber-800">
           {copy.tableInvalid}

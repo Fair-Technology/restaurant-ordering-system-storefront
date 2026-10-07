@@ -73,6 +73,7 @@ export interface OrderCopy {
   statusAcceptedDineIn: (time: string) => string;
   statusReadyDineIn: string;
   statusCompletedDineIn: string;
+  orderingPaused: string;
 }
 
 const en: OrderCopy = {
@@ -163,6 +164,8 @@ const en: OrderCopy = {
   statusAcceptedDineIn: (t) => `Confirmed — ready at ${t}`,
   statusReadyDineIn: 'Your order is ready',
   statusCompletedDineIn: 'Enjoy your meal!',
+  orderingPaused:
+    'Online ordering is paused at the moment. Please try again later or contact the restaurant directly.',
 };
 
 const de: OrderCopy = {
@@ -257,6 +260,8 @@ const de: OrderCopy = {
   statusAcceptedDineIn: (t) => `Bestätigt – fertig um ${t}`,
   statusReadyDineIn: 'Ihre Bestellung ist fertig',
   statusCompletedDineIn: 'Guten Appetit!',
+  orderingPaused:
+    'Online-Bestellungen sind im Moment pausiert. Bitte versuchen Sie es später erneut oder wenden Sie sich direkt an das Restaurant.',
 };
 
 export function orderCopy(lang: string): OrderCopy {

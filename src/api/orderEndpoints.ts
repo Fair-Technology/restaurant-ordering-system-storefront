@@ -11,6 +11,7 @@ export const MODE_NOT_OFFERED_ERROR = 'This restaurant is not taking orders this
 export const TABLE_INVALID_ERROR = 'Please scan the QR code on your table again';
 export const PAYMENT_CONFIRMING_ERROR = 'Your payment is being confirmed';
 export const ADDRESS_REQUIRED_ERROR = 'An address is required for orders over 250 €';
+export const ORDER_LIMIT_REACHED_ERROR = 'This restaurant has paused online ordering for now';
 
 export type PaymentMethod = 'card';
 export type LineStatus = 'ok' | 'price_changed' | 'unavailable' | 'invalid_options';
@@ -94,6 +95,7 @@ export interface BasketQuoteDto {
   paymentMethods: PaymentMethod[];
   addressRequired: boolean;
   prepMinutes: number;
+  orderLimitReached?: boolean;
 }
 
 export interface PlaceOrderRequest {
