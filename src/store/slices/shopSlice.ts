@@ -8,7 +8,6 @@ export interface ShopState {
   /** Language the catalog actually came back in (the shop may not offer the visitor's own). */
   resolvedMenuLanguage: string | null;
   currency: string | null;
-  fulfilmentMode: FulfilmentMode | null;
 }
 
 const initialState: ShopState = {
@@ -16,7 +15,6 @@ const initialState: ShopState = {
   menuLanguage: null,
   resolvedMenuLanguage: null,
   currency: null,
-  fulfilmentMode: null,
 };
 
 const shopSlice = createSlice({
@@ -31,9 +29,6 @@ const shopSlice = createSlice({
     clearActiveShop(state) {
       state.activeShopId = null;
     },
-    setFulfilmentMode(state, action: PayloadAction<FulfilmentMode>) {
-      state.fulfilmentMode = action.payload;
-    },
     setMenuLanguage(state, action: PayloadAction<string>) {
       state.menuLanguage = action.payload;
     },
@@ -43,6 +38,5 @@ const shopSlice = createSlice({
   },
 });
 
-export const { setActiveShop, clearActiveShop, setMenuLanguage, setResolvedMenuLanguage, setFulfilmentMode } =
-  shopSlice.actions;
+export const { setActiveShop, clearActiveShop, setMenuLanguage, setResolvedMenuLanguage } = shopSlice.actions;
 export const shopReducer = shopSlice.reducer;
