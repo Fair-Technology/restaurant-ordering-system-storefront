@@ -7,7 +7,12 @@ export interface Product {
   imageURL: string;
   description: string;
   isAvailable: boolean;
+  /** Unit price the server charges right now: the offer price while an offer is on, else the normal price. */
   price: number;
+  /** Normal price, set only while an offer is on (shown struck through next to `price`). */
+  regularPrice?: number;
+  /** Owner's name for the offer (e.g. "Lunch special"), if any. */
+  offerLabel?: string;
   categories: Category[];
   variantTypes: VariantType[];
   addons: AddonGroup[];

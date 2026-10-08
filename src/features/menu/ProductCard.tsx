@@ -95,7 +95,17 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }) => {
             {product.label}
           </h3>
           <p className="text-sm font-bold text-gray-900">
-            {money.major(displayPrice)}
+            {product.regularPrice !== undefined && (
+              <span className="mr-1.5 font-normal text-gray-500 line-through" data-testid="regular-price">
+                {money.major(product.regularPrice)}
+              </span>
+            )}
+            <span data-testid="product-price">{money.major(displayPrice)}</span>
+            {product.offerLabel && (
+              <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-800" data-testid="offer-label">
+                {product.offerLabel}
+              </span>
+            )}
           </p>
           <p className="text-gray-500 text-xs sm:text-sm line-clamp-2">
             {product.description}

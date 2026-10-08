@@ -37,6 +37,8 @@ export type Product = {
   imageURL?: string;
   description?: string;
   price: number;
+  regularPrice?: number;
+  offerLabel?: string;
   variantTypes?: VariantGroup[];
   addons?: AddonGroup[];
   allergens?: CatalogLabel[];
@@ -328,6 +330,11 @@ const ProductModal: React.FC<ProductModalProps> = ({
               <div className="ml-auto text-right">
                 <div className="text-sm text-gray-500">Unit</div>
                 <div className="text-xl font-semibold">
+                  {product.regularPrice !== undefined && (
+                    <span className="mr-1.5 text-sm font-normal text-gray-500 line-through">
+                      {money.major(product.regularPrice + (unitPrice - product.price))}
+                    </span>
+                  )}
                   {money.major(unitPrice)}
                 </div>
                 <div className="text-sm text-gray-500">
