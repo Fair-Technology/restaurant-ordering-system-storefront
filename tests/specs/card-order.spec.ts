@@ -96,6 +96,8 @@ interface MockOptions {
   quote?: (requestBody: Json) => Json;
   order?: Json;
   orderLimitReached?: boolean;
+  delivery?: Json | null;
+  products?: Json[];
 }
 
 async function mockBackend(page: Page, opts: MockOptions = {}) {
@@ -108,9 +110,11 @@ async function mockBackend(page: Page, opts: MockOptions = {}) {
         slug: 'test-shop',
         name: 'Test Shop',
         currency: 'EUR',
+        countryCode: 'DE',
         fulfilment: {
           modes: opts.modes ?? ['collection'],
           prepMinutes: { collection: 20, delivery: 45, dine_in: 20 },
+          delivery: opts.delivery ?? null,
         },
         orderLimitReached: opts.orderLimitReached ?? false,
         branding: null,
@@ -122,7 +126,7 @@ async function mockBackend(page: Page, opts: MockOptions = {}) {
       fulfil({
         language,
         languages: [language],
-        categories: [{ id: 'c1', name: 'Pasta', sortOrder: 1, products: [baseProduct] }],
+        categories: [{ id: 'c1', name: 'Pasta', sortOrder: 1, products: opts.products ?? [baseProduct] }],
       }),
     ),
   );
@@ -680,6 +684,182 @@ test.describe('Ordering paused in German', () => {
     await page.goto('/shops/test-shop');
     await expect(
       page.getByText('Online-Bestellungen sind im Moment pausiert.', { exact: false }),
+    ).toBeVisible();
+  });
+});
+
+const ZONES = { zones: [{ postcode: '10115', feeCents: 250, minOrderCents: 1000 }] };
+const DELIVERY_MODES = ['collection', 'delivery'];
+
+function deliveryQuote(body: Json): Json {
+  return body.postcode === '10115'
+    ? {
+        ...okQuote,
+        fulfilmentMode: 'delivery',
+        deliveryFeeCents: 250,
+        totalCents: 1300,
+        postcodeServed: true,
+        minOrderAmountCents: 1000,
+        prepMinutes: 45,
+      }
+    : { ...okQuote, fulfilmentMode: 'delivery', deliveryFeeCents: null, totalCents: 1050, postcodeServed: false };
+}
+
+function bindDelivery(page: Page, postcode = '10115') {
+  return page.addInitScript(
+    (p) =>
+      sessionStorage.setItem(
+        'delivery_session_v1:test-shop',
+        JSON.stringify({ slug: 'test-shop', postcode: p, savedAt: Date.now() }),
+      ),
+    postcode,
+  );
+}
+
+async function fillDeliveryAddress(page: Page) {
+  await page.getByLabel('Delivery street and number', { exact: true }).fill('Teststraße 1');
+  await page.getByLabel('Delivery town or city', { exact: true }).fill('Berlin');
+}
+
+test.describe('Delivery order', () => {
+  test.use({ locale: 'en-US' });
+
+  test('delivery asks for the postcode first', async ({ page }) => {
+    await mockBackend(page, { modes: DELIVERY_MODES, delivery: ZONES });
+    await page.goto('/shops/test-shop');
+    await page.getByRole('button', { name: 'Delivery' }).click();
+    await page.getByLabel('Your postcode').fill('10999');
+    await page.getByRole('button', { name: 'Check' }).click();
+    await expect(
+      page.getByText("We don't deliver to 10999. You can collect your order instead."),
+    ).toBeVisible();
+    await page.getByRole('button', { name: 'Collect instead' }).click();
+    await expect(page.getByRole('button', { name: 'Collection' })).toHaveAttribute('aria-pressed', 'true');
+
+    await page.getByRole('button', { name: 'Delivery' }).click();
+    await page.getByLabel('Your postcode').fill('10 115');
+    await page.getByRole('button', { name: 'Check' }).click();
+    await expect(
+      page.getByText('Delivery to 10115 · fee €2.50 · minimum order €10.00 · about 45 min'),
+    ).toBeVisible();
+  });
+
+  test('a dish that cannot be delivered is hidden for delivery', async ({ page }) => {
+    await mockBackend(page, {
+      modes: DELIVERY_MODES,
+      delivery: ZONES,
+      products: [baseProduct, { ...baseProduct, id: 'p2', name: 'Draught beer', unavailableModes: ['delivery'] }],
+    });
+    await page.goto('/shops/test-shop');
+    await expect(page.getByText('Draught beer')).toBeVisible();
+    await page.getByRole('button', { name: 'Delivery' }).click();
+    await page.getByLabel('Your postcode').fill('10115');
+    await page.getByRole('button', { name: 'Check' }).click();
+    await expect(page.getByText('Delivery to 10115')).toBeVisible();
+    await expect(page.getByText('Draught beer')).toHaveCount(0);
+    await expect(page.getByText('Carbonara')).toBeVisible();
+  });
+
+  test('a delivery order is sent with its address and fee', async ({ page }) => {
+    await bindDelivery(page);
+    await seedCart(page);
+    await mockBackend(page, { modes: DELIVERY_MODES, delivery: ZONES, quote: deliveryQuote });
+    const quotes: Json[] = [];
+    let placed: Json | null = null;
+    await page.route('**/api/orders/quote', async (route) => {
+      const body = route.request().postDataJSON() as Json;
+      quotes.push(body);
+      await route.fulfill(fulfil(deliveryQuote(body)));
+    });
+    await page.route('**/api/orders', async (route) => {
+      placed = route.request().postDataJSON() as Json;
+      await route.fulfill(fulfil({ ...CARD_RESULT, totalCents: 1300 }));
+    });
+    await page.goto('/shops/test-shop/checkout');
+
+    const totals = page.getByTestId('delivery-totals');
+    await expect(totals).toContainText('€10.50');
+    await expect(totals).toContainText('€2.50');
+    await expect(totals).toContainText('€13.00');
+    await expect(page.getByText('Postcode 10115 –')).toBeVisible();
+
+    await fillDetails(page);
+    await fillDeliveryAddress(page);
+    await page.getByRole('button', { name: 'Continue to payment' }).click();
+
+    await expect(page.getByTestId('fake-card')).toBeVisible();
+    await expect(page.getByTestId('payment-total')).toHaveText('€13.00');
+    expect(quotes[quotes.length - 1]).toMatchObject({ fulfilmentMode: 'delivery', postcode: '10115' });
+    expect(placed).toMatchObject({
+      fulfilmentMode: 'delivery',
+      deliveryAddress: { street: 'Teststraße 1', postcode: '10115', city: 'Berlin' },
+      expectedDeliveryFeeCents: 250,
+    });
+    expect((placed as unknown as Json).customerAddress).toBeUndefined();
+    const calls = await fakeStripeCalls(page);
+    expect(calls.createOptions?.defaultValues?.billingDetails?.address?.country).toBe('DE');
+  });
+
+  test('a postcode no longer served blocks checkout', async ({ page }) => {
+    await bindDelivery(page, '10999');
+    await seedCart(page);
+    await mockBackend(page, { modes: DELIVERY_MODES, delivery: ZONES, quote: deliveryQuote });
+    await page.goto('/shops/test-shop/checkout');
+    await expect(
+      page.getByText(
+        'The restaurant no longer delivers to this postcode. Choose collection or another postcode on the menu.',
+      ),
+    ).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Continue to payment' })).toBeDisabled();
+  });
+
+  test('a changed fee asks for another look', async ({ page }) => {
+    await bindDelivery(page);
+    await seedCart(page);
+    await mockBackend(page, { modes: DELIVERY_MODES, delivery: ZONES, quote: deliveryQuote });
+    await page.route('**/api/orders', (route) =>
+      route.fulfill(
+        fulfil({ error: 'The delivery fee has changed. Please check your order and try again.' }, 409),
+      ),
+    );
+    await page.goto('/shops/test-shop/checkout');
+    await fillDetails(page);
+    await fillDeliveryAddress(page);
+    await page.getByRole('button', { name: 'Continue to payment' }).click();
+    await expect(page.getByText('The delivery fee has changed. Please check the new total.')).toBeVisible();
+  });
+
+  test('the diner order page shows delivery', async ({ page }) => {
+    await mockBackend(page, {
+      order: {
+        fulfilmentMode: 'delivery',
+        state: 'OUT_FOR_DELIVERY',
+        displayState: 'OUT_FOR_DELIVERY',
+        paymentStatus: 'paid',
+        deliveryAddress: { street: 'Teststraße 1', postcode: '10115', city: 'Berlin' },
+        deliveryFeeCents: 250,
+        totalCents: 1300,
+      },
+    });
+    await page.goto(ORDER_URL);
+    await expect(page.getByText('On its way to you')).toBeVisible();
+    await expect(page.getByText('Delivery to: Teststraße 1, 10115 Berlin')).toBeVisible();
+    await expect(page.getByText('Delivery fee')).toBeVisible();
+    await expect(page.getByText('€13.00')).toBeVisible();
+  });
+});
+
+test.describe('Delivery order in German', () => {
+  test.use({ locale: 'de-DE' });
+
+  test('German delivery wording', async ({ page }) => {
+    await mockBackend(page, { language: 'de', modes: DELIVERY_MODES, delivery: ZONES });
+    await page.goto('/shops/test-shop');
+    await page.getByRole('button', { name: 'Lieferung' }).click();
+    await page.getByLabel('Ihre Postleitzahl').fill('10115');
+    await page.getByRole('button', { name: 'Prüfen' }).click();
+    await expect(
+      page.getByText(/Lieferung nach 10115 · Liefergebühr 2,50\s€ · Mindestbestellwert 10,00\s€ · ca\. 45 Min\./),
     ).toBeVisible();
   });
 });
