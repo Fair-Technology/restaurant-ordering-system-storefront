@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { PublicLegalPackDto } from '../../../api/legalEndpoints';
 import type { LegalCopy } from '../../../utils/legalCopy';
-import type { CustomerAddress } from '../../../api/orderEndpoints';
+import type { CustomerAddress, DeliveryAddress } from '../../../api/orderEndpoints';
 import type { OrderCopy } from '../../../utils/orderCopy';
 import { addressFromForm } from '../../../utils/address';
 
@@ -12,6 +12,7 @@ export interface CustomerFormData {
   phone: string;
   notes: string;
   customerAddress?: CustomerAddress;
+  deliveryAddress?: DeliveryAddress;
 }
 
 interface CustomerDetailsFormProps {
@@ -37,7 +38,27 @@ interface CustomerDetailsFormProps {
     | 'addressIncomplete'
   >;
   defaultCountry: string;
+  /** The postcode chosen on the menu; non-null only for a delivery order. */
+  deliveryPostcode: string | null;
+  deliveryCopy: Pick<
+    OrderCopy,
+    'deliveryAddressTitle' | 'deliveryStreet' | 'deliveryCity' | 'deliveryPostcodeFixed'
+  >;
 }
+
+/** "Postcode 10115 – change it on the menu": the part after the dash links back to the menu. */
+const PostcodeFixedNote: React.FC<{ text: string; slug: string }> = ({ text, slug }) => {
+  const at = text.indexOf(' – ');
+  if (at < 0) return <Link to={`/shops/${slug}`} className="underline">{text}</Link>;
+  return (
+    <>
+      {text.slice(0, at + 3)}
+      <Link to={`/shops/${slug}`} className="underline">
+        {text.slice(at + 3)}
+      </Link>
+    </>
+  );
+};
 
 const CustomerDetailsForm: React.FC<CustomerDetailsFormProps> = ({
   onSubmit,
@@ -53,6 +74,8 @@ const CustomerDetailsForm: React.FC<CustomerDetailsFormProps> = ({
   addressRequired,
   addressCopy,
   defaultCountry,
+  deliveryPostcode,
+  deliveryCopy,
 }) => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -68,6 +91,8 @@ const CustomerDetailsForm: React.FC<CustomerDetailsFormProps> = ({
   // language has loaded (Germany → Deutschland). Captured once, a stale default looked like typed input.
   const [countryEdited, setCountryEdited] = useState(false);
   const country = countryEdited ? address.country : defaultCountry;
+  const [deliveryStreet, setDeliveryStreet] = useState('');
+  const [deliveryCity, setDeliveryCity] = useState('');
   const [addressError, setAddressError] = useState<string | null>(null);
 
   function handleSubmit(e: React.FormEvent) {
@@ -84,7 +109,16 @@ const CustomerDetailsForm: React.FC<CustomerDetailsFormProps> = ({
       return;
     }
     setAddressError(null);
-    onSubmit({ name, email, phone, notes, customerAddress: parsed ?? undefined });
+    onSubmit({
+      name,
+      email,
+      phone,
+      notes,
+      customerAddress: parsed ?? undefined,
+      deliveryAddress: deliveryPostcode
+        ? { street: deliveryStreet.trim(), postcode: deliveryPostcode, city: deliveryCity.trim() }
+        : undefined,
+    });
   }
 
   return (
@@ -132,6 +166,39 @@ const CustomerDetailsForm: React.FC<CustomerDetailsFormProps> = ({
           placeholder="+1 (555) 000-0000"
         />
       </div>
+
+      {deliveryPostcode !== null && (
+        <fieldset className="space-y-2">
+          <legend className="block text-sm font-medium text-gray-700 mb-1">
+            {deliveryCopy.deliveryAddressTitle}
+          </legend>
+          <input
+            type="text"
+            required
+            maxLength={200}
+            autoComplete="address-line1"
+            aria-label={deliveryCopy.deliveryStreet}
+            placeholder={deliveryCopy.deliveryStreet}
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand-accent)]"
+            value={deliveryStreet}
+            onChange={(e) => setDeliveryStreet(e.target.value)}
+          />
+          <input
+            type="text"
+            required
+            maxLength={200}
+            autoComplete="address-level2"
+            aria-label={deliveryCopy.deliveryCity}
+            placeholder={deliveryCopy.deliveryCity}
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand-accent)]"
+            value={deliveryCity}
+            onChange={(e) => setDeliveryCity(e.target.value)}
+          />
+          <p className="text-sm text-gray-600">
+            <PostcodeFixedNote text={deliveryCopy.deliveryPostcodeFixed(deliveryPostcode)} slug={slug} />
+          </p>
+        </fieldset>
+      )}
 
       <fieldset className="space-y-2">
         <legend className="block text-sm font-medium text-gray-700 mb-1">

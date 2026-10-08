@@ -74,6 +74,25 @@ export interface OrderCopy {
   statusReadyDineIn: string;
   statusCompletedDineIn: string;
   orderingPaused: string;
+  deliveryPostcodeLabel: string;
+  deliveryCheck: string;
+  deliveryNotServed: (postcode: string) => string;
+  collectInstead: string;
+  deliveryChange: string;
+  deliverySummary: (postcode: string, fee: string, min: string, minutes: number) => string;
+  deliveryAddressTitle: string;
+  deliveryStreet: string;
+  deliveryCity: string;
+  deliveryPostcodeFixed: (postcode: string) => string;
+  itemsLine: string;
+  deliveryFeeLine: string;
+  deliveryNotServedNow: string;
+  deliveryFeeChanged: string;
+  deliveryOff: string;
+  statusAcceptedDelivery: (time: string) => string;
+  statusOutForDelivery: string;
+  statusCompletedDelivery: string;
+  deliverTo: (address: string) => string;
 }
 
 const en: OrderCopy = {
@@ -164,6 +183,26 @@ const en: OrderCopy = {
   statusAcceptedDineIn: (t) => `Confirmed — ready at ${t}`,
   statusReadyDineIn: 'Your order is ready',
   statusCompletedDineIn: 'Enjoy your meal!',
+  deliveryPostcodeLabel: 'Your postcode',
+  deliveryCheck: 'Check',
+  deliveryNotServed: (pc) => `We don't deliver to ${pc}. You can collect your order instead.`,
+  collectInstead: 'Collect instead',
+  deliveryChange: 'Change postcode',
+  deliverySummary: (pc, fee, min, m) => `Delivery to ${pc} · fee ${fee} · minimum order ${min} · about ${m} min`,
+  deliveryAddressTitle: 'Delivery address',
+  deliveryStreet: 'Delivery street and number',
+  deliveryCity: 'Delivery town or city',
+  deliveryPostcodeFixed: (pc) => `Postcode ${pc} – change it on the menu`,
+  itemsLine: 'Items',
+  deliveryFeeLine: 'Delivery fee',
+  deliveryNotServedNow:
+    'The restaurant no longer delivers to this postcode. Choose collection or another postcode on the menu.',
+  deliveryFeeChanged: 'The delivery fee has changed. Please check the new total.',
+  deliveryOff: 'The restaurant is not delivering right now. You can collect your order instead.',
+  statusAcceptedDelivery: (t) => `Confirmed — delivery around ${t}`,
+  statusOutForDelivery: 'On its way to you',
+  statusCompletedDelivery: 'Delivered — enjoy your meal!',
+  deliverTo: (a) => `Delivery to: ${a}`,
   orderingPaused:
     'Online ordering is paused at the moment. Please try again later or contact the restaurant directly.',
 };
@@ -260,6 +299,27 @@ const de: OrderCopy = {
   statusAcceptedDineIn: (t) => `Bestätigt – fertig um ${t}`,
   statusReadyDineIn: 'Ihre Bestellung ist fertig',
   statusCompletedDineIn: 'Guten Appetit!',
+  deliveryPostcodeLabel: 'Ihre Postleitzahl',
+  deliveryCheck: 'Prüfen',
+  deliveryNotServed: (pc) => `Wir liefern leider nicht nach ${pc}. Sie können Ihre Bestellung stattdessen abholen.`,
+  collectInstead: 'Stattdessen abholen',
+  deliveryChange: 'Postleitzahl ändern',
+  deliverySummary: (pc, fee, min, m) =>
+    `Lieferung nach ${pc} · Liefergebühr ${fee} · Mindestbestellwert ${min} · ca. ${m} Min.`,
+  deliveryAddressTitle: 'Lieferadresse',
+  deliveryStreet: 'Lieferadresse: Straße und Hausnummer',
+  deliveryCity: 'Lieferadresse: Ort',
+  deliveryPostcodeFixed: (pc) => `Postleitzahl ${pc} – auf der Speisekarte ändern`,
+  itemsLine: 'Artikel',
+  deliveryFeeLine: 'Liefergebühr',
+  deliveryNotServedNow:
+    'Das Restaurant liefert nicht mehr an diese Postleitzahl. Wählen Sie auf der Speisekarte Abholung oder eine andere Postleitzahl.',
+  deliveryFeeChanged: 'Die Liefergebühr hat sich geändert. Bitte prüfen Sie die neue Summe.',
+  deliveryOff: 'Das Restaurant liefert gerade nicht. Sie können Ihre Bestellung stattdessen abholen.',
+  statusAcceptedDelivery: (t) => `Bestätigt – Lieferung gegen ${t}`,
+  statusOutForDelivery: 'Unterwegs zu Ihnen',
+  statusCompletedDelivery: 'Geliefert – guten Appetit!',
+  deliverTo: (a) => `Lieferung an: ${a}`,
   orderingPaused:
     'Online-Bestellungen sind im Moment pausiert. Bitte versuchen Sie es später erneut oder wenden Sie sich direkt an das Restaurant.',
 };

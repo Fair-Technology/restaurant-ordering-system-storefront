@@ -819,6 +819,8 @@ export type CatalogProductDto = {
   dietaryTags?: CatalogLabel[];
   /** Spiciness, localized to the response language, or null */
   spice?: CatalogLabel | null;
+  /** Ways of ordering this dish is hidden for; hand-added, the generated client lags (TODO 5438) */
+  unavailableModes?: ('collection' | 'delivery' | 'dine_in')[];
   createdAt?: string;
   updatedAt?: string;
 };

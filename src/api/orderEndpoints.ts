@@ -12,6 +12,9 @@ export const TABLE_INVALID_ERROR = 'Please scan the QR code on your table again'
 export const PAYMENT_CONFIRMING_ERROR = 'Your payment is being confirmed';
 export const ADDRESS_REQUIRED_ERROR = 'An address is required for orders over 250 €';
 export const ORDER_LIMIT_REACHED_ERROR = 'This restaurant has paused online ordering for now';
+export const DELIVERY_POSTCODE_NOT_SERVED_ERROR = 'This restaurant does not deliver to this postcode';
+export const DELIVERY_FEE_CHANGED_ERROR =
+  'The delivery fee has changed. Please check your order and try again.';
 
 export type PaymentMethod = 'card';
 export type LineStatus = 'ok' | 'price_changed' | 'unavailable' | 'invalid_options';
@@ -45,6 +48,18 @@ export interface CustomerAddress {
   country: string;
 }
 
+export interface DeliveryAddress {
+  street: string;
+  postcode: string;
+  city: string;
+}
+
+export interface DeliveryZoneDto {
+  postcode: string;
+  feeCents: number;
+  minOrderCents: number;
+}
+
 export interface OrderDocument {
   id: string;
   kind: 'invoice' | 'cancellation' | 'correction';
@@ -69,6 +84,7 @@ export interface QuoteBasketRequest {
   shopId: string;
   items: CheckoutItemDto[];
   fulfilmentMode?: FulfilmentMode;
+  postcode?: string;
   language?: string;
 }
 
@@ -96,6 +112,9 @@ export interface BasketQuoteDto {
   addressRequired: boolean;
   prepMinutes: number;
   orderLimitReached?: boolean;
+  deliveryFeeCents?: number | null;
+  totalCents?: number;
+  postcodeServed?: boolean | null;
 }
 
 export interface PlaceOrderRequest {
@@ -108,6 +127,8 @@ export interface PlaceOrderRequest {
   fulfilmentMode?: FulfilmentMode;
   paymentMethod?: PaymentMethod;
   customerAddress?: CustomerAddress;
+  deliveryAddress?: DeliveryAddress;
+  expectedDeliveryFeeCents?: number;
   table?: string;
   idempotencyKey?: string;
   language?: string;
@@ -121,6 +142,7 @@ export interface CardCheckoutResult {
   accessToken: string;
   clientSecret: string;
   subtotalCents: number;
+  totalCents?: number;
   currency: string;
   stripeConnectAccountId: string;
 }
@@ -131,6 +153,7 @@ export interface PlacedCheckoutResult {
   orderRef: string;
   accessToken: string;
   subtotalCents: number;
+  totalCents?: number;
   currency: string;
 }
 
@@ -161,6 +184,9 @@ export interface CustomerOrderDto {
     selectedAddonOptionNames: string[];
   }>;
   subtotalCents: number;
+  totalCents?: number;
+  deliveryFeeCents?: number | null;
+  deliveryAddress?: DeliveryAddress | null;
   currency: string;
   createdAt: string;
   canCancel: boolean;
@@ -180,6 +206,7 @@ export interface CustomerDocumentArg extends CustomerOrderArg {
 export interface ShopFulfilment {
   modes: FulfilmentMode[];
   prepMinutes: Record<FulfilmentMode, number>;
+  delivery?: { zones: DeliveryZoneDto[] } | null;
 }
 
 export const orderApi = api.injectEndpoints({

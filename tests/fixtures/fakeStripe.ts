@@ -4,6 +4,7 @@ import type { Page } from '@playwright/test';
 export interface FakeStripeCalls {
   init: { key: string; options: { stripeAccount?: string } } | null;
   confirmParams: { return_url?: string } | null;
+  createOptions: { defaultValues?: { billingDetails?: { address?: { country?: string } } } } | null;
 }
 
 // Runs inside the page. Stands in for Stripe.js so no test ever reaches the real Stripe.
@@ -25,7 +26,14 @@ function installFakeStripe(): void {
     unmount() {},
   };
   const stripe = {
-    elements: () => ({ create: () => element, getElement: () => element, update() {} }),
+    elements: () => ({
+      create: (_type: string, options: unknown) => {
+        w.__createOptions = options;
+        return element;
+      },
+      getElement: () => element,
+      update() {},
+    }),
     createToken: async () => ({}),
     createPaymentMethod: async () => ({}),
     confirmCardPayment: async () => ({}),
@@ -59,6 +67,7 @@ export async function fakeStripeCalls(page: Page): Promise<FakeStripeCalls> {
     return {
       init: (w.__stripeInit as FakeStripeCalls['init']) ?? null,
       confirmParams: (w.__confirmParams as FakeStripeCalls['confirmParams']) ?? null,
+      createOptions: (w.__createOptions as FakeStripeCalls['createOptions']) ?? null,
     };
   });
 }
