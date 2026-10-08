@@ -14,8 +14,9 @@ import {
 import NavBar from '../../shared/NavBar';
 import { Product } from '../../types/Product';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { setActiveShop, setMenuLanguage, setResolvedMenuLanguage, setFulfilmentMode, type FulfilmentMode } from '../../store/slices/shopSlice';
+import { setActiveShop, setMenuLanguage, setResolvedMenuLanguage, type FulfilmentMode } from '../../store/slices/shopSlice';
 import FulfilmentModeBar from './FulfilmentModeBar';
+import DeliveryPostcodeBox from './DeliveryPostcodeBox';
 import { orderCopy } from '../../utils/orderCopy';
 import type { ShopFulfilment } from '../../api/orderEndpoints';
 import {
@@ -27,6 +28,9 @@ import { useBrandingStyle } from '../../hooks/useBrandingStyle';
 import { initialMenuLanguage } from '../../utils/menuLanguage';
 import { useTableSession } from '../../hooks/useTableSession';
 import { normaliseTableNumber } from '../../utils/tableSession';
+import { useDeliverySession } from '../../hooks/useDeliverySession';
+import { useMoney } from '../../hooks/useMoney';
+import { chosenMode } from '../../utils/delivery';
 
 type CategoryOption = { id: string; label: string; count: number; icon?: string };
 
@@ -94,13 +98,51 @@ const ShopView = () => {
     { skip: !resolvedShopId },
   );
 
-  // Filter out empty/unavailable categories and sort by sortOrder
+  const resolvedLanguage = catalogData?.language ?? lang;
+
+  // Remember the language the menu actually came back in, for price formatting
+  useEffect(() => {
+    if (catalogData?.language) dispatch(setResolvedMenuLanguage(catalogData.language));
+  }, [dispatch, catalogData?.language]);
+
+  const fulfilment = (resolvedShopData as { fulfilment?: ShopFulfilment } | undefined)?.fulfilment;
+  const orderLimitReached =
+    (resolvedShopData as { orderLimitReached?: boolean } | undefined)?.orderLimitReached === true;
+  // Dine in is never offered as a choice: it only exists once a table QR code was scanned.
+  const visibleModes: FulfilmentMode[] = (fulfilment?.modes ?? ['collection']).filter((m) => m !== 'dine_in');
+  const dineInOn = (fulfilment?.modes ?? []).includes('dine_in');
+  const [searchParams] = useSearchParams();
+  const scanned = searchParams.get('t');
+  const { table, bind, unbind } = useTableSession(slug, dineInOn);
+  const { postcode: deliveryPostcode, choose: chooseDelivery, clear: clearDelivery } = useDeliverySession(slug);
+  const [askingPostcode, setAskingPostcode] = useState(false);
+  const mode = chosenMode({ table, deliveryPostcode, modes: fulfilment?.modes ?? ['collection'] });
+  const barSelected: FulfilmentMode = mode === 'delivery' || askingPostcode ? 'delivery' : 'collection';
+  const money = useMoney();
+  const [tableInvalid, setTableInvalid] = useState(false);
+  useEffect(() => {
+    if (!slug || scanned === null || !fulfilment || !dineInOn) return; // dine-in off: ?t= is ignored
+    const label = normaliseTableNumber(scanned);
+    if (label) {
+      bind(label);
+      setTableInvalid(false);
+    } else {
+      unbind();
+      setTableInvalid(true);
+    }
+    navigate(`/shops/${slug}`, { replace: true }); // the tab session is the one source of truth
+  }, [slug, scanned, fulfilment, dineInOn, bind, unbind, navigate]);
+  // Filter out dishes not offered for this way of ordering, empty categories, and sort by sortOrder
   const visibleCategories = useMemo(
     () =>
       (catalogData?.categories ?? [])
-        .filter((cat) => cat.name && (cat.products?.length ?? 0) > 0)
+        .map((cat) => ({
+          ...cat,
+          products: (cat.products ?? []).filter((p) => !(p.unavailableModes ?? []).includes(mode)),
+        }))
+        .filter((cat) => cat.name && cat.products.length > 0)
         .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)),
-    [catalogData]
+    [catalogData, mode]
   );
 
   // Build the list of category filter options from visible categories
@@ -126,38 +168,6 @@ const ShopView = () => {
     [visibleCategories]
   );
 
-  const resolvedLanguage = catalogData?.language ?? lang;
-
-  // Remember the language the menu actually came back in, for price formatting
-  useEffect(() => {
-    if (catalogData?.language) dispatch(setResolvedMenuLanguage(catalogData.language));
-  }, [dispatch, catalogData?.language]);
-
-  const fulfilment = (resolvedShopData as { fulfilment?: ShopFulfilment } | undefined)?.fulfilment;
-  const orderLimitReached =
-    (resolvedShopData as { orderLimitReached?: boolean } | undefined)?.orderLimitReached === true;
-  // Dine in is never offered as a choice: it only exists once a table QR code was scanned.
-  const visibleModes: FulfilmentMode[] = (fulfilment?.modes ?? ['collection']).filter((m) => m !== 'dine_in');
-  const dineInOn = (fulfilment?.modes ?? []).includes('dine_in');
-  const storedMode = useAppSelector((state) => state.shop.fulfilmentMode);
-  const selectedMode =
-    storedMode && visibleModes.includes(storedMode) ? storedMode : visibleModes[0] ?? 'collection';
-  const [searchParams] = useSearchParams();
-  const scanned = searchParams.get('t');
-  const { table, bind, unbind } = useTableSession(slug, dineInOn);
-  const [tableInvalid, setTableInvalid] = useState(false);
-  useEffect(() => {
-    if (!slug || scanned === null || !fulfilment || !dineInOn) return; // dine-in off: ?t= is ignored
-    const label = normaliseTableNumber(scanned);
-    if (label) {
-      bind(label);
-      setTableInvalid(false);
-    } else {
-      unbind();
-      setTableInvalid(true);
-    }
-    navigate(`/shops/${slug}`, { replace: true }); // the tab session is the one source of truth
-  }, [slug, scanned, fulfilment, dineInOn, bind, unbind, navigate]);
   const copy = orderCopy(resolvedLanguage);
 
   // Group available products by category slug, mapping API DTOs to Product type
@@ -237,13 +247,39 @@ const ShopView = () => {
           </button>
         </div>
       ) : (
-        <FulfilmentModeBar
-          modes={visibleModes}
-          prepMinutes={fulfilment?.prepMinutes ?? { collection: 20, delivery: 45, dine_in: 20 }}
-          selected={selectedMode}
-          onSelect={(m) => dispatch(setFulfilmentMode(m))}
-          copy={copy}
-        />
+        <>
+          <FulfilmentModeBar
+            modes={visibleModes}
+            prepMinutes={fulfilment?.prepMinutes ?? { collection: 20, delivery: 45, dine_in: 20 }}
+            selected={barSelected}
+            onSelect={(m) => {
+              if (m === 'delivery') {
+                setAskingPostcode(true);
+              } else {
+                clearDelivery();
+                setAskingPostcode(false);
+              }
+            }}
+            copy={copy}
+          />
+          {barSelected === 'delivery' && fulfilment?.delivery && (
+            <DeliveryPostcodeBox
+              zones={fulfilment.delivery.zones}
+              postcode={deliveryPostcode}
+              deliveryMinutes={fulfilment.prepMinutes.delivery}
+              onChoose={(p) => {
+                chooseDelivery(p);
+                setAskingPostcode(false);
+              }}
+              onCollect={() => {
+                clearDelivery();
+                setAskingPostcode(false);
+              }}
+              copy={copy}
+              formatCents={(c) => money.cents(c)}
+            />
+          )}
+        </>
       )}
       <div className="max-w-7xl mx-auto px-6 pt-3 flex justify-end">
         <LanguageSwitcher
