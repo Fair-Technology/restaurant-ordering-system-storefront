@@ -5,12 +5,14 @@ import { CheckoutPageSkeleton } from '../../shared/Skeletons';
 import NavBar from '../../shared/NavBar';
 import Footer from '../../shared/Footer';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { setActiveShop, setResolvedMenuLanguage, type FulfilmentMode } from '../../store/slices/shopSlice';
+import { setActiveShop, setResolvedMenuLanguage } from '../../store/slices/shopSlice';
 import { loadCart, selectCartItems, clearCart, removeItem, setItemPrice } from '../../store/slices/cartSlice';
 import { useGetShopBySlugQuery, useGetCatalogQuery } from '../../api/endpoints';
 import {
   ADDRESS_REQUIRED_ERROR,
   BASKET_CHANGED_ERROR,
+  DELIVERY_FEE_CHANGED_ERROR,
+  DELIVERY_POSTCODE_NOT_SERVED_ERROR,
   LEGAL_CHANGED_ERROR,
   MODE_NOT_OFFERED_ERROR,
   ORDER_LIMIT_REACHED_ERROR,
@@ -28,6 +30,8 @@ import { useMoney } from '../../hooks/useMoney';
 import { orderCopy } from '../../utils/orderCopy';
 import { useTableSession } from '../../hooks/useTableSession';
 import { readTableSession } from '../../utils/tableSession';
+import { useDeliverySession } from '../../hooks/useDeliverySession';
+import { chosenMode } from '../../utils/delivery';
 import { stripeForAccount } from '../../utils/stripe';
 import QuoteNotice from './components/QuoteNotice';
 import { useGetShopLegalQuery } from '../../api/legalEndpoints';
@@ -116,18 +120,14 @@ const CheckoutPage: React.FC = () => {
   const dineInOn = (fulfilment?.modes ?? []).includes('dine_in');
   const { table, unbind } = useTableSession(slug, dineInOn);
   const [tableNotice, setTableNotice] = useState<string | null>(null);
-  const visibleModes: FulfilmentMode[] = (fulfilment?.modes ?? ['collection']).filter((m) => m !== 'dine_in');
-  const storedMode = useAppSelector((state) => state.shop.fulfilmentMode);
-  const mode: FulfilmentMode = table
-    ? 'dine_in'
-    : storedMode && visibleModes.includes(storedMode)
-      ? storedMode
-      : visibleModes[0] ?? 'collection';
+  const { postcode: deliveryPostcode, clear: clearDelivery } = useDeliverySession(slug);
+  const mode = chosenMode({ table, deliveryPostcode, modes: fulfilment?.modes ?? ['collection'] });
   const copy = orderCopy(resolvedLanguage);
   const quoteArg = {
     shopId: resolvedShopId,
     fulfilmentMode: mode,
     language: resolvedLanguage,
+    ...(mode === 'delivery' && deliveryPostcode ? { postcode: deliveryPostcode } : {}),
     items: cartItems.map((i) => ({
       productId: i.id,
       quantity: i.quantity,
@@ -148,7 +148,7 @@ const CheckoutPage: React.FC = () => {
   const allOk = !!quote && quote.lines.every((l) => l.status === 'ok');
   const canSubmit =
     !!quote && allOk && quote.openNow && !quote.belowMinimum && method !== null && !quoting &&
-    !quote.orderLimitReached;
+    !quote.orderLimitReached && (mode !== 'delivery' || quote.postcodeServed === true);
 
   function applyQuoteChanges() {
     if (!quote) return;
@@ -182,6 +182,9 @@ const CheckoutPage: React.FC = () => {
       customerNotes: data.notes || undefined,
       paymentMethod: method,
       customerAddress: data.customerAddress,
+      ...(mode === 'delivery' && data.deliveryAddress
+        ? { deliveryAddress: data.deliveryAddress, expectedDeliveryFeeCents: quote?.deliveryFeeCents ?? 0 }
+        : {}),
       idempotencyKey,
       legalRevisions:
         legalData?.terms && legalData?.withdrawal
@@ -199,7 +202,15 @@ const CheckoutPage: React.FC = () => {
       return;
     }
     const msg = (res.error as { data?: { error?: string } } | undefined)?.data?.error;
-    if (msg === BASKET_CHANGED_ERROR) {
+    if (msg === DELIVERY_POSTCODE_NOT_SERVED_ERROR) {
+      setIdempotencyKey(crypto.randomUUID());
+      clearDelivery();
+      setPlaceError(copy.deliveryNotServedNow);
+    } else if (msg === DELIVERY_FEE_CHANGED_ERROR) {
+      setIdempotencyKey(crypto.randomUUID());
+      requote();
+      setPlaceError(copy.deliveryFeeChanged);
+    } else if (msg === BASKET_CHANGED_ERROR) {
       setIdempotencyKey(crypto.randomUUID());
       requote();
       setPlaceError(copy.basketChangedTitle);
@@ -211,8 +222,13 @@ const CheckoutPage: React.FC = () => {
       setPlaceError(copy.addressNeeded);
     } else if (msg === MODE_NOT_OFFERED_ERROR || msg === TABLE_INVALID_ERROR) {
       setIdempotencyKey(crypto.randomUUID());
-      unbind();
-      setTableNotice(msg === MODE_NOT_OFFERED_ERROR ? copy.dineInOff : copy.tableInvalid);
+      if (mode === 'delivery') {
+        clearDelivery();
+        setTableNotice(copy.deliveryOff);
+      } else {
+        unbind();
+        setTableNotice(msg === MODE_NOT_OFFERED_ERROR ? copy.dineInOff : copy.tableInvalid);
+      }
     } else if (msg === ORDER_LIMIT_REACHED_ERROR) {
       requote();
       setPlaceError(copy.orderingPaused);
@@ -279,6 +295,25 @@ const CheckoutPage: React.FC = () => {
                 {quote && !quote.openNow && (
                   <p className="mb-4 text-sm text-red-600">{copy.closedNow}</p>
                 )}
+                {quote && mode === 'delivery' && quote.postcodeServed === false && (
+                  <p className="mb-4 text-sm text-red-600">{copy.deliveryNotServedNow}</p>
+                )}
+                {quote && mode === 'delivery' && quote.postcodeServed && (
+                  <dl className="mb-4 text-sm space-y-1" data-testid="delivery-totals">
+                    <div className="flex justify-between">
+                      <dt>{copy.itemsLine}</dt>
+                      <dd>{money.cents(quote.subtotalCents)}</dd>
+                    </div>
+                    <div className="flex justify-between">
+                      <dt>{copy.deliveryFeeLine}</dt>
+                      <dd>{money.cents(quote.deliveryFeeCents ?? 0)}</dd>
+                    </div>
+                    <div className="flex justify-between font-semibold">
+                      <dt>{copy.total}</dt>
+                      <dd>{money.cents(quote.totalCents ?? quote.subtotalCents)}</dd>
+                    </div>
+                  </dl>
+                )}
                 {quote && quote.belowMinimum && (
                   <p className="mb-4 text-sm text-red-600">
                     {copy.belowMinimum(money.cents(quote.minOrderAmountCents))}
@@ -296,6 +331,8 @@ const CheckoutPage: React.FC = () => {
                   paymentNote={copy.payOnlineInfo}
                   addressRequired={quote?.addressRequired ?? false}
                   addressCopy={copy}
+                  deliveryPostcode={mode === 'delivery' ? deliveryPostcode : null}
+                  deliveryCopy={copy}
                   defaultCountry={resolvedLanguage === 'de' ? 'Deutschland' : 'Germany'}
                   legal={legalData}
                   copy={legalCopy(legalData?.language ?? resolvedLanguage)}
@@ -314,7 +351,8 @@ const CheckoutPage: React.FC = () => {
                     }}
                   >
                     <PaymentStep
-                      subtotalCents={checkoutData.subtotalCents}
+                      totalCents={checkoutData.totalCents ?? checkoutData.subtotalCents}
+                      country={(shopData as { countryCode?: string } | undefined)?.countryCode ?? null}
                       currency={checkoutData.currency}
                       onSuccess={handlePaymentSuccess}
                       onError={(msg) => setPaymentError(msg)}

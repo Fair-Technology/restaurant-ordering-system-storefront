@@ -6,14 +6,16 @@ import { initialMenuLanguage } from '../../../utils/menuLanguage';
 import { orderCopy } from '../../../utils/orderCopy';
 
 interface PaymentStepProps {
-  subtotalCents: number;
+  totalCents: number;
+  country: string | null;
   currency: string;
   onSuccess: (paymentIntentId: string) => void;
   onError: (message: string) => void;
 }
 
 const PaymentStep: React.FC<PaymentStepProps> = ({
-  subtotalCents,
+  totalCents,
+  country,
   currency,
   onSuccess,
   onError,
@@ -21,7 +23,7 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
   const resolvedLanguage = useAppSelector((state) => state.shop.resolvedMenuLanguage);
   const storedLanguage = useAppSelector((state) => state.shop.menuLanguage);
   const language = resolvedLanguage ?? storedLanguage ?? initialMenuLanguage(navigator.language);
-  const total = formatCents(subtotalCents, currency, language);
+  const total = formatCents(totalCents, currency, language);
   const copy = orderCopy(language);
   const stripe = useStripe();
   const elements = useElements();
@@ -54,7 +56,7 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
     <div className="space-y-4">
       <div className="text-sm text-gray-500">
         {copy.total}:{' '}
-        <span className="font-semibold text-gray-800">
+        <span className="font-semibold text-gray-800" data-testid="payment-total">
           {total}
         </span>
       </div>
@@ -71,7 +73,10 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
         </div>
       )}
 
-      <PaymentElement onReady={() => setElementReady(true)} />
+      <PaymentElement
+        onReady={() => setElementReady(true)}
+        options={country ? { defaultValues: { billingDetails: { address: { country } } } } : undefined}
+      />
 
       <button
         className="w-full bg-[var(--brand-accent)] hover:opacity-90 text-[var(--brand-on-accent)] px-4 py-3 rounded-lg transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
