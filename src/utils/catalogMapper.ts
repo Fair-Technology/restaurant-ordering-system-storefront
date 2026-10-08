@@ -30,8 +30,25 @@ export const slugifyCategoryName = (name: string): string =>
  *
  * This adapter keeps API shape changes isolated from UI components.
  */
+// The generated client predates the catalog's offer fields; this hand-written type adds them
+// until the client is regenerated from the backend's current OpenAPI spec.
+export type CatalogProductWithOffer = CatalogProductDto & {
+  offerPrice?: number | null;
+  offerLabel?: string | null;
+};
+
+/**
+ * The server only sends an offer price inside the dish's window, and charges it. Anything that is
+ * not a whole, positive amount below the normal price is ignored, exactly as the server does.
+ */
+export const activeOfferCents = (product: CatalogProductWithOffer): number | null => {
+  const offer = product.offerPrice;
+  const normal = product.price ?? 0;
+  return typeof offer === 'number' && Number.isInteger(offer) && offer > 0 && offer < normal ? offer : null;
+};
+
 export const mapApiProductToProduct = (
-  product: CatalogProductDto,
+  product: CatalogProductWithOffer,
   category: CatalogCategoryDto,
   language: string,
 ): Product => ({
@@ -42,7 +59,13 @@ export const mapApiProductToProduct = (
       ?.url ?? '',
   description: product.description ?? '',
   isAvailable: product.isAvailable ?? true,
-  price: centsToDollars(product.price ?? 0),
+  ...(activeOfferCents(product) !== null
+    ? {
+        price: centsToDollars(activeOfferCents(product) ?? 0),
+        regularPrice: centsToDollars(product.price ?? 0),
+        offerLabel: product.offerLabel ?? undefined,
+      }
+    : { price: centsToDollars(product.price ?? 0) }),
   categories: [{ id: category.id ?? '', name: category.name ?? '', icon: category.icon ?? undefined }],
   allergens: product.allergens ?? [],
   additives: product.additives ?? [],
