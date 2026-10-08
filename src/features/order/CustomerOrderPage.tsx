@@ -18,7 +18,7 @@ import { useMoney } from '../../hooks/useMoney';
 import { downloadBase64File } from '../../utils/download';
 import { orderCopy } from '../../utils/orderCopy';
 
-const LIVE_STATES = ['PLACED', 'ACCEPTED', 'READY'];
+const LIVE_STATES = ['PLACED', 'ACCEPTED', 'READY', 'OUT_FOR_DELIVERY'];
 const CONFIRMING_POLL_MS = 3000;
 
 const CustomerOrderPage: React.FC = () => {
@@ -101,6 +101,7 @@ const CustomerOrderPage: React.FC = () => {
   let status: React.ReactNode = null;
   if (order) {
     const dineIn = order.fulfilmentMode === 'dine_in';
+    const delivery = order.fulfilmentMode === 'delivery';
     if (order.state === 'PLACED') {
       status = (
         <>
@@ -120,15 +121,23 @@ const CustomerOrderPage: React.FC = () => {
     } else if (order.state === 'CANCELLED') {
       status = <p className="text-lg font-medium">{copy.statusCancelled}</p>;
     } else if (order.state === 'COMPLETED') {
-      status = <p className="text-lg font-medium">{dineIn ? copy.statusCompletedDineIn : copy.statusCompleted}</p>;
+      status = (
+        <p className="text-lg font-medium">
+          {delivery ? copy.statusCompletedDelivery : dineIn ? copy.statusCompletedDineIn : copy.statusCompleted}
+        </p>
+      );
+    } else if (order.state === 'OUT_FOR_DELIVERY') {
+      status = <p className="text-lg font-medium">{copy.statusOutForDelivery}</p>;
     } else if (order.state === 'READY') {
       status = <p className="text-lg font-medium">{dineIn ? copy.statusReadyDineIn : copy.statusReady}</p>;
     } else {
       status = (
         <p className="text-lg font-medium">
-          {dineIn
-            ? copy.statusAcceptedDineIn(timeIn(order.readyAt, order.timezone))
-            : copy.statusAccepted(timeIn(order.readyAt, order.timezone))}
+          {delivery
+            ? copy.statusAcceptedDelivery(timeIn(order.readyAt, order.timezone))
+            : dineIn
+              ? copy.statusAcceptedDineIn(timeIn(order.readyAt, order.timezone))
+              : copy.statusAccepted(timeIn(order.readyAt, order.timezone))}
         </p>
       );
     }
@@ -142,7 +151,7 @@ const CustomerOrderPage: React.FC = () => {
       paymentLines = [copy.reservedOnline, ...(gone ? [] : [copy.reservePromise])];
     } else if (order.paymentStatus === 'paid') {
       paymentLines = gone
-        ? [copy.refundInProgress(money.cents(order.subtotalCents))]
+        ? [copy.refundInProgress(money.cents(order.totalCents ?? order.subtotalCents))]
         : [copy.paidOnline];
     } else if (order.paymentStatus === 'canceled') {
       paymentLines = [copy.notCharged, copy.reservationBankNote];
@@ -176,6 +185,13 @@ const CustomerOrderPage: React.FC = () => {
               {copy.yourOrder(order.orderRef)}
             </h1>
             {order.table && <p className="text-base font-semibold">{copy.tableLine(order.table.label)}</p>}
+            {order.deliveryAddress && (
+              <p className="text-sm">
+                {copy.deliverTo(
+                  `${order.deliveryAddress.street}, ${order.deliveryAddress.postcode} ${order.deliveryAddress.city}`,
+                )}
+              </p>
+            )}
             <div className="space-y-1">{status}</div>
 
             <ul className="divide-y text-sm">
@@ -198,9 +214,15 @@ const CustomerOrderPage: React.FC = () => {
               ))}
             </ul>
 
+            {order.deliveryFeeCents != null && (
+              <div className="flex justify-between text-sm">
+                <span>{copy.deliveryFeeLine}</span>
+                <span>{money.cents(order.deliveryFeeCents)}</span>
+              </div>
+            )}
             <div className="flex justify-between font-semibold text-sm">
               <span>{copy.total}</span>
-              <span>{money.cents(order.subtotalCents)}</span>
+              <span>{money.cents(order.totalCents ?? order.subtotalCents)}</span>
             </div>
             {paymentLines.map((line) => (
               <p key={line} className="text-sm text-gray-600">
