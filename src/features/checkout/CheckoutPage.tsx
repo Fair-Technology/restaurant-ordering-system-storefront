@@ -127,6 +127,7 @@ const CheckoutPage: React.FC = () => {
   const copy = orderCopy(resolvedLanguage);
   const [whenChoice, setWhenChoice] = useState<WhenChoice | null>(null);
   const [slotChoice, setSlotChoice] = useState<string | null>(null);
+  const [dayChoice, setDayChoice] = useState<string | null>(null);
   const quoteArg = {
     shopId: resolvedShopId,
     fulfilmentMode: mode,
@@ -160,7 +161,8 @@ const CheckoutPage: React.FC = () => {
     () => slotDays(quoteSlots, timeZone, resolvedLanguage),
     [quoteSlots, timeZone, resolvedLanguage],
   );
-  const currentDay = days.find((d) => d.times.some((t) => t.iso === chosenSlot)) ?? days[0];
+  const currentDay =
+    days.find((d) => d.key === dayChoice) ?? days.find((d) => d.times.some((t) => t.iso === chosenSlot)) ?? days[0];
   const canSubmit =
     !!quote && allOk &&
     (when === 'asap' ? quote.openNow : chosenSlot !== null && quote.slotAvailable === true) &&
@@ -350,9 +352,9 @@ const CheckoutPage: React.FC = () => {
                           className="border rounded px-2 py-1 text-sm"
                           value={currentDay?.key ?? ''}
                           onChange={(e) => {
-                            const day = days.find((d) => d.key === e.target.value);
                             setWhenChoice('later');
-                            setSlotChoice(day?.times[0]?.iso ?? null);
+                            setDayChoice(e.target.value);
+                            setSlotChoice(null);
                           }}
                         >
                           {days.map((d) => (
