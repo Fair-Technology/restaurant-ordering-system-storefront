@@ -5,6 +5,8 @@ import type { FulfilmentMode } from '../store/slices/shopSlice';
 
 // Literal strings the backend sends as `error`; the storefront compares them.
 export const BASKET_CHANGED_ERROR = 'Your basket has changed. Please review it and try again.';
+export const DISCOUNT_CHANGED_ERROR = 'Your discount has changed. Please check your order and try again.';
+export const DISCOUNT_ALREADY_USED_ERROR = 'You have already used this code.';
 export const LEGAL_CHANGED_ERROR =
   'The restaurant has updated its terms. Please review them and order again.';
 export const MODE_NOT_OFFERED_ERROR = 'This restaurant is not taking orders this way right now';
@@ -81,6 +83,21 @@ export interface CheckoutItemDto {
   expectedUnitPriceCents?: number;
 }
 
+export type DiscountProblem =
+  | 'unknown'
+  | 'not_started'
+  | 'expired'
+  | 'used_up'
+  | 'already_used'
+  | 'minimum'
+  | 'too_small';
+
+export interface AppliedDiscount {
+  kind: 'code' | 'voucher';
+  code: string;
+  cents: number;
+}
+
 export interface QuoteBasketRequest {
   shopId: string;
   items: CheckoutItemDto[];
@@ -88,6 +105,7 @@ export interface QuoteBasketRequest {
   postcode?: string;
   language?: string;
   scheduledFor?: string;
+  discountCode?: string;
 }
 
 export interface QuoteLineDto {
@@ -121,6 +139,12 @@ export interface BasketQuoteDto {
   slots?: string[];
   scheduledFor?: string | null;
   slotAvailable?: boolean | null;
+  // Absent on a backend from before discount codes; absent means no code box and no loyalty tick.
+  acceptsCodes?: boolean;
+  discount?: AppliedDiscount | null;
+  discountProblem?: DiscountProblem | null;
+  discountMinSubtotalCents?: number | null;
+  loyalty?: { everyOrders: number; rewardCents: number } | null;
 }
 
 export interface PlaceOrderRequest {
@@ -140,6 +164,9 @@ export interface PlaceOrderRequest {
   language?: string;
   legalRevisions?: { terms: number; withdrawal: number };
   scheduledFor?: string;
+  discountCode?: string;
+  expectedDiscountCents?: number;
+  loyaltyOptIn?: boolean;
 }
 
 export interface CardCheckoutResult {
@@ -194,6 +221,7 @@ export interface CustomerOrderDto {
   subtotalCents: number;
   totalCents?: number;
   deliveryFeeCents?: number | null;
+  discount?: AppliedDiscount | null;
   deliveryAddress?: DeliveryAddress | null;
   currency: string;
   createdAt: string;

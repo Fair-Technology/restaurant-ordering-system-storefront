@@ -104,6 +104,20 @@ export interface OrderCopy {
   statusOutForDelivery: string;
   statusCompletedDelivery: string;
   deliverTo: (address: string) => string;
+  haveCode: string;
+  codeLabel: string;
+  codeApply: string;
+  codeRemove: string;
+  discountLine: (code: string) => string;
+  codeUnknown: string;
+  codeNotStarted: string;
+  codeExpired: string;
+  codeUsedUp: string;
+  codeAlreadyUsed: string;
+  codeMinimum: (minimum: string) => string;
+  codeTooSmall: string;
+  discountChanged: string;
+  loyaltyOptIn: (amount: string, everyOrders: number, shop: string) => string;
 }
 
 const en: OrderCopy = {
@@ -226,6 +240,20 @@ const en: OrderCopy = {
   statusOutForDelivery: 'On its way to you',
   statusCompletedDelivery: 'Delivered — enjoy your meal!',
   deliverTo: (a) => `Delivery to: ${a}`,
+  haveCode: 'Have a discount code?',
+  codeLabel: 'Discount code',
+  codeApply: 'Apply',
+  codeRemove: 'Remove',
+  discountLine: (code) => `Discount (${code})`,
+  codeUnknown: 'This code is not valid.',
+  codeNotStarted: 'This code is not valid yet.',
+  codeExpired: 'This code has expired.',
+  codeUsedUp: 'This code has been used up.',
+  codeAlreadyUsed: 'You have already used this code.',
+  codeMinimum: (m) => `This code applies from ${m}.`,
+  codeTooSmall: 'This order is too small for this code.',
+  discountChanged: 'Your discount has changed. Please check the total and try again.',
+  loyaltyOptIn: (amount, n, shop) => `Email me a voucher worth ${amount} after every ${n}th order at ${shop}.`,
   orderingPaused:
     'Online ordering is paused at the moment. Please try again later or contact the restaurant directly.',
 };
@@ -355,6 +383,21 @@ const de: OrderCopy = {
   statusOutForDelivery: 'Unterwegs zu Ihnen',
   statusCompletedDelivery: 'Geliefert – guten Appetit!',
   deliverTo: (a) => `Lieferung an: ${a}`,
+  haveCode: 'Rabattcode?',
+  codeLabel: 'Rabattcode',
+  codeApply: 'Einlösen',
+  codeRemove: 'Entfernen',
+  discountLine: (code) => `Rabatt (${code})`,
+  codeUnknown: 'Dieser Code ist ungültig.',
+  codeNotStarted: 'Dieser Code gilt noch nicht.',
+  codeExpired: 'Dieser Code ist abgelaufen.',
+  codeUsedUp: 'Dieser Code ist aufgebraucht.',
+  codeAlreadyUsed: 'Sie haben diesen Code bereits eingelöst.',
+  codeMinimum: (m) => `Dieser Code gilt ab ${m}.`,
+  codeTooSmall: 'Diese Bestellung ist für den Code zu klein.',
+  discountChanged: 'Ihr Rabatt hat sich geändert. Bitte prüfen Sie die Summe und versuchen Sie es erneut.',
+  loyaltyOptIn: (amount, n, shop) =>
+    `Schicken Sie mir nach jeder ${n}. Bestellung bei ${shop} einen Gutschein über ${amount} per E-Mail.`,
   orderingPaused:
     'Online-Bestellungen sind im Moment pausiert. Bitte versuchen Sie es später erneut oder wenden Sie sich direkt an das Restaurant.',
 };

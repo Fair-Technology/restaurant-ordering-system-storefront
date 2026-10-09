@@ -224,6 +224,12 @@ const CustomerOrderPage: React.FC = () => {
               ))}
             </ul>
 
+            {order.discount && (
+              <div className="flex justify-between text-sm">
+                <span>{copy.discountLine(order.discount.code)}</span>
+                <span>{money.cents(-order.discount.cents)}</span>
+              </div>
+            )}
             {order.deliveryFeeCents != null && (
               <div className="flex justify-between text-sm">
                 <span>{copy.deliveryFeeLine}</span>
