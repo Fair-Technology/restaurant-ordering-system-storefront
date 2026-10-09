@@ -1017,3 +1017,173 @@ test.describe('Order for later in German', () => {
     await expect(page.getByLabel('Tag')).toContainText(/Sa\.?,? 10\. Okt/);
   });
 });
+
+function codeQuote(extra: Json = {}) {
+  return (body: Json): Json => {
+    const code = body.discountCode as string | undefined;
+    const ok = code === 'WELCOME10';
+    return {
+      ...okQuote,
+      acceptsCodes: true,
+      loyalty: null,
+      discountMinSubtotalCents: null,
+      discount: ok ? { kind: 'code', code: 'WELCOME10', cents: 105 } : null,
+      discountProblem: code && !ok ? 'unknown' : null,
+      totalCents: ok ? 945 : 1050,
+      taxCents: ok ? 62 : 69,
+      ...extra,
+    };
+  };
+}
+
+test.describe('Discount codes', () => {
+  test.use({ locale: 'en-US' });
+
+  test('no code box unless the restaurant takes codes', async ({ page }) => {
+    await mockBackend(page);
+    await seedCart(page);
+    await page.goto('/shops/test-shop/checkout');
+
+    await expect(page.getByRole('button', { name: 'Continue to payment' })).toBeVisible();
+    await expect(page.getByTestId('discount')).toHaveCount(0);
+  });
+
+  test('a valid code lowers the total and is sent with the order', async ({ page }) => {
+    await mockBackend(page, { quote: codeQuote() });
+    await seedCart(page);
+    let placed: Json | null = null;
+    await page.route('**/api/orders', async (route) => {
+      placed = route.request().postDataJSON() as Json;
+      await route.fulfill(fulfil(CARD_RESULT));
+    });
+    await page.goto('/shops/test-shop/checkout');
+
+    await page.getByText('Have a discount code?').click();
+    await page.getByLabel('Discount code').fill('welcome10');
+    await page.getByRole('button', { name: 'Apply' }).click();
+
+    const totals = page.getByTestId('order-totals');
+    await expect(totals).toContainText('Discount (WELCOME10)');
+    await expect(totals).toContainText('-€1.05');
+    await expect(totals).toContainText('€9.45');
+
+    await fillDetails(page);
+    await page.getByRole('button', { name: 'Continue to payment' }).click();
+    await expect(page.getByTestId('fake-card')).toBeVisible();
+    expect(placed).toMatchObject({ discountCode: 'WELCOME10', expectedDiscountCents: 105 });
+  });
+
+  test('an unknown code says so and blocks ordering until removed', async ({ page }) => {
+    await mockBackend(page, { quote: codeQuote() });
+    await seedCart(page);
+    await page.goto('/shops/test-shop/checkout');
+
+    await page.getByText('Have a discount code?').click();
+    await page.getByLabel('Discount code').fill('NOPE1');
+    await page.getByRole('button', { name: 'Apply' }).click();
+    await expect(page.getByText('This code is not valid.')).toBeVisible();
+
+    await fillDetails(page);
+    await expect(page.getByRole('button', { name: 'Continue to payment' })).toBeDisabled();
+    await page.getByTestId('discount').getByRole('button', { name: 'Remove' }).click();
+    await expect(page.getByRole('button', { name: 'Continue to payment' })).toBeEnabled();
+  });
+
+  test('a code the diner already used asks them to remove it', async ({ page }) => {
+    await mockBackend(page, { quote: codeQuote() });
+    await seedCart(page);
+    await page.route('**/api/orders', (route) =>
+      route.fulfill(fulfil({ error: 'You have already used this code.' }, 409)),
+    );
+    await page.goto('/shops/test-shop/checkout');
+
+    await page.getByText('Have a discount code?').click();
+    await page.getByLabel('Discount code').fill('WELCOME10');
+    await page.getByRole('button', { name: 'Apply' }).click();
+    await expect(page.getByTestId('order-totals')).toContainText('€9.45');
+    await fillDetails(page);
+    await page.getByRole('button', { name: 'Continue to payment' }).click();
+
+    await expect(page.getByText('You have already used this code.')).toBeVisible();
+    await expect(page.getByLabel('Discount code')).toHaveValue('');
+  });
+
+  test('the loyalty offer can be ticked and is sent', async ({ page }) => {
+    await mockBackend(page, { quote: codeQuote({ loyalty: { everyOrders: 5, rewardCents: 500 } }) });
+    await seedCart(page);
+    let placed: Json | null = null;
+    await page.route('**/api/orders', async (route) => {
+      placed = route.request().postDataJSON() as Json;
+      await route.fulfill(fulfil(CARD_RESULT));
+    });
+    await page.goto('/shops/test-shop/checkout');
+
+    const tick = page.getByLabel('Email me a voucher worth €5.00 after every 5th order at Test Shop.');
+    await expect(tick).not.toBeChecked();
+    await tick.check();
+    await fillDetails(page);
+    await page.getByRole('button', { name: 'Continue to payment' }).click();
+    await expect(page.getByTestId('fake-card')).toBeVisible();
+    expect(placed).toMatchObject({ loyaltyOptIn: true });
+
+    placed = null;
+    await page.goto('/shops/test-shop/checkout');
+    await expect(tick).not.toBeChecked();
+    await fillDetails(page);
+    await page.getByRole('button', { name: 'Continue to payment' }).click();
+    await expect(page.getByTestId('fake-card')).toBeVisible();
+    expect(placed).not.toBeNull();
+    expect('loyaltyOptIn' in (placed as unknown as Json)).toBe(false);
+  });
+
+  test('a changed discount re-asks the server', async ({ page }) => {
+    await mockBackend(page, { quote: codeQuote() });
+    await seedCart(page);
+    let quotes = 0;
+    await page.route('**/api/orders/quote', async (route) => {
+      quotes += 1;
+      await route.fulfill(fulfil(codeQuote()(route.request().postDataJSON() as Json)));
+    });
+    await page.route('**/api/orders', (route) =>
+      route.fulfill(
+        fulfil({ error: 'Your discount has changed. Please check your order and try again.' }, 409),
+      ),
+    );
+    await page.goto('/shops/test-shop/checkout');
+
+    await page.getByText('Have a discount code?').click();
+    await page.getByLabel('Discount code').fill('WELCOME10');
+    await page.getByRole('button', { name: 'Apply' }).click();
+    await expect(page.getByTestId('order-totals')).toContainText('€9.45');
+    await fillDetails(page);
+    const before = quotes;
+    await page.getByRole('button', { name: 'Continue to payment' }).click();
+
+    await expect(page.getByText('Your discount has changed. Please check the total and try again.')).toBeVisible();
+    await expect.poll(() => quotes).toBeGreaterThan(before);
+  });
+
+  test('the order page shows the discount', async ({ page }) => {
+    await mockBackend(page, {
+      order: { discount: { kind: 'code', code: 'WELCOME10', cents: 105 }, totalCents: 945 },
+    });
+    await page.goto(ORDER_URL);
+
+    await expect(page.getByText('Discount (WELCOME10)')).toBeVisible();
+  });
+});
+
+test.describe('Discount codes in German', () => {
+  test.use({ locale: 'de-DE' });
+
+  test('German wording for codes', async ({ page }) => {
+    await mockBackend(page, { language: 'de', quote: codeQuote() });
+    await seedCart(page);
+    await page.goto('/shops/test-shop/checkout');
+
+    await page.getByText('Rabattcode?').click();
+    await page.getByLabel('Rabattcode').fill('NOPE1');
+    await page.getByRole('button', { name: 'Einlösen' }).click();
+    await expect(page.getByText('Dieser Code ist ungültig.')).toBeVisible();
+  });
+});
