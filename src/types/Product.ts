@@ -22,6 +22,15 @@ export interface Product {
   spice: CatalogLabel | null;
   /** Menu language this product's text is localized to (e.g. 'de', 'en') */
   language: string;
+  /** Set only for a combo: its choices, each with the dishes the diner may pick. */
+  combo?: ComboChoiceGroup[];
+}
+
+/** One choice in a combo; the diner picks exactly one of `options`. */
+export interface ComboChoiceGroup {
+  id: string;
+  label: string;
+  options: Product[];
 }
 
 export interface Category {

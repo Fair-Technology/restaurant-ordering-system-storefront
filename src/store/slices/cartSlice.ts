@@ -4,6 +4,13 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 const BASE_CART_KEY = 'mewmew_cart_v1';
 const cartKey = (shopId?: string) => `${BASE_CART_KEY}:${shopId ?? 'global'}`;
 
+export type CartComboChoice = {
+  groupId: string;
+  productId: string;
+  variantId?: string;
+  addonOptionIds?: string[];
+};
+
 export type CartItem = {
   key: string; // signature id::variant::addons
   id: string;
@@ -13,6 +20,8 @@ export type CartItem = {
   quantity: number;
   variantId?: string;
   addonOptionIds?: string[];
+  comboChoices?: CartComboChoice[];
+  detail?: string; // a combo's picks as shown in the basket
 };
 
 interface CartState {
@@ -36,14 +45,22 @@ const initialState: CartState = {
  * same key — preventing duplicate entries for identical selections.
  *
  * e.g. "abc123::var-sm::addon1,addon2"
+ *
+ * A combo appends its picks, so two combos with different dishes stay separate lines.
  */
 function makeSignature(payload: {
   id: string;
   variantId?: string;
   addonOptionIds?: string[];
+  comboChoices?: CartComboChoice[];
 }) {
   const addons = (payload.addonOptionIds || []).slice().sort().join(',');
-  return `${payload.id}::${payload.variantId ?? ''}::${addons}`;
+  const base = `${payload.id}::${payload.variantId ?? ''}::${addons}`;
+  if (!payload.comboChoices?.length) return base; // dish keys stay exactly as before
+  const picks = payload.comboChoices
+    .map((c) => `${c.groupId}=${c.productId}/${c.variantId ?? ''}/${(c.addonOptionIds ?? []).slice().sort().join('+')}`)
+    .join(';');
+  return `${base}::${picks}`;
 }
 
 /**
@@ -91,6 +108,8 @@ const cartSlice = createSlice({
           quantity?: number;
           variantId?: string;
           addonOptionIds?: string[];
+          comboChoices?: CartComboChoice[];
+          detail?: string;
         };
       }>
     ) {
@@ -113,6 +132,8 @@ const cartSlice = createSlice({
           quantity: item.quantity ?? 1,
           variantId: item.variantId,
           addonOptionIds: item.addonOptionIds,
+          comboChoices: item.comboChoices,
+          detail: item.detail,
         });
       }
       persist(state);

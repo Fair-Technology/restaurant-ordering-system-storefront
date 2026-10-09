@@ -23,7 +23,12 @@ import {
   resolveShopBranding,
   type ShopWithBranding,
 } from '../../utils/branding';
-import { slugifyCategoryName, mapApiProductToProduct } from '../../utils/catalogMapper';
+import {
+  slugifyCategoryName,
+  mapApiProductToProduct,
+  resolveCombo,
+  type CatalogProductWithOffer,
+} from '../../utils/catalogMapper';
 import { useBrandingStyle } from '../../hooks/useBrandingStyle';
 import { initialMenuLanguage } from '../../utils/menuLanguage';
 import { useTableSession } from '../../hooks/useTableSession';
@@ -132,17 +137,40 @@ const ShopView = () => {
     }
     navigate(`/shops/${slug}`, { replace: true }); // the tab session is the one source of truth
   }, [slug, scanned, fulfilment, dineInOn, bind, unbind, navigate]);
-  // Filter out dishes not offered for this way of ordering, empty categories, and sort by sortOrder
+  // Dishes a combo may offer right now: not a combo, on the menu, and offered for this mode
+  const dishes = useMemo(
+    () =>
+      new Map(
+        (catalogData?.categories ?? []).flatMap((cat) =>
+          (cat.products ?? [])
+            .filter(
+              (p) =>
+                !(p as CatalogProductWithOffer).combo &&
+                p.isAvailable !== false &&
+                !(p.unavailableModes ?? []).includes(mode),
+            )
+            .map((p) => [p.id!, mapApiProductToProduct(p, cat, resolvedLanguage)] as const),
+        ),
+      ),
+    [catalogData, mode, resolvedLanguage],
+  );
+
+  // Filter out dishes not offered for this way of ordering, combos with an empty choice, empty categories, and sort by sortOrder
   const visibleCategories = useMemo(
     () =>
       (catalogData?.categories ?? [])
         .map((cat) => ({
           ...cat,
-          products: (cat.products ?? []).filter((p) => !(p.unavailableModes ?? []).includes(mode)),
+          products: (cat.products ?? []).filter(
+            (p) =>
+              !(p.unavailableModes ?? []).includes(mode) &&
+              (!(p as CatalogProductWithOffer).combo ||
+                resolveCombo(p as CatalogProductWithOffer, dishes) !== null),
+          ),
         }))
         .filter((cat) => cat.name && cat.products.length > 0)
         .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)),
-    [catalogData, mode]
+    [catalogData, mode, dishes]
   );
 
   // Build the list of category filter options from visible categories
@@ -177,10 +205,15 @@ const ShopView = () => {
       const id = slugifyCategoryName(cat.name!);
       grouped[id] = (cat.products ?? [])
         .filter((p) => p.isAvailable !== false)
-        .map((p) => mapApiProductToProduct(p, cat, resolvedLanguage));
+        .map((p) => ({
+          ...mapApiProductToProduct(p, cat, resolvedLanguage),
+          ...((p as CatalogProductWithOffer).combo
+            ? { combo: resolveCombo(p as CatalogProductWithOffer, dishes)! }
+            : {}),
+        }));
     });
     return grouped;
-  }, [visibleCategories, resolvedLanguage]);
+  }, [visibleCategories, resolvedLanguage, dishes]);
 
   const categoryLabels = useMemo(() => {
     return categories.reduce<Record<string, string>>((acc, category) => {

@@ -61,9 +61,8 @@ const CartSummary: React.FC<CartSummaryProps> = ({ slug, products }) => {
                 .filter((o) => item.addonOptionIds?.includes(o.id))
                 .map((o) => o.label) ?? [];
 
-            const customisationDetail = [variantName, addonNames.join(', ')]
-              .filter(Boolean)
-              .join(' · ');
+            const customisationDetail =
+              item.detail ?? [variantName, addonNames.join(', ')].filter(Boolean).join(' · ');
 
             return (
               <div
@@ -110,7 +109,7 @@ const CartSummary: React.FC<CartSummaryProps> = ({ slug, products }) => {
                     {money.major(item.quantity * item.price)}
                   </div>
                   <div className="flex gap-2">
-                    {product && (
+                    {product && !item.comboChoices && (
                       <button
                         className="text-xs text-[var(--brand-accent)] hover:underline"
                         onClick={() => setEditingItem(item)}

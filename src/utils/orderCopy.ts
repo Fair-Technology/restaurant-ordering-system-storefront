@@ -118,6 +118,12 @@ export interface OrderCopy {
   codeTooSmall: string;
   discountChanged: string;
   loyaltyOptIn: (amount: string, everyOrders: number, shop: string) => string;
+  comboBadge: string;
+  comboPickOne: string;
+  comboAdd: string;
+  comboCancel: string;
+  comboIncomplete: string;
+  comboTotal: (amount: string) => string;
 }
 
 const en: OrderCopy = {
@@ -256,6 +262,12 @@ const en: OrderCopy = {
   loyaltyOptIn: (amount, n, shop) => `Email me a voucher worth ${amount} after every ${n}th order at ${shop}.`,
   orderingPaused:
     'Online ordering is paused at the moment. Please try again later or contact the restaurant directly.',
+  comboBadge: 'Combo',
+  comboPickOne: 'Choose one',
+  comboAdd: 'Add to order',
+  comboCancel: 'Cancel',
+  comboIncomplete: 'Choose one dish in every group.',
+  comboTotal: (a) => `Total ${a}`,
 };
 
 const de: OrderCopy = {
@@ -400,6 +412,12 @@ const de: OrderCopy = {
     `Schicken Sie mir nach jeder ${n}. Bestellung bei ${shop} einen Gutschein über ${amount} per E-Mail.`,
   orderingPaused:
     'Online-Bestellungen sind im Moment pausiert. Bitte versuchen Sie es später erneut oder wenden Sie sich direkt an das Restaurant.',
+  comboBadge: 'Menü',
+  comboPickOne: 'Bitte eins wählen',
+  comboAdd: 'Zur Bestellung',
+  comboCancel: 'Abbrechen',
+  comboIncomplete: 'Bitte wählen Sie in jeder Gruppe ein Gericht.',
+  comboTotal: (a) => `Gesamt ${a}`,
 };
 
 export function orderCopy(lang: string): OrderCopy {

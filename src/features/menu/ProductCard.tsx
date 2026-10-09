@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { UtensilsCrossed } from 'lucide-react';
 import Button from '../../shared/Button';
 import ProductModal from './ProductModal';
+import ComboModal from './ComboModal';
+import { orderCopy } from '../../utils/orderCopy';
 import { Product } from '../../types/Product';
 import { useMoney } from '../../hooks/useMoney';
 
@@ -101,6 +103,11 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }) => {
               </span>
             )}
             <span data-testid="product-price">{money.major(displayPrice)}</span>
+            {product.combo && (
+              <span className="ml-2 rounded bg-gray-100 px-1.5 py-0.5 text-xs font-medium text-gray-700" data-testid="combo-badge">
+                {orderCopy(product.language ?? '').comboBadge}
+              </span>
+            )}
             {product.offerLabel && (
               <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-800" data-testid="offer-label">
                 {product.offerLabel}
@@ -141,13 +148,22 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }) => {
         </div>
       </div>
 
-      <ProductModal
-        product={product}
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        shopId={shopId}
-        onAddToCart={(payload) => onAddToCart?.(payload)}
-      />
+      {product.combo ? (
+        <ComboModal
+          product={product}
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          shopId={shopId}
+        />
+      ) : (
+        <ProductModal
+          product={product}
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          shopId={shopId}
+          onAddToCart={(payload) => onAddToCart?.(payload)}
+        />
+      )}
     </>
   );
 };

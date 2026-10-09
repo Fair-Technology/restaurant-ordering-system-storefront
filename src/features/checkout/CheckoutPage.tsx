@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { toComboChoiceDtos } from '../../utils/combo';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Elements } from '@stripe/react-stripe-js';
 import { CheckoutPageSkeleton } from '../../shared/Skeletons';
@@ -148,6 +149,7 @@ const CheckoutPage: React.FC = () => {
       selectedVariantOptionId: i.variantId,
       selectedAddonOptionIds: i.addonOptionIds,
       expectedUnitPriceCents: Math.round(i.price * 100),
+      ...(i.comboChoices ? { comboChoices: toComboChoiceDtos(i.comboChoices) } : {}),
     })),
   };
   const {

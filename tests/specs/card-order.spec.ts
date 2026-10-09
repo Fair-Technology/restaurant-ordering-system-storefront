@@ -1187,3 +1187,164 @@ test.describe('Discount codes in German', () => {
     await expect(page.getByText('Dieser Code ist ungültig.')).toBeVisible();
   });
 });
+
+const COLA = { ...baseProduct, id: 'p2', name: 'Cola', price: 350, allergens: [] as unknown[] };
+const FANTA = { ...baseProduct, id: 'p5', name: 'Fanta', price: 350, allergens: [] as unknown[] };
+const COMBO = {
+  ...baseProduct,
+  id: 'm1',
+  name: 'Pasta Menu',
+  price: 1200,
+  allergens: [{ id: 'gluten', label: 'Gluten' }],
+  combo: {
+    groups: [
+      { id: 'g-main', name: 'Main', productIds: ['p1'] },
+      { id: 'g-drink', name: 'Drink', productIds: ['p2', 'p5', 'p404'] },
+    ],
+  },
+};
+const MENU = [baseProduct, COLA, FANTA, COMBO];
+const COMBO_CHOICES = [
+  { groupId: 'g-main', productId: 'p1' },
+  { groupId: 'g-drink', productId: 'p2' },
+];
+const comboQuote = () => ({
+  ...okQuote,
+  lines: [
+    {
+      index: 0,
+      productId: 'm1',
+      name: 'Pasta Menu',
+      quantity: 1,
+      status: 'ok',
+      unitPriceCents: 1200,
+      expectedUnitPriceCents: 1200,
+      lineTotalCents: 1200,
+    },
+  ],
+  subtotalCents: 1200,
+  taxCents: 107,
+  totalCents: 1200,
+});
+async function seedComboCart(page: Page) {
+  await page.addInitScript(
+    (choices) =>
+      localStorage.setItem(
+        'mewmew_cart_v1:test-shop',
+        JSON.stringify([
+          {
+            key: 'm1::::::g-main=p1//;g-drink=p2//',
+            id: 'm1',
+            name: 'Pasta Menu',
+            price: 12,
+            quantity: 1,
+            comboChoices: choices,
+            detail: 'Carbonara · Cola',
+          },
+        ]),
+      ),
+    COMBO_CHOICES,
+  );
+}
+
+test.describe('Combos', () => {
+  test.use({ locale: 'en-US' });
+
+  test('a combo shows on the menu with its badge', async ({ page }) => {
+    await mockBackend(page, { products: MENU });
+    await page.goto('/shops/test-shop');
+
+    await expect(page.getByTestId('combo-badge')).toHaveCount(1);
+    await expect(page.getByTestId('combo-badge')).toHaveText('Combo');
+  });
+
+  test('the picker needs one dish per group and adds the combo', async ({ page }) => {
+    await mockBackend(page, { products: MENU });
+    await page.goto('/shops/test-shop');
+    await page.getByRole('button', { name: 'View details for Pasta Menu' }).click();
+
+    // Carbonara, Cola and Fanta; p404 is not offered
+    await expect(page.getByRole('radio')).toHaveCount(3);
+    await expect(page.getByRole('radio', { name: 'Carbonara' })).toBeChecked();
+    await expect(page.getByRole('button', { name: 'Add to order' })).toBeDisabled();
+    await expect(page.getByText('Choose one dish in every group.')).toBeVisible();
+
+    await page.getByRole('radio', { name: 'Cola' }).check();
+    await expect(page.getByRole('button', { name: 'Add to order' })).toBeEnabled();
+    await expect(page.getByText('Total €12.00')).toBeVisible();
+
+    await page.getByRole('button', { name: 'Add to order' }).click();
+    await page.goto('/shops/test-shop/checkout');
+    await expect(page.getByText('Carbonara · Cola')).toBeVisible();
+  });
+
+  test('a combo whose choice has nothing left is hidden', async ({ page }) => {
+    await mockBackend(page, {
+      products: [baseProduct, { ...COLA, isAvailable: false }, { ...FANTA, isAvailable: false }, COMBO],
+    });
+    await page.goto('/shops/test-shop');
+
+    await expect(page.getByRole('button', { name: 'View details for Carbonara' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'View details for Pasta Menu' })).toHaveCount(0);
+  });
+
+  test('the combo is sent with its choices', async ({ page }) => {
+    await mockBackend(page, { products: MENU, quote: comboQuote });
+    await seedComboCart(page);
+    let placed: Json | null = null;
+    await page.route('**/api/orders', async (route) => {
+      placed = route.request().postDataJSON() as Json;
+      await route.fulfill(fulfil(CARD_RESULT));
+    });
+    await page.goto('/shops/test-shop/checkout');
+    await fillDetails(page);
+    await page.getByRole('button', { name: 'Continue to payment' }).click();
+
+    await expect(page.getByTestId('fake-card')).toBeVisible();
+    expect((placed as unknown as Json).items).toEqual([
+      { productId: 'm1', quantity: 1, expectedUnitPriceCents: 1200, comboChoices: COMBO_CHOICES },
+    ]);
+  });
+
+  test('the order page lists the dishes of a combo', async ({ page }) => {
+    await mockBackend(page, {
+      order: {
+        items: [
+          {
+            productName: 'Pasta Menu: Carbonara',
+            quantity: 1,
+            unitPriceCents: 900,
+            lineTotalCents: 900,
+            selectedVariantOptionName: null,
+            selectedAddonOptionNames: [],
+          },
+          {
+            productName: 'Pasta Menu: Cola',
+            quantity: 1,
+            unitPriceCents: 300,
+            lineTotalCents: 300,
+            selectedVariantOptionName: null,
+            selectedAddonOptionNames: [],
+          },
+        ],
+        subtotalCents: 1200,
+      },
+    });
+    await page.goto(ORDER_URL);
+
+    await expect(page.getByText('1 × Pasta Menu: Cola')).toBeVisible();
+  });
+});
+
+test.describe('Combos in German', () => {
+  test.use({ locale: 'de-DE' });
+
+  test('German wording for combos', async ({ page }) => {
+    await mockBackend(page, { language: 'de', products: MENU });
+    await page.goto('/shops/test-shop');
+
+    await expect(page.getByTestId('combo-badge')).toHaveText('Menü');
+    await page.getByRole('button', { name: /Pasta Menu/ }).first().click();
+    await expect(page.getByRole('button', { name: 'Zur Bestellung' })).toBeVisible();
+  });
+});
