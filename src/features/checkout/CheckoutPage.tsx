@@ -16,6 +16,7 @@ import {
   LEGAL_CHANGED_ERROR,
   MODE_NOT_OFFERED_ERROR,
   ORDER_LIMIT_REACHED_ERROR,
+  SLOT_UNAVAILABLE_ERROR,
   TABLE_INVALID_ERROR,
   usePlaceOrderMutation,
   useQuoteBasketQuery,
@@ -28,6 +29,7 @@ import { resolveShopBranding, type ShopWithBranding } from '../../utils/branding
 import { useBrandingStyle } from '../../hooks/useBrandingStyle';
 import { useMoney } from '../../hooks/useMoney';
 import { orderCopy } from '../../utils/orderCopy';
+import { effectiveWhen, slotDays, type WhenChoice } from '../../utils/slots';
 import { useTableSession } from '../../hooks/useTableSession';
 import { readTableSession } from '../../utils/tableSession';
 import { useDeliverySession } from '../../hooks/useDeliverySession';
@@ -123,11 +125,14 @@ const CheckoutPage: React.FC = () => {
   const { postcode: deliveryPostcode, clear: clearDelivery } = useDeliverySession(slug);
   const mode = chosenMode({ table, deliveryPostcode, modes: fulfilment?.modes ?? ['collection'] });
   const copy = orderCopy(resolvedLanguage);
+  const [whenChoice, setWhenChoice] = useState<WhenChoice | null>(null);
+  const [slotChoice, setSlotChoice] = useState<string | null>(null);
   const quoteArg = {
     shopId: resolvedShopId,
     fulfilmentMode: mode,
     language: resolvedLanguage,
     ...(mode === 'delivery' && deliveryPostcode ? { postcode: deliveryPostcode } : {}),
+    ...(whenChoice === 'later' && slotChoice ? { scheduledFor: slotChoice } : {}),
     items: cartItems.map((i) => ({
       productId: i.id,
       quantity: i.quantity,
@@ -146,8 +151,20 @@ const CheckoutPage: React.FC = () => {
   const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
   const method = quote?.paymentMethods[0] ?? null;
   const allOk = !!quote && quote.lines.every((l) => l.status === 'ok');
+  const timeZone = (shopData as { timezone?: string } | undefined)?.timezone ?? 'Europe/Berlin';
+  const quoteSlots = useMemo(() => quote?.slots ?? [], [quote?.slots]);
+  const hasSlots = mode !== 'dine_in' && quoteSlots.length > 0;
+  const when = effectiveWhen(whenChoice, quote?.openNow ?? true, hasSlots);
+  const chosenSlot = when === 'later' && slotChoice && quoteSlots.includes(slotChoice) ? slotChoice : null;
+  const days = useMemo(
+    () => slotDays(quoteSlots, timeZone, resolvedLanguage),
+    [quoteSlots, timeZone, resolvedLanguage],
+  );
+  const currentDay = days.find((d) => d.times.some((t) => t.iso === chosenSlot)) ?? days[0];
   const canSubmit =
-    !!quote && allOk && quote.openNow && !quote.belowMinimum && method !== null && !quoting &&
+    !!quote && allOk &&
+    (when === 'asap' ? quote.openNow : chosenSlot !== null && quote.slotAvailable === true) &&
+    !quote.belowMinimum && method !== null && !quoting &&
     !quote.orderLimitReached && (mode !== 'delivery' || quote.postcodeServed === true);
 
   function applyQuoteChanges() {
@@ -185,6 +202,7 @@ const CheckoutPage: React.FC = () => {
       ...(mode === 'delivery' && data.deliveryAddress
         ? { deliveryAddress: data.deliveryAddress, expectedDeliveryFeeCents: quote?.deliveryFeeCents ?? 0 }
         : {}),
+      ...(when === 'later' && chosenSlot ? { scheduledFor: chosenSlot } : {}),
       idempotencyKey,
       legalRevisions:
         legalData?.terms && legalData?.withdrawal
@@ -210,6 +228,11 @@ const CheckoutPage: React.FC = () => {
       setIdempotencyKey(crypto.randomUUID());
       requote();
       setPlaceError(copy.deliveryFeeChanged);
+    } else if (msg === SLOT_UNAVAILABLE_ERROR) {
+      setIdempotencyKey(crypto.randomUUID());
+      setSlotChoice(null);
+      requote();
+      setPlaceError(copy.slotGone);
     } else if (msg === BASKET_CHANGED_ERROR) {
       setIdempotencyKey(crypto.randomUUID());
       requote();
@@ -292,8 +315,70 @@ const CheckoutPage: React.FC = () => {
                 {quote?.orderLimitReached && (
                   <p className="mb-4 text-sm text-red-600">{copy.orderingPaused}</p>
                 )}
-                {quote && !quote.openNow && (
+                {quote && !quote.openNow && !hasSlots && (
                   <p className="mb-4 text-sm text-red-600">{copy.closedNow}</p>
+                )}
+                {quote && !quote.openNow && hasSlots && (
+                  <p className="mb-4 text-sm text-amber-800">{copy.closedOrderLater}</p>
+                )}
+                {quote && hasSlots && (
+                  <fieldset className="mb-4 space-y-2" data-testid="when">
+                    <legend className="text-sm font-semibold">{copy.whenTitle}</legend>
+                    <label className="flex items-center gap-2 text-sm">
+                      <input
+                        type="radio"
+                        name="when"
+                        checked={when === 'asap'}
+                        disabled={!quote.openNow}
+                        onChange={() => setWhenChoice('asap')}
+                      />
+                      {copy.whenAsap(quote.prepMinutes)}
+                    </label>
+                    <label className="flex items-center gap-2 text-sm">
+                      <input
+                        type="radio"
+                        name="when"
+                        checked={when === 'later'}
+                        onChange={() => setWhenChoice('later')}
+                      />
+                      {copy.whenLater}
+                    </label>
+                    {when === 'later' && (
+                      <div className="flex gap-2">
+                        <select
+                          aria-label={copy.slotDay}
+                          className="border rounded px-2 py-1 text-sm"
+                          value={currentDay?.key ?? ''}
+                          onChange={(e) => {
+                            const day = days.find((d) => d.key === e.target.value);
+                            setWhenChoice('later');
+                            setSlotChoice(day?.times[0]?.iso ?? null);
+                          }}
+                        >
+                          {days.map((d) => (
+                            <option key={d.key} value={d.key}>{d.label}</option>
+                          ))}
+                        </select>
+                        <select
+                          aria-label={copy.slotTime}
+                          className="border rounded px-2 py-1 text-sm"
+                          value={chosenSlot ?? ''}
+                          onChange={(e) => {
+                            setWhenChoice('later');
+                            setSlotChoice(e.target.value || null);
+                          }}
+                        >
+                          <option value="">{copy.slotPick}</option>
+                          {(currentDay?.times ?? []).map((t) => (
+                            <option key={t.iso} value={t.iso}>{t.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                    {when === 'later' && chosenSlot && quote.slotAvailable === false && !quoting && (
+                      <p className="text-sm text-red-600">{copy.slotGone}</p>
+                    )}
+                  </fieldset>
                 )}
                 {quote && mode === 'delivery' && quote.postcodeServed === false && (
                   <p className="mb-4 text-sm text-red-600">{copy.deliveryNotServedNow}</p>

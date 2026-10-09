@@ -111,6 +111,7 @@ async function mockBackend(page: Page, opts: MockOptions = {}) {
         name: 'Test Shop',
         currency: 'EUR',
         countryCode: 'DE',
+        timezone: 'Europe/Berlin',
         fulfilment: {
           modes: opts.modes ?? ['collection'],
           prepMinutes: { collection: 20, delivery: 45, dine_in: 20 },
@@ -861,5 +862,138 @@ test.describe('Delivery order in German', () => {
     await expect(
       page.getByText(/Lieferung nach 10115 · Liefergebühr 2,50\s€ · Mindestbestellwert 10,00\s€ · ca\. 45 Min\./),
     ).toBeVisible();
+  });
+});
+
+const SLOTS = ['2026-10-10T16:00:00.000Z', '2026-10-10T16:15:00.000Z', '2026-10-11T10:00:00.000Z'];
+
+function laterQuote(openNow: boolean) {
+  return (body: Json): Json => ({
+    ...okQuote,
+    openNow,
+    slots: SLOTS,
+    scheduledFor: (body.scheduledFor as string | undefined) ?? null,
+    slotAvailable: body.scheduledFor ? SLOTS.includes(body.scheduledFor as string) : null,
+  });
+}
+
+test.describe('Order for later', () => {
+  test.use({ locale: 'en-US' });
+
+  test('a closed restaurant can take an order for later', async ({ page }) => {
+    await mockBackend(page, { quote: laterQuote(false) });
+    await seedCart(page);
+    const quotes: Json[] = [];
+    let placed: Json | null = null;
+    await page.route('**/api/orders/quote', async (route) => {
+      const body = route.request().postDataJSON() as Json;
+      quotes.push(body);
+      await route.fulfill(fulfil(laterQuote(false)(body)));
+    });
+    await page.route('**/api/orders', async (route) => {
+      placed = route.request().postDataJSON() as Json;
+      await route.fulfill(fulfil(CARD_RESULT));
+    });
+    await page.goto('/shops/test-shop/checkout');
+
+    await expect(page.getByText('The restaurant is closed right now. You can order for later.')).toBeVisible();
+    await expect(page.getByLabel('As soon as possible (about 20 min)')).toBeDisabled();
+    await expect(page.getByLabel('Later')).toBeChecked();
+    await expect(page.getByRole('button', { name: 'Continue to payment' })).toBeDisabled();
+    await expect(page.getByLabel('Day')).toHaveValue('2026-10-10');
+    await expect(page.getByLabel('Day')).toContainText('Sat 10 Oct');
+
+    await page.getByLabel('Time').selectOption('2026-10-10T16:15:00.000Z');
+    await expect(page.getByLabel('Time')).toContainText('18:15');
+    await fillDetails(page);
+    await expect(page.getByRole('button', { name: 'Continue to payment' })).toBeEnabled();
+    await page.getByRole('button', { name: 'Continue to payment' }).click();
+    await expect(page.getByTestId('fake-card')).toBeVisible();
+
+    expect(placed).toMatchObject({ scheduledFor: '2026-10-10T16:15:00.000Z', fulfilmentMode: 'collection' });
+    expect(quotes[quotes.length - 1]).toMatchObject({ scheduledFor: '2026-10-10T16:15:00.000Z' });
+  });
+
+  test('picking another day picks its first time', async ({ page }) => {
+    await mockBackend(page, { quote: laterQuote(false) });
+    await seedCart(page);
+    await page.goto('/shops/test-shop/checkout');
+
+    await page.getByLabel('Day').selectOption('2026-10-11');
+    await expect(page.getByLabel('Time')).toHaveValue('2026-10-11T10:00:00.000Z');
+  });
+
+  test('an open restaurant orders as soon as possible unless later is picked', async ({ page }) => {
+    await mockBackend(page, { quote: laterQuote(true) });
+    await seedCart(page);
+    let placed: Json | null = null;
+    await page.route('**/api/orders', async (route) => {
+      placed = route.request().postDataJSON() as Json;
+      await route.fulfill(fulfil(CARD_RESULT));
+    });
+    await page.goto('/shops/test-shop/checkout');
+
+    await expect(page.getByLabel('As soon as possible (about 20 min)')).toBeChecked();
+    await fillDetails(page);
+    await page.getByRole('button', { name: 'Continue to payment' }).click();
+    await expect(page.getByTestId('fake-card')).toBeVisible();
+    expect(placed).not.toBeNull();
+    expect('scheduledFor' in (placed as unknown as Json)).toBe(false);
+
+    await page.goto('/shops/test-shop/checkout');
+    await page.getByLabel('Later').click();
+    await fillDetails(page);
+    await expect(page.getByRole('button', { name: 'Continue to payment' })).toBeDisabled();
+    await page.getByLabel('Time').selectOption('2026-10-10T16:00:00.000Z');
+    await expect(page.getByRole('button', { name: 'Continue to payment' })).toBeEnabled();
+  });
+
+  test('a time taken meanwhile asks for another', async ({ page }) => {
+    await mockBackend(page, { quote: laterQuote(false) });
+    await seedCart(page);
+    await page.route('**/api/orders', (route) =>
+      route.fulfill(fulfil({ error: 'This time is no longer available. Please choose another.' }, 409)),
+    );
+    await page.goto('/shops/test-shop/checkout');
+
+    await page.getByLabel('Time').selectOption('2026-10-10T16:15:00.000Z');
+    await fillDetails(page);
+    await page.getByRole('button', { name: 'Continue to payment' }).click();
+
+    await expect(page.getByText('This time is no longer available. Please choose another.')).toBeVisible();
+    await expect(page.getByLabel('Time')).toHaveValue('');
+  });
+
+  test('without times from the server nothing changes', async ({ page }) => {
+    await mockBackend(page, { quote: () => ({ ...okQuote, openNow: false }) });
+    await seedCart(page);
+    await page.goto('/shops/test-shop/checkout');
+
+    await expect(page.getByText('This restaurant is not taking orders right now.')).toBeVisible();
+    await expect(page.getByTestId('when')).toHaveCount(0);
+  });
+
+  test('the order page shows the booked time', async ({ page }) => {
+    await mockBackend(page, { order: { scheduledFor: '2026-10-10T16:00:00.000Z' } });
+    await page.goto(ORDER_URL);
+
+    await expect(page.getByText('For: Saturday, 10 October, 18:00')).toBeVisible();
+    await expect(page.getByText('Booked — Test Shop confirms it shortly before.')).toBeVisible();
+  });
+});
+
+test.describe('Order for later in German', () => {
+  test.use({ locale: 'de-DE' });
+
+  test('German wording for later', async ({ page }) => {
+    await mockBackend(page, { language: 'de', quote: laterQuote(false) });
+    await seedCart(page);
+    await page.goto('/shops/test-shop/checkout');
+
+    await expect(
+      page.getByText('Das Restaurant hat gerade geschlossen. Sie können für später bestellen.'),
+    ).toBeVisible();
+    await expect(page.getByLabel('Später')).toBeChecked();
+    await expect(page.getByLabel('Tag')).toContainText(/Sa\.?,? 10\. Okt/);
   });
 });
