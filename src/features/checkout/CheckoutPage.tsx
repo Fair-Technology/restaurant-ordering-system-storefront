@@ -12,6 +12,8 @@ import {
   ADDRESS_REQUIRED_ERROR,
   BASKET_CHANGED_ERROR,
   DELIVERY_FEE_CHANGED_ERROR,
+  DISCOUNT_ALREADY_USED_ERROR,
+  DISCOUNT_CHANGED_ERROR,
   DELIVERY_POSTCODE_NOT_SERVED_ERROR,
   LEGAL_CHANGED_ERROR,
   MODE_NOT_OFFERED_ERROR,
@@ -29,6 +31,7 @@ import { resolveShopBranding, type ShopWithBranding } from '../../utils/branding
 import { useBrandingStyle } from '../../hooks/useBrandingStyle';
 import { useMoney } from '../../hooks/useMoney';
 import { orderCopy } from '../../utils/orderCopy';
+import { discountProblemText, normaliseCodeInput } from '../../utils/discount';
 import { effectiveWhen, slotDays, type WhenChoice } from '../../utils/slots';
 import { useTableSession } from '../../hooks/useTableSession';
 import { readTableSession } from '../../utils/tableSession';
@@ -128,12 +131,17 @@ const CheckoutPage: React.FC = () => {
   const [whenChoice, setWhenChoice] = useState<WhenChoice | null>(null);
   const [slotChoice, setSlotChoice] = useState<string | null>(null);
   const [dayChoice, setDayChoice] = useState<string | null>(null);
+  const [codeOpen, setCodeOpen] = useState(false);
+  const [codeInput, setCodeInput] = useState('');
+  const [appliedCode, setAppliedCode] = useState<string | null>(null); // what the quote is asked about
+  const [loyaltyTick, setLoyaltyTick] = useState(false);
   const quoteArg = {
     shopId: resolvedShopId,
     fulfilmentMode: mode,
     language: resolvedLanguage,
     ...(mode === 'delivery' && deliveryPostcode ? { postcode: deliveryPostcode } : {}),
     ...(whenChoice === 'later' && slotChoice ? { scheduledFor: slotChoice } : {}),
+    ...(appliedCode ? { discountCode: appliedCode } : {}),
     items: cartItems.map((i) => ({
       productId: i.id,
       quantity: i.quantity,
@@ -152,6 +160,20 @@ const CheckoutPage: React.FC = () => {
   const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
   const method = quote?.paymentMethods[0] ?? null;
   const allOk = !!quote && quote.lines.every((l) => l.status === 'ok');
+  const discount = appliedCode && quote?.discount ? quote.discount : null;
+  const codeProblem = appliedCode && quote && !quote.discount ? quote.discountProblem ?? 'unknown' : null;
+  const showCodeBox = quote?.acceptsCodes === true || appliedCode !== null;
+  const loyalty = quote?.loyalty ?? null;
+  function applyCode() {
+    const c = normaliseCodeInput(codeInput);
+    setIdempotencyKey(crypto.randomUUID());
+    setAppliedCode(c ?? (codeInput.trim() === '' ? null : codeInput.trim().toUpperCase()));
+  }
+  function removeCode() {
+    setIdempotencyKey(crypto.randomUUID());
+    setAppliedCode(null);
+    setCodeInput('');
+  }
   const timeZone = (shopData as { timezone?: string } | undefined)?.timezone ?? 'Europe/Berlin';
   const quoteSlots = useMemo(() => quote?.slots ?? [], [quote?.slots]);
   const hasSlots = mode !== 'dine_in' && quoteSlots.length > 0;
@@ -167,7 +189,8 @@ const CheckoutPage: React.FC = () => {
     !!quote && allOk &&
     (when === 'asap' ? quote.openNow : chosenSlot !== null && quote.slotAvailable === true) &&
     !quote.belowMinimum && method !== null && !quoting &&
-    !quote.orderLimitReached && (mode !== 'delivery' || quote.postcodeServed === true);
+    !quote.orderLimitReached && (mode !== 'delivery' || quote.postcodeServed === true) &&
+    codeProblem === null && !(appliedCode && quoting);
 
   function applyQuoteChanges() {
     if (!quote) return;
@@ -205,6 +228,8 @@ const CheckoutPage: React.FC = () => {
         ? { deliveryAddress: data.deliveryAddress, expectedDeliveryFeeCents: quote?.deliveryFeeCents ?? 0 }
         : {}),
       ...(when === 'later' && chosenSlot ? { scheduledFor: chosenSlot } : {}),
+      ...(discount ? { discountCode: discount.code, expectedDiscountCents: discount.cents } : {}),
+      ...(loyalty && loyaltyTick ? { loyaltyOptIn: true } : {}),
       idempotencyKey,
       legalRevisions:
         legalData?.terms && legalData?.withdrawal
@@ -235,6 +260,15 @@ const CheckoutPage: React.FC = () => {
       setSlotChoice(null);
       requote();
       setPlaceError(copy.slotGone);
+    } else if (msg === DISCOUNT_ALREADY_USED_ERROR) {
+      setIdempotencyKey(crypto.randomUUID());
+      setAppliedCode(null);
+      setCodeInput('');
+      setPlaceError(copy.codeAlreadyUsed);
+    } else if (msg === DISCOUNT_CHANGED_ERROR) {
+      setIdempotencyKey(crypto.randomUUID());
+      requote();
+      setPlaceError(copy.discountChanged);
     } else if (msg === BASKET_CHANGED_ERROR) {
       setIdempotencyKey(crypto.randomUUID());
       requote();
@@ -385,16 +419,68 @@ const CheckoutPage: React.FC = () => {
                 {quote && mode === 'delivery' && quote.postcodeServed === false && (
                   <p className="mb-4 text-sm text-red-600">{copy.deliveryNotServedNow}</p>
                 )}
-                {quote && mode === 'delivery' && quote.postcodeServed && (
-                  <dl className="mb-4 text-sm space-y-1" data-testid="delivery-totals">
+                {quote && showCodeBox && (
+                  <div className="mb-4 space-y-2" data-testid="discount">
+                    {!codeOpen && !appliedCode ? (
+                      <button type="button" className="text-sm underline" onClick={() => setCodeOpen(true)}>
+                        {copy.haveCode}
+                      </button>
+                    ) : (
+                      <div className="flex gap-2 items-end">
+                        <label className="flex-1 text-sm">
+                          <span className="block mb-1">{copy.codeLabel}</span>
+                          <input
+                            className="w-full border rounded px-2 py-1 uppercase"
+                            value={codeInput}
+                            onChange={(e) => setCodeInput(e.target.value)}
+                            disabled={appliedCode !== null}
+                            aria-label={copy.codeLabel}
+                          />
+                        </label>
+                        {appliedCode === null ? (
+                          <button
+                            type="button"
+                            className="border rounded px-3 py-1 text-sm"
+                            onClick={applyCode}
+                            disabled={codeInput.trim() === ''}
+                          >
+                            {copy.codeApply}
+                          </button>
+                        ) : (
+                          <button type="button" className="border rounded px-3 py-1 text-sm" onClick={removeCode}>
+                            {copy.codeRemove}
+                          </button>
+                        )}
+                      </div>
+                    )}
+                    {codeProblem && !quoting && (
+                      <p className="text-sm text-red-600">
+                        {discountProblemText(codeProblem, copy, money.cents(quote.discountMinSubtotalCents ?? 0))}
+                      </p>
+                    )}
+                  </div>
+                )}
+                {quote && ((mode === 'delivery' && quote.postcodeServed) || discount) && (
+                  <dl
+                    className="mb-4 text-sm space-y-1"
+                    data-testid={mode === 'delivery' ? 'delivery-totals' : 'order-totals'}
+                  >
                     <div className="flex justify-between">
                       <dt>{copy.itemsLine}</dt>
                       <dd>{money.cents(quote.subtotalCents)}</dd>
                     </div>
-                    <div className="flex justify-between">
-                      <dt>{copy.deliveryFeeLine}</dt>
-                      <dd>{money.cents(quote.deliveryFeeCents ?? 0)}</dd>
-                    </div>
+                    {discount && (
+                      <div className="flex justify-between">
+                        <dt>{copy.discountLine(discount.code)}</dt>
+                        <dd>{money.cents(-discount.cents)}</dd>
+                      </div>
+                    )}
+                    {mode === 'delivery' && quote.postcodeServed && (
+                      <div className="flex justify-between">
+                        <dt>{copy.deliveryFeeLine}</dt>
+                        <dd>{money.cents(quote.deliveryFeeCents ?? 0)}</dd>
+                      </div>
+                    )}
                     <div className="flex justify-between font-semibold">
                       <dt>{copy.total}</dt>
                       <dd>{money.cents(quote.totalCents ?? quote.subtotalCents)}</dd>
@@ -405,6 +491,17 @@ const CheckoutPage: React.FC = () => {
                   <p className="mb-4 text-sm text-red-600">
                     {copy.belowMinimum(money.cents(quote.minOrderAmountCents))}
                   </p>
+                )}
+                {quote && loyalty && (
+                  <label className="mb-4 flex items-start gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      className="mt-0.5"
+                      checked={loyaltyTick}
+                      onChange={(e) => setLoyaltyTick(e.target.checked)}
+                    />
+                    <span>{copy.loyaltyOptIn(money.cents(loyalty.rewardCents), loyalty.everyOrders, shopName)}</span>
+                  </label>
                 )}
                 <CustomerDetailsForm
                   onSubmit={handleInfoSubmit}
