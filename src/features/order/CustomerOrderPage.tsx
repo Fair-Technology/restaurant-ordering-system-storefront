@@ -17,6 +17,7 @@ import { useBrandingStyle } from '../../hooks/useBrandingStyle';
 import { useMoney } from '../../hooks/useMoney';
 import { downloadBase64File } from '../../utils/download';
 import { orderCopy } from '../../utils/orderCopy';
+import { slotLabel } from '../../utils/slots';
 
 const LIVE_STATES = ['PLACED', 'ACCEPTED', 'READY', 'OUT_FOR_DELIVERY'];
 const CONFIRMING_POLL_MS = 3000;
@@ -105,8 +106,12 @@ const CustomerOrderPage: React.FC = () => {
     if (order.state === 'PLACED') {
       status = (
         <>
-          <p className="text-lg font-medium">{copy.statusPlaced(order.shopName)}</p>
-          <p className="text-sm text-gray-600">{copy.statusPlacedHint}</p>
+          <p className="text-lg font-medium">
+            {order.scheduledFor ? copy.statusScheduled(order.shopName) : copy.statusPlaced(order.shopName)}
+          </p>
+          <p className="text-sm text-gray-600">
+            {order.scheduledFor ? copy.statusScheduledHint : copy.statusPlacedHint}
+          </p>
         </>
       );
     } else if (order.state === 'REJECTED') {
@@ -185,6 +190,11 @@ const CustomerOrderPage: React.FC = () => {
               {copy.yourOrder(order.orderRef)}
             </h1>
             {order.table && <p className="text-base font-semibold">{copy.tableLine(order.table.label)}</p>}
+            {order.scheduledFor && (
+              <p className="text-base font-semibold">
+                {copy.scheduledLine(slotLabel(order.scheduledFor, order.timezone, order.language))}
+              </p>
+            )}
             {order.deliveryAddress && (
               <p className="text-sm">
                 {copy.deliverTo(

@@ -13,6 +13,7 @@ export const PAYMENT_CONFIRMING_ERROR = 'Your payment is being confirmed';
 export const ADDRESS_REQUIRED_ERROR = 'An address is required for orders over 250 €';
 export const ORDER_LIMIT_REACHED_ERROR = 'This restaurant has paused online ordering for now';
 export const DELIVERY_POSTCODE_NOT_SERVED_ERROR = 'This restaurant does not deliver to this postcode';
+export const SLOT_UNAVAILABLE_ERROR = 'This time is no longer available. Please choose another.';
 export const DELIVERY_FEE_CHANGED_ERROR =
   'The delivery fee has changed. Please check your order and try again.';
 
@@ -86,6 +87,7 @@ export interface QuoteBasketRequest {
   fulfilmentMode?: FulfilmentMode;
   postcode?: string;
   language?: string;
+  scheduledFor?: string;
 }
 
 export interface QuoteLineDto {
@@ -115,6 +117,10 @@ export interface BasketQuoteDto {
   deliveryFeeCents?: number | null;
   totalCents?: number;
   postcodeServed?: boolean | null;
+  // Absent on a backend from before scheduled orders; absent slots mean "When?" is hidden.
+  slots?: string[];
+  scheduledFor?: string | null;
+  slotAvailable?: boolean | null;
 }
 
 export interface PlaceOrderRequest {
@@ -133,6 +139,7 @@ export interface PlaceOrderRequest {
   idempotencyKey?: string;
   language?: string;
   legalRevisions?: { terms: number; withdrawal: number };
+  scheduledFor?: string;
 }
 
 export interface CardCheckoutResult {
@@ -171,6 +178,7 @@ export interface CustomerOrderDto {
   displayState: string;
   fulfilmentMode: FulfilmentMode;
   table?: { label: string } | null;
+  scheduledFor?: string | null;
   paymentStatus: PaymentStatus;
   refundedCents: number;
   documents: OrderDocument[];

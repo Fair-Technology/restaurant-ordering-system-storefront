@@ -70,6 +70,17 @@ export interface OrderCopy {
   tableExpired: string;
   dineInOff: string;
   tableLine: (label: string) => string;
+  whenTitle: string;
+  whenAsap: (minutes: number) => string;
+  whenLater: string;
+  slotDay: string;
+  slotTime: string;
+  slotPick: string;
+  closedOrderLater: string;
+  slotGone: string;
+  scheduledLine: (when: string) => string;
+  statusScheduled: (shop: string) => string;
+  statusScheduledHint: string;
   statusAcceptedDineIn: (time: string) => string;
   statusReadyDineIn: string;
   statusCompletedDineIn: string;
@@ -180,6 +191,18 @@ const en: OrderCopy = {
   tableExpired: 'Your table session has expired. Please scan the QR code on your table again.',
   dineInOff: 'This restaurant is not taking table orders right now. You can order for collection.',
   tableLine: (l) => `Table ${l}`,
+  whenTitle: 'When?',
+  whenAsap: (m) => `As soon as possible (about ${m} min)`,
+  whenLater: 'Later',
+  slotDay: 'Day',
+  slotTime: 'Time',
+  slotPick: 'Choose a time',
+  closedOrderLater: 'The restaurant is closed right now. You can order for later.',
+  slotGone: 'This time is no longer available. Please choose another.',
+  scheduledLine: (w) => `For: ${w}`,
+  statusScheduled: (s) => `Booked — ${s} confirms it shortly before.`,
+  statusScheduledHint:
+    'You can cancel until the restaurant confirms. Your card is only charged then.',
   statusAcceptedDineIn: (t) => `Confirmed — ready at ${t}`,
   statusReadyDineIn: 'Your order is ready',
   statusCompletedDineIn: 'Enjoy your meal!',
@@ -296,6 +319,18 @@ const de: OrderCopy = {
   tableExpired: 'Ihre Tischsitzung ist abgelaufen. Bitte scannen Sie den QR-Code auf Ihrem Tisch erneut.',
   dineInOff: 'Dieses Restaurant nimmt gerade keine Tischbestellungen an. Sie können zur Abholung bestellen.',
   tableLine: (l) => `Tisch ${l}`,
+  whenTitle: 'Wann?',
+  whenAsap: (m) => `So bald wie möglich (ca. ${m} Min.)`,
+  whenLater: 'Später',
+  slotDay: 'Tag',
+  slotTime: 'Uhrzeit',
+  slotPick: 'Uhrzeit wählen',
+  closedOrderLater: 'Das Restaurant hat gerade geschlossen. Sie können für später bestellen.',
+  slotGone: 'Diese Uhrzeit ist nicht mehr frei. Bitte wählen Sie eine andere.',
+  scheduledLine: (w) => `Für: ${w}`,
+  statusScheduled: (s) => `Vorbestellt – ${s} bestätigt kurz vorher.`,
+  statusScheduledHint:
+    'Sie können stornieren, bis das Restaurant bestätigt. Erst dann wird Ihre Karte belastet.',
   statusAcceptedDineIn: (t) => `Bestätigt – fertig um ${t}`,
   statusReadyDineIn: 'Ihre Bestellung ist fertig',
   statusCompletedDineIn: 'Guten Appetit!',
