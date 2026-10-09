@@ -75,12 +75,21 @@ export interface InvoiceFileDto {
   contentBase64: string;
 }
 
+export interface ComboChoiceDto {
+  groupId: string;
+  productId: string;
+  selectedVariantOptionId?: string;
+  selectedAddonOptionIds?: string[];
+}
+
 export interface CheckoutItemDto {
   productId: string;
   quantity: number;
   selectedVariantOptionId?: string;
   selectedAddonOptionIds?: string[];
   expectedUnitPriceCents?: number;
+  /** A combo only: one picked dish per group, each with its own size and extras. */
+  comboChoices?: ComboChoiceDto[];
 }
 
 export type DiscountProblem =

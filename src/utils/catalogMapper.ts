@@ -1,5 +1,5 @@
 import type { CatalogCategoryDto, CatalogProductDto } from '../api/endpoints';
-import type { Product } from '../types/Product';
+import type { ComboChoiceGroup, Product } from '../types/Product';
 import { centsToDollars } from './money';
 
 /**
@@ -32,10 +32,33 @@ export const slugifyCategoryName = (name: string): string =>
  */
 // The generated client predates the catalog's offer fields; this hand-written type adds them
 // until the client is regenerated from the backend's current OpenAPI spec.
+export interface CatalogComboDto {
+  groups: { id: string; name: string; productIds: string[] }[];
+}
+
+// The generated client also predates `combo` (null for a dish; absent from an older backend).
 export type CatalogProductWithOffer = CatalogProductDto & {
   offerPrice?: number | null;
   offerLabel?: string | null;
+  combo?: CatalogComboDto | null;
 };
+
+/** The combo's groups with each offered dish resolved; null when any group has no dish left. */
+export function resolveCombo(
+  product: CatalogProductWithOffer,
+  dishes: ReadonlyMap<string, Product>,
+): ComboChoiceGroup[] | null {
+  if (!product.combo) return null;
+  const groups = product.combo.groups.map((g) => ({
+    id: g.id,
+    label: g.name,
+    options: g.productIds.flatMap((id) => {
+      const d = dishes.get(id);
+      return d ? [d] : [];
+    }),
+  }));
+  return groups.length > 0 && groups.every((g) => g.options.length > 0) ? groups : null;
+}
 
 /**
  * The server only sends an offer price inside the dish's window, and charges it. Anything that is
