@@ -914,12 +914,15 @@ test.describe('Order for later', () => {
     expect(quotes[quotes.length - 1]).toMatchObject({ scheduledFor: '2026-10-10T16:15:00.000Z' });
   });
 
-  test('picking another day picks its first time', async ({ page }) => {
+  test('picking another day shows its times and leaves the time unpicked', async ({ page }) => {
     await mockBackend(page, { quote: laterQuote(false) });
     await seedCart(page);
     await page.goto('/shops/test-shop/checkout');
 
     await page.getByLabel('Day').selectOption('2026-10-11');
+    await expect(page.getByLabel('Day')).toHaveValue('2026-10-11');
+    await expect(page.getByLabel('Time')).toHaveValue('');
+    await page.getByLabel('Time').selectOption('2026-10-11T10:00:00.000Z');
     await expect(page.getByLabel('Time')).toHaveValue('2026-10-11T10:00:00.000Z');
   });
 
@@ -946,6 +949,23 @@ test.describe('Order for later', () => {
     await expect(page.getByRole('button', { name: 'Continue to payment' })).toBeDisabled();
     await page.getByLabel('Time').selectOption('2026-10-10T16:00:00.000Z');
     await expect(page.getByRole('button', { name: 'Continue to payment' })).toBeEnabled();
+  });
+
+  test('changing the day clears the chosen time', async ({ page }) => {
+    await mockBackend(page, { quote: laterQuote(true) });
+    await seedCart(page);
+    await page.goto('/shops/test-shop/checkout');
+
+    await page.getByLabel('Later').click();
+    await fillDetails(page);
+    await page.getByLabel('Time').selectOption('2026-10-10T16:00:00.000Z');
+    await expect(page.getByRole('button', { name: 'Continue to payment' })).toBeEnabled();
+
+    const days = await page.getByLabel('Day').locator('option').evaluateAll((o) => o.map((x) => (x as HTMLOptionElement).value));
+    await page.getByLabel('Day').selectOption(days[1]);
+    await expect(page.getByLabel('Day')).toHaveValue(days[1]);
+    await expect(page.getByLabel('Time')).toHaveValue('');
+    await expect(page.getByRole('button', { name: 'Continue to payment' })).toBeDisabled();
   });
 
   test('a time taken meanwhile asks for another', async ({ page }) => {
