@@ -1,10 +1,12 @@
 import React from 'react';
 import { useGetPlatformLegalQuery } from '../../api/legalEndpoints';
-import { initialMenuLanguage } from '../../utils/menuLanguage';
+import { useAppSelector } from '../../store/hooks';
+import { currentChoice, pageLanguageOf } from '../../utils/pageLanguage';
 import { legalCopy } from '../../utils/legalCopy';
 
 const SubProcessorsPage: React.FC = () => {
-  const lang = initialMenuLanguage(navigator.language) === 'de' ? 'de' : 'en';
+  const storedLanguage = useAppSelector((state) => state.shop.menuLanguage);
+  const lang = pageLanguageOf(currentChoice(storedLanguage, navigator.language));
   const copy = legalCopy(lang);
   const { data, isLoading, isError } = useGetPlatformLegalQuery();
 

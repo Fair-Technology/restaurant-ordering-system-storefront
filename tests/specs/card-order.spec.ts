@@ -469,7 +469,8 @@ test.describe('Card order', () => {
   });
 
   test('an untouched address stays empty when the shop language loads late', async ({ page }) => {
-    // English browser, German shop: the form first prefills "Germany", then the menu arrives in German
+    // English browser, German shop: the page is English from the start; the German menu arriving late
+    // must not touch the address
     await mockBackend(page, { language: 'de' });
     await page.route('**/api/shops/shop-t/catalog**', async (route) => {
       await new Promise((resolve) => setTimeout(resolve, 1500));
@@ -489,10 +490,10 @@ test.describe('Card order', () => {
     });
     await page.goto('/shops/test-shop/checkout');
     await expect(page.getByPlaceholder('Your full name')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Weiter zur Zahlung' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Continue to payment' })).toBeVisible();
 
     await fillDetails(page);
-    await page.getByRole('button', { name: 'Weiter zur Zahlung' }).click();
+    await page.getByRole('button', { name: 'Continue to payment' }).click();
 
     await expect(page.getByTestId('fake-card')).toBeVisible();
     expect((placed as unknown as Json).customerAddress).toBeUndefined();
@@ -1447,17 +1448,21 @@ test.describe('Shop info footer', () => {
     await expect(info.getByText('Daily: 17:00 – 21:00')).toBeVisible();
   });
 
-  test('German wording', async ({ page }) => {
-    await mockBackend(page, {
-      language: 'de',
-      shop: { address: ADDRESS, openingHours: { ...week('11:30', '21:00'), sun: [] }, phone: '069 1234' },
+  test.describe('German browser', () => {
+    test.use({ locale: 'de-DE' });
+
+    test('German wording', async ({ page }) => {
+      await mockBackend(page, {
+        language: 'de',
+        shop: { address: ADDRESS, openingHours: { ...week('11:30', '21:00'), sun: [] }, phone: '069 1234' },
+      });
+      await page.goto('/shops/test-shop');
+      const info = page.getByTestId('shop-info');
+      await expect(info.getByText('Öffnungszeiten')).toBeVisible();
+      await expect(info.getByText('Mo – Sa: 11:30 – 21:00')).toBeVisible();
+      await expect(info.getByText('So: Ruhetag')).toBeVisible();
+      await expect(info.getByRole('link', { name: 'Route planen' })).toBeVisible();
     });
-    await page.goto('/shops/test-shop');
-    const info = page.getByTestId('shop-info');
-    await expect(info.getByText('Öffnungszeiten')).toBeVisible();
-    await expect(info.getByText('Mo – Sa: 11:30 – 21:00')).toBeVisible();
-    await expect(info.getByText('So: Ruhetag')).toBeVisible();
-    await expect(info.getByRole('link', { name: 'Route planen' })).toBeVisible();
   });
 
   test('no address, hours or phone means no info block', async ({ page }) => {

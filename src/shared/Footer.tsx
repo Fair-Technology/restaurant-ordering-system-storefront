@@ -1,15 +1,15 @@
 import { Link } from 'react-router-dom';
 import { useGetShopLegalQuery } from '../api/legalEndpoints';
 import { useAppSelector } from '../store/hooks';
-import { initialMenuLanguage } from '../utils/menuLanguage';
+import { currentChoice, pageLanguageOf } from '../utils/pageLanguage';
 import { legalCopy } from '../utils/legalCopy';
 
 // flush: sits right under another footer block (the shop info), so no top gap
 const Footer = ({ slug, flush = false }: { slug?: string; flush?: boolean }) => {
   const storedLanguage = useAppSelector((state) => state.shop.menuLanguage);
-  const lang = storedLanguage ?? initialMenuLanguage(navigator.language);
+  const lang = currentChoice(storedLanguage, navigator.language);
   const { data } = useGetShopLegalQuery({ slug: slug ?? '', lang }, { skip: !slug });
-  const copy = legalCopy(data?.language ?? lang);
+  const copy = legalCopy(pageLanguageOf(lang));
 
   const links = [
     { doc: 'impressum', label: copy.footerImpressum },

@@ -63,12 +63,12 @@ test.describe('Euro prices', () => {
       await expect(page.getByText('€10.50')).toBeVisible();
     });
 
-    test('an English visitor to a German-only menu sees German prices', async ({ page }) => {
-      // The shop offers only German, so the catalog comes back in German despite the English browser
+    test('an English visitor to a German-only menu sees English-style prices', async ({ page }) => {
+      // The menu comes back in German, but prices follow the page language, which is English
       await mockMenu(page, 'de');
       await page.goto('/shops/test-shop');
-      await expect(page.getByText(/10,50\s€/)).toBeVisible();
-      await expect(page.getByText('€10.50')).toHaveCount(0);
+      await expect(page.getByText('€10.50')).toBeVisible();
+      await expect(page.getByText(/10,50\s€/)).toHaveCount(0);
     });
   });
 });

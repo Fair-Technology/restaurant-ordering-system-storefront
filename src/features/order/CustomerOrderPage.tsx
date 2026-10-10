@@ -17,6 +17,7 @@ import { useBrandingStyle } from '../../hooks/useBrandingStyle';
 import { useMoney } from '../../hooks/useMoney';
 import { downloadBase64File } from '../../utils/download';
 import { orderCopy } from '../../utils/orderCopy';
+import { currentChoice, pageLanguageOf } from '../../utils/pageLanguage';
 import { slotLabel } from '../../utils/slots';
 
 const LIVE_STATES = ['PLACED', 'ACCEPTED', 'READY', 'OUT_FOR_DELIVERY'];
@@ -78,7 +79,7 @@ const CustomerOrderPage: React.FC = () => {
     if (data) dispatch(setActiveShop({ shopId: data.shopSlug, currency: data.currency }));
   }, [dispatch, data]);
 
-  const copy = orderCopy(order?.language ?? storedLanguage ?? navigator.language.slice(0, 2));
+  const copy = orderCopy(order?.language ?? pageLanguageOf(currentChoice(storedLanguage, navigator.language)));
 
   const timeIn = (iso: string | null, timeZone: string): string =>
     iso
