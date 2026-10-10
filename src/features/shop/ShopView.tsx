@@ -283,7 +283,6 @@ const ShopView = () => {
         <>
           <FulfilmentModeBar
             modes={visibleModes}
-            prepMinutes={fulfilment?.prepMinutes ?? { collection: 20, delivery: 45, dine_in: 20 }}
             selected={barSelected}
             onSelect={(m) => {
               if (m === 'delivery') {
