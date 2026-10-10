@@ -1,18 +1,49 @@
-import React from 'react';
+import React, { useState } from 'react';
 
 interface HeroSectionProps {
   heroImageUrl: string;
 }
 
+// The whole banner is always shown (object-contain). A blurred, enlarged copy of
+// it fills the full-width band behind. Once the picture has loaded, the sharp
+// frame takes its shape (aspect-ratio): the full window width up to 1232px (the shop
+// content below: max-w-7xl minus px-6), then centred; height is clamped to 160px
+// at the least and 70vh at the most. Until then (or on error) the frame keeps the fixed heights.
 const HeroSection: React.FC<HeroSectionProps> = ({ heroImageUrl }) => {
+  const [ratio, setRatio] = useState<number | null>(null);
+  const sizing =
+    ratio === null ? 'h-72 md:h-96' : 'min-h-40 max-h-[70vh] md:min-h-0';
   return (
-    <section
-      data-testid="shop-hero"
-      className="relative h-72 md:h-96 bg-center bg-cover"
-      style={{ backgroundImage: `url('${heroImageUrl}')` }}
-    >
+    <section data-testid="shop-hero" className="relative overflow-hidden">
+      <div
+        data-testid="shop-hero-backdrop"
+        aria-hidden="true"
+        className="absolute inset-0 bg-center bg-cover blur-2xl scale-110"
+        style={{ backgroundImage: `url('${heroImageUrl}')` }}
+      />
+      <div className="absolute inset-0 bg-black/10" />
+      <div
+        data-testid="shop-hero-frame"
+        className={`relative w-full max-w-[1232px] mx-auto ${sizing}`}
+        style={ratio === null ? undefined : { aspectRatio: String(ratio) }}
+      >
+        <img
+          data-testid="shop-hero-image"
+          src={heroImageUrl}
+          alt=""
+          onLoad={(e) => {
+            const { naturalWidth, naturalHeight } = e.currentTarget;
+            setRatio(
+              naturalWidth > 0 && naturalHeight > 0
+                ? naturalWidth / naturalHeight
+                : null,
+            );
+          }}
+          onError={() => setRatio(null)}
+          className="w-full h-full object-contain"
+        />
+      </div>
       <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-transparent" />
-      <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-gray-50/60 to-transparent" />
     </section>
   );
 };
