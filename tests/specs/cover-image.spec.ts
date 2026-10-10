@@ -83,9 +83,9 @@ test.describe('Cover image', () => {
     await mockShop(page, { heroImageUrl: 'https://cover.test/pic.svg' });
     await page.setViewportSize({ width: viewportWidth, height: 900 });
     await page.goto('/shops/test-shop');
-    const hero = page.getByTestId('shop-hero');
-    await expect(hero).toHaveAttribute('style', /aspect-ratio/);
-    return (await hero.boundingBox())?.height ?? 0;
+    const frame = page.getByTestId('shop-hero-frame');
+    await expect(frame).toHaveAttribute('style', /aspect-ratio/);
+    return (await frame.boundingBox())?.height ?? 0;
   };
 
   test('box follows a 2.4:1 picture on a phone', async ({ page }) => {
@@ -94,9 +94,13 @@ test.describe('Cover image', () => {
 
   test('on desktop the box matches the content width and follows the picture', async ({ page }) => {
     await heightFor(page, 2400, 1000, 1600);
-    const box = await page.getByTestId('shop-hero').boundingBox();
+    const box = await page.getByTestId('shop-hero-frame').boundingBox();
     expect(box?.width).toBe(1232); // max-w-7xl (1280) minus px-6 on both sides
     expect(box?.height).toBeCloseTo(1232 / 2.4, 0);
+    // the blurred band behind it spans the whole window and is as tall as the frame
+    const band = await page.getByTestId('shop-hero').boundingBox();
+    expect(band?.width).toBe(1600);
+    expect(band?.height).toBeCloseTo(1232 / 2.4, 0);
   });
 
   test('on desktop a tall portrait picture is capped at 70vh', async ({ page }) => {
