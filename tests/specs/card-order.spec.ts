@@ -332,16 +332,19 @@ test.describe('Card order', () => {
     await expect(page.getByText('€10.50')).toHaveCount(0);
   });
 
-  test('the menu says collection only', async ({ page }) => {
+  test('a collection-only menu shows no mode line', async ({ page }) => {
     await mockBackend(page);
     await page.goto('/shops/test-shop');
-    await expect(page.getByText('Collection · ready in about 20 min')).toBeVisible();
+    await expect(page.getByText('Carbonara').first()).toBeVisible();
+    // one way to get the food: no mode line, no time estimate under the banner
+    await expect(page.getByText('Collection', { exact: true })).toHaveCount(0);
+    await expect(page.getByText(/ready in about/)).toHaveCount(0);
   });
 
   test('dine-in is never offered without a table', async ({ page }) => {
     await mockBackend(page, { modes: ['collection', 'dine_in'] });
     await page.goto('/shops/test-shop');
-    await expect(page.getByText('Collection · ready in about 20 min')).toBeVisible();
+    await expect(page.getByText('Carbonara').first()).toBeVisible();
     await expect(page.getByText('How would you like your order?')).toHaveCount(0);
     await expect(page.getByRole('button', { name: 'Dine in' })).toHaveCount(0);
   });
@@ -552,7 +555,6 @@ function bindTable(page: Page, label = '7', ageMs = 0) {
   );
 }
 
-const COLLECTION_PILL = 'Collection · ready in about 20 min';
 
 test.describe('Table order', () => {
   test.use({ locale: 'en-US' });
@@ -599,13 +601,13 @@ test.describe('Table order', () => {
     await expect(
       page.getByText('This table QR code is not valid. Please ask a member of staff.'),
     ).toBeVisible();
-    await expect(page.getByText(COLLECTION_PILL)).toBeVisible();
+    await expect(page.getByText('Carbonara').first()).toBeVisible();
   });
 
   test('with dine-in off a table link is ignored', async ({ page }) => {
     await mockBackend(page);
     await page.goto('/shops/test-shop?t=7');
-    await expect(page.getByText(COLLECTION_PILL)).toBeVisible();
+    await expect(page.getByText('Carbonara').first()).toBeVisible();
     await expect(page.getByText('Table 7')).toHaveCount(0);
   });
 
@@ -613,7 +615,7 @@ test.describe('Table order', () => {
     await mockBackend(page, { modes: ['collection', 'dine_in'] });
     await bindTable(page, '7', 7_260_000);
     await page.goto('/shops/test-shop');
-    await expect(page.getByText(COLLECTION_PILL)).toBeVisible();
+    await expect(page.getByText('Carbonara').first()).toBeVisible();
     await expect(page.getByText('Table 7 · Dine in')).toHaveCount(0);
   });
 
@@ -622,7 +624,7 @@ test.describe('Table order', () => {
     await page.goto('/shops/test-shop?t=7');
     await page.getByRole('button', { name: 'Not at this table? Order for collection instead' }).click();
     await expect(page.getByText('Table 7 · Dine in')).toHaveCount(0);
-    await expect(page.getByText(COLLECTION_PILL)).toBeVisible();
+    await expect(page.getByText('Carbonara').first()).toBeVisible();
   });
 
   test('dine-in switched off mid-checkout forgets the table', async ({ page }) => {

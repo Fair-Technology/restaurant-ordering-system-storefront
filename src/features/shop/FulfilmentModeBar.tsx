@@ -4,7 +4,6 @@ import type { OrderCopy } from '../../utils/orderCopy';
 
 interface FulfilmentModeBarProps {
   modes: FulfilmentMode[];
-  prepMinutes: Record<FulfilmentMode, number>;
   selected: FulfilmentMode;
   onSelect: (mode: FulfilmentMode) => void;
   copy: OrderCopy;
@@ -12,7 +11,6 @@ interface FulfilmentModeBarProps {
 
 const FulfilmentModeBar: React.FC<FulfilmentModeBarProps> = ({
   modes,
-  prepMinutes,
   selected,
   onSelect,
   copy,
@@ -23,17 +21,8 @@ const FulfilmentModeBar: React.FC<FulfilmentModeBarProps> = ({
     dine_in: copy.modeDineIn,
   };
 
-  if (modes.length <= 1) {
-    const only = modes[0] ?? 'collection';
-    const label = only === 'collection' ? copy.modeCollection(prepMinutes.collection) : shortLabel[only];
-    return (
-      <div className="max-w-7xl mx-auto px-6 pt-3">
-        <span className="inline-block rounded-full bg-white border border-gray-200 px-3 py-1 text-sm text-gray-700">
-          {label}
-        </span>
-      </div>
-    );
-  }
+  // One way to get the food: nothing to choose, so nothing is shown
+  if (modes.length <= 1) return null;
 
   return (
     <div className="max-w-7xl mx-auto px-6 pt-3">

@@ -1,7 +1,6 @@
 import type { OrderDocument, RejectReason } from '../api/orderEndpoints';
 
 export interface OrderCopy {
-  modeCollection: (min: number) => string;
   modeCollectionShort: string;
   modeDelivery: string;
   modeDineIn: string;
@@ -127,7 +126,6 @@ export interface OrderCopy {
 }
 
 const en: OrderCopy = {
-  modeCollection: (min) => `Collection · ready in about ${min} min`,
   modeCollectionShort: 'Collection',
   modeDelivery: 'Delivery',
   modeDineIn: 'Dine in',
@@ -271,7 +269,6 @@ const en: OrderCopy = {
 };
 
 const de: OrderCopy = {
-  modeCollection: (min) => `Abholung · fertig in ca. ${min} Min.`,
   modeCollectionShort: 'Abholung',
   modeDelivery: 'Lieferung',
   modeDineIn: 'Vor Ort',
