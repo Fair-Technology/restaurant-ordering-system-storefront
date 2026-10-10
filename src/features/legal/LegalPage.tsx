@@ -5,7 +5,7 @@ import Footer from '../../shared/Footer';
 import NotFound from '../../pages/NotFound';
 import { useAppSelector } from '../../store/hooks';
 import { useGetShopLegalQuery, type PublicLegalPackDto } from '../../api/legalEndpoints';
-import { initialMenuLanguage } from '../../utils/menuLanguage';
+import { currentChoice, pageLanguageOf } from '../../utils/pageLanguage';
 import { legalCopy, type LegalCopy, type LegalDoc } from '../../utils/legalCopy';
 
 const DOCS: readonly LegalDoc[] = ['impressum', 'terms', 'withdrawal', 'privacy'];
@@ -65,7 +65,7 @@ const DocumentBody: React.FC<{ doc: LegalDoc; data: PublicLegalPackDto; copy: Le
 const LegalPage: React.FC = () => {
   const { slug, doc } = useParams<{ slug: string; doc: string }>();
   const storedLanguage = useAppSelector((state) => state.shop.menuLanguage);
-  const lang = storedLanguage ?? initialMenuLanguage(navigator.language);
+  const lang = currentChoice(storedLanguage, navigator.language);
   const { data, isLoading, isError } = useGetShopLegalQuery(
     { slug: slug ?? '', lang },
     { skip: !slug || !isLegalDoc(doc) },
@@ -73,7 +73,7 @@ const LegalPage: React.FC = () => {
 
   if (!isLegalDoc(doc)) return <NotFound />;
 
-  const copy = legalCopy(data?.language ?? lang);
+  const copy = legalCopy(pageLanguageOf(lang));
 
   return (
     <div className="min-h-screen flex flex-col bg-white">

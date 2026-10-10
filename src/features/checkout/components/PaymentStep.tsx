@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { useAppSelector } from '../../../store/hooks';
 import { formatCents } from '../../../utils/money';
-import { initialMenuLanguage } from '../../../utils/menuLanguage';
+import { currentChoice, pageLanguageOf } from '../../../utils/pageLanguage';
 import { orderCopy } from '../../../utils/orderCopy';
 
 interface PaymentStepProps {
@@ -20,9 +20,8 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
   onSuccess,
   onError,
 }) => {
-  const resolvedLanguage = useAppSelector((state) => state.shop.resolvedMenuLanguage);
   const storedLanguage = useAppSelector((state) => state.shop.menuLanguage);
-  const language = resolvedLanguage ?? storedLanguage ?? initialMenuLanguage(navigator.language);
+  const language = pageLanguageOf(currentChoice(storedLanguage, navigator.language));
   const total = formatCents(totalCents, currency, language);
   const copy = orderCopy(language);
   const stripe = useStripe();

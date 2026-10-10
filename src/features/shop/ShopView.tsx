@@ -32,7 +32,7 @@ import {
   type CatalogProductWithOffer,
 } from '../../utils/catalogMapper';
 import { useBrandingStyle } from '../../hooks/useBrandingStyle';
-import { initialMenuLanguage } from '../../utils/menuLanguage';
+import { currentChoice, pageLanguageOf, pickerCurrent, pickerLanguages } from '../../utils/pageLanguage';
 import { useTableSession } from '../../hooks/useTableSession';
 import { normaliseTableNumber } from '../../utils/tableSession';
 import { useDeliverySession } from '../../hooks/useDeliverySession';
@@ -98,14 +98,17 @@ const ShopView = () => {
   }, [dispatch, resolvedShopId, resolvedShopData?.currency]);
 
   const storedMenuLanguage = useAppSelector((state) => state.shop.menuLanguage);
-  const lang = storedMenuLanguage ?? initialMenuLanguage(navigator.language);
+  const lang = currentChoice(storedMenuLanguage, navigator.language);
 
   const { data: catalogData } = useGetCatalogQuery(
     { shopId: resolvedShopId, lang },
     { skip: !resolvedShopId },
   );
 
+  // Two separate things: the language the menu came back in, and the language of the page's own text
   const resolvedLanguage = catalogData?.language ?? lang;
+  const pageLanguage = pageLanguageOf(lang);
+  const offeredLanguages = pickerLanguages(catalogData?.languages);
 
   // Remember the language the menu actually came back in, for price formatting
   useEffect(() => {
@@ -198,7 +201,7 @@ const ShopView = () => {
     [visibleCategories]
   );
 
-  const copy = orderCopy(resolvedLanguage);
+  const copy = orderCopy(pageLanguage);
 
   // Group available products by category slug, mapping API DTOs to Product type
   const groupedItems = useMemo<Record<string, Product[]>>(() => {
@@ -317,8 +320,8 @@ const ShopView = () => {
       )}
       <div className="max-w-7xl mx-auto px-6 pt-3 flex justify-end">
         <LanguageSwitcher
-          languages={catalogData?.languages ?? []}
-          current={resolvedLanguage}
+          languages={offeredLanguages}
+          current={pickerCurrent(lang, offeredLanguages)}
           onChange={(l) => dispatch(setMenuLanguage(l))}
         />
       </div>

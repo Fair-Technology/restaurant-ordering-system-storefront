@@ -112,7 +112,7 @@ test.describe('Menu language', () => {
     await expect(page.getByText('No declarable additives')).toBeVisible();
   });
 
-  test('hides the switcher for a single-language menu', async ({ page }) => {
+  test('a single-language menu still offers the page languages DE and EN', async ({ page }) => {
     await mockShop(page);
     await page.route('**/api/shops/shop-t/catalog**', async (route) => {
       await route.fulfill({
@@ -123,8 +123,7 @@ test.describe('Menu language', () => {
     });
     await page.goto('/shops/test-shop');
 
-    await expect(page.getByRole('group', { name: 'Menüsprache' })).toHaveCount(0);
-    await expect(page.getByRole('group', { name: 'Menu language' })).toHaveCount(0);
+    await expect(page.getByRole('group', { name: 'Menu language' }).getByRole('button')).toHaveText(['DE', 'EN']);
     await expect(page.getByRole('heading', { name: 'Pizza Margherita' })).toBeVisible();
   });
 });

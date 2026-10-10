@@ -42,7 +42,7 @@ import { stripeForAccount } from '../../utils/stripe';
 import QuoteNotice from './components/QuoteNotice';
 import { useGetShopLegalQuery } from '../../api/legalEndpoints';
 import { legalCopy } from '../../utils/legalCopy';
-import { initialMenuLanguage } from '../../utils/menuLanguage';
+import { currentChoice, pageLanguageOf } from '../../utils/pageLanguage';
 import CartSummary from './components/CartSummary';
 import CustomerDetailsForm, { type CustomerFormData } from './components/CustomerDetailsForm';
 import PaymentStep from './components/PaymentStep';
@@ -73,14 +73,15 @@ const CheckoutPage: React.FC = () => {
 
   // Same lang the shop view resolved, so RTK Query shares the cached catalog response
   const storedMenuLanguage = useAppSelector((state) => state.shop.menuLanguage);
-  const lang = storedMenuLanguage ?? initialMenuLanguage(navigator.language);
+  const lang = currentChoice(storedMenuLanguage, navigator.language);
 
   // Fetch the product catalog so CartSummary can show variant/addon names and open the edit modal
   const { data: catalogData } = useGetCatalogQuery(
     { shopId: resolvedShopId, lang },
     { skip: !resolvedShopId },
   );
-  const resolvedLanguage = catalogData?.language ?? lang;
+  const resolvedLanguage = catalogData?.language ?? lang; // menu language
+  const pageLanguage = pageLanguageOf(lang); // language of the page text and of the order
 
   // Remember the language the menu actually came back in, for price formatting
   useEffect(() => {
@@ -128,7 +129,7 @@ const CheckoutPage: React.FC = () => {
   const [tableNotice, setTableNotice] = useState<string | null>(null);
   const { postcode: deliveryPostcode, clear: clearDelivery } = useDeliverySession(slug);
   const mode = chosenMode({ table, deliveryPostcode, modes: fulfilment?.modes ?? ['collection'] });
-  const copy = orderCopy(resolvedLanguage);
+  const copy = orderCopy(pageLanguage);
   const [whenChoice, setWhenChoice] = useState<WhenChoice | null>(null);
   const [slotChoice, setSlotChoice] = useState<string | null>(null);
   const [dayChoice, setDayChoice] = useState<string | null>(null);
@@ -139,7 +140,7 @@ const CheckoutPage: React.FC = () => {
   const quoteArg = {
     shopId: resolvedShopId,
     fulfilmentMode: mode,
-    language: resolvedLanguage,
+    language: pageLanguage,
     ...(mode === 'delivery' && deliveryPostcode ? { postcode: deliveryPostcode } : {}),
     ...(whenChoice === 'later' && slotChoice ? { scheduledFor: slotChoice } : {}),
     ...(appliedCode ? { discountCode: appliedCode } : {}),
@@ -182,8 +183,8 @@ const CheckoutPage: React.FC = () => {
   const when = effectiveWhen(whenChoice, quote?.openNow ?? true, hasSlots);
   const chosenSlot = when === 'later' && slotChoice && quoteSlots.includes(slotChoice) ? slotChoice : null;
   const days = useMemo(
-    () => slotDays(quoteSlots, timeZone, resolvedLanguage),
-    [quoteSlots, timeZone, resolvedLanguage],
+    () => slotDays(quoteSlots, timeZone, pageLanguage),
+    [quoteSlots, timeZone, pageLanguage],
   );
   const currentDay =
     days.find((d) => d.key === dayChoice) ?? days.find((d) => d.times.some((t) => t.iso === chosenSlot)) ?? days[0];
@@ -519,9 +520,9 @@ const CheckoutPage: React.FC = () => {
                   addressCopy={copy}
                   deliveryPostcode={mode === 'delivery' ? deliveryPostcode : null}
                   deliveryCopy={copy}
-                  defaultCountry={resolvedLanguage === 'de' ? 'Deutschland' : 'Germany'}
+                  defaultCountry={pageLanguage === 'de' ? 'Deutschland' : 'Germany'}
                   legal={legalData}
-                  copy={legalCopy(legalData?.language ?? resolvedLanguage)}
+                  copy={legalCopy(pageLanguage)}
                   slug={slug ?? ''}
                 />
               </div>
@@ -533,7 +534,7 @@ const CheckoutPage: React.FC = () => {
                     stripe={stripePromise}
                     options={{
                       clientSecret: checkoutData.clientSecret,
-                      locale: resolvedLanguage === 'de' ? 'de' : 'en',
+                      locale: pageLanguage === 'de' ? 'de' : 'en',
                     }}
                   >
                     <PaymentStep
