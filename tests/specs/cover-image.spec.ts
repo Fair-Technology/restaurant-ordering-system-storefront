@@ -56,6 +56,28 @@ test.describe('Cover image', () => {
     expect(requested.some((u) => u.includes('images.unsplash.com'))).toBe(false);
   });
 
+  test('shows no banner at all when the shop switched it off, even with a picture uploaded', async ({ page }) => {
+    await mockShop(page, { heroImageUrl: 'https://cover.test/shops/shop-t/cover.jpg', showHero: false });
+    await page.goto('/shops/test-shop');
+    await expect(page.getByText('Test Shop').first()).toBeVisible();
+    await expect(page.getByTestId('shop-hero')).toHaveCount(0);
+    await page.waitForLoadState('networkidle');
+    expect(requested.some((u) => u.includes('cover.test'))).toBe(false);
+    await expect(page.locator('img[src*="default-cover"]')).toHaveCount(0);
+  });
+
+  test('shows no banner when switched off and no picture is uploaded (no default photo either)', async ({ page }) => {
+    await mockShop(page, { heroImageUrl: null, showHero: false });
+    await page.goto('/shops/test-shop');
+    await expect(page.getByTestId('shop-hero')).toHaveCount(0);
+  });
+
+  test('shows the banner when the switch is on or was never set', async ({ page }) => {
+    await mockShop(page, { heroImageUrl: 'https://cover.test/shops/shop-t/cover.jpg', showHero: true });
+    await page.goto('/shops/test-shop');
+    await expect(page.getByTestId('shop-hero')).toHaveCount(1);
+  });
+
   test('treats an empty cover URL as no cover', async ({ page }) => {
     await mockShop(page, { heroImageUrl: '' });
     await page.goto('/shops/test-shop');
