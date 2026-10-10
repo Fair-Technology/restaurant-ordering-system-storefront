@@ -92,8 +92,15 @@ test.describe('Cover image', () => {
     expect(await heightFor(page, 2400, 1000, 390)).toBeCloseTo(162.5, 0);
   });
 
-  test('box is capped at 384px on a wide screen', async ({ page }) => {
-    expect(await heightFor(page, 2400, 1000, 1600)).toBe(384);
+  test('on desktop the box matches the content width and follows the picture', async ({ page }) => {
+    await heightFor(page, 2400, 1000, 1600);
+    const box = await page.getByTestId('shop-hero').boundingBox();
+    expect(box?.width).toBe(1232); // max-w-7xl (1280) minus px-6 on both sides
+    expect(box?.height).toBeCloseTo(1232 / 2.4, 0);
+  });
+
+  test('on desktop a tall portrait picture is capped at 70vh', async ({ page }) => {
+    expect(await heightFor(page, 1000, 2000, 1600)).toBe(630);
   });
 
   test('a very wide 6:1 picture gets the 160px minimum on a phone', async ({ page }) => {
