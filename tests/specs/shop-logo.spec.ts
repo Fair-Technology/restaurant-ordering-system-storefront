@@ -51,36 +51,58 @@ async function mockHome(page: Page) {
 }
 
 test.describe('Shop logo shows whole', () => {
-  test('a wide 4:1 logo keeps its height, widens, and is not cropped (nav bar)', async ({ page }) => {
-    await mockLogo(page, 400, 100);
+  const navLogo = (page: Page) => page.locator('header img').first();
+  const navBox = async (page: Page) => {
+    await expect(navLogo(page)).toHaveJSProperty('complete', true);
+    return navLogo(page).boundingBox();
+  };
+
+  test('a wide 4:1 logo is 48px tall on desktop, keeps its proportions, not cropped (nav bar)', async ({ page }) => {
+    await mockLogo(page, 800, 200);
     await mockShop(page);
     await page.goto('/shops/test-shop');
-    const logo = page.locator('header img[alt="Test Shop"]');
-    await expect(logo).toHaveCSS('object-fit', 'contain');
-    const box = await logo.boundingBox();
-    expect(box?.height).toBe(32);
-    expect(box!.width).toBeGreaterThan(32);
-    expect(box!.width).toBeLessThanOrEqual(128);
+    await expect(navLogo(page)).toHaveCSS('object-fit', 'contain');
+    await expect.poll(async () => (await navBox(page))?.width).toBeCloseTo(192, 0);
+    expect((await navBox(page))?.height).toBe(48);
   });
 
-  test('a very wide logo is capped at 4x the height (nav bar)', async ({ page }) => {
-    await mockLogo(page, 1000, 100);
+  test('a very wide logo is capped at 320px on desktop, 200px on a phone (nav bar)', async ({ page }) => {
+    await mockLogo(page, 3000, 300);
     await mockShop(page);
     await page.goto('/shops/test-shop');
-    const box = await page.locator('header img[alt="Test Shop"]').boundingBox();
-    expect(box?.width).toBe(128);
-    expect(box?.height).toBe(32);
+    await expect.poll(async () => (await navBox(page))?.width).toBe(320);
+    expect((await navBox(page))?.height).toBe(48);
+    await page.setViewportSize({ width: 390, height: 800 });
+    await expect.poll(async () => (await navBox(page))?.width).toBe(200);
+    expect((await navBox(page))?.height).toBe(40);
   });
 
-  test('a square logo is unchanged (nav bar)', async ({ page }) => {
-    await mockLogo(page, 200, 200);
+  test('a square logo is 48px on desktop and 40px on a phone (nav bar)', async ({ page }) => {
+    await mockLogo(page, 400, 400);
     await mockShop(page);
     await page.goto('/shops/test-shop');
-    const logo = page.locator('header img[alt="Test Shop"]');
-    await expect(logo).toHaveCSS('object-fit', 'contain');
-    const box = await logo.boundingBox();
-    expect(box?.width).toBe(32);
-    expect(box?.height).toBe(32);
+    await expect(navLogo(page)).toHaveCSS('object-fit', 'contain');
+    await expect.poll(async () => (await navBox(page))?.width).toBe(48);
+    expect((await navBox(page))?.height).toBe(48);
+    await page.setViewportSize({ width: 390, height: 800 });
+    await expect.poll(async () => (await navBox(page))?.width).toBe(40);
+    expect((await navBox(page))?.height).toBe(40);
+  });
+
+  test('a small logo is never scaled up past its natural size (nav bar)', async ({ page }) => {
+    await mockLogo(page, 60, 15);
+    await mockShop(page);
+    await page.goto('/shops/test-shop');
+    await expect.poll(async () => (await navBox(page))?.width).toBe(60);
+    expect((await navBox(page))?.height).toBe(15);
+  });
+
+  test('the header stays 64px tall with a logo', async ({ page }) => {
+    await mockLogo(page, 400, 400);
+    await mockShop(page);
+    await page.goto('/shops/test-shop');
+    await expect(navLogo(page)).toBeVisible();
+    expect((await page.locator('header').boundingBox())?.height).toBe(65); // h-16 + 1px border
   });
 
   test('on a 390px phone a wide logo leaves the shop name and cart on screen', async ({ page }) => {
@@ -88,6 +110,7 @@ test.describe('Shop logo shows whole', () => {
     await mockLogo(page, 1000, 100);
     await mockShop(page, 'A Rather Long Restaurant Name');
     await page.goto('/shops/test-shop');
+    await expect.poll(async () => (await navBox(page))?.width).toBe(200);
     const cart = await page.getByRole('button', { name: 'Cart' }).boundingBox();
     expect(cart!.x + cart!.width).toBeLessThanOrEqual(390);
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);

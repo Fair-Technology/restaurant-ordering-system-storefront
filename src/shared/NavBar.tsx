@@ -103,8 +103,8 @@ const NavBar: React.FC<NavBarProps> = ({
               name={shopName}
               logoUrl={logoUrl}
               className="h-8 w-8 rounded ring-2 ring-[var(--brand-accent)]"
-              logoClassName="h-8 w-8"
-              wideClassName="h-8 w-auto max-w-32"
+              logoClassName="h-10 w-10 md:h-12 md:w-12 max-h-[var(--logo-h)] max-w-[var(--logo-w)]"
+              wideClassName="h-10 md:h-12 w-auto max-h-[var(--logo-h)] max-w-[min(var(--logo-w),200px)] md:max-w-[min(var(--logo-w),320px)]"
               textClassName="text-xs"
             />
             {!logoUrl && (

@@ -34,18 +34,34 @@ const ShopLogo: React.FC<ShopLogoProps> = ({
   accentColor,
 }) => {
   const [square, setSquare] = useState(true);
+  // Natural pixel size, exposed as CSS variables so callers can stop a small
+  // logo being scaled up (and blurred) with max-w-[var(--logo-w)] etc.
+  const [natural, setNatural] = useState<{ w: number; h: number } | null>(null);
   return logoUrl ? (
     <img
       src={logoUrl}
       alt={name}
       onLoad={(e) => {
         const { naturalWidth, naturalHeight } = e.currentTarget;
+        setNatural(
+          naturalWidth > 0 && naturalHeight > 0
+            ? { w: naturalWidth, h: naturalHeight }
+            : null,
+        );
         setSquare(
           naturalWidth <= 0 ||
             naturalHeight <= 0 ||
             isSquare(naturalWidth, naturalHeight),
         );
       }}
+      style={
+        natural
+          ? ({
+              '--logo-w': `${natural.w}px`,
+              '--logo-h': `${natural.h}px`,
+            } as React.CSSProperties)
+          : undefined
+      }
       className={
         square
           ? `${logoClassName} object-contain`
