@@ -98,6 +98,7 @@ interface MockOptions {
   orderLimitReached?: boolean;
   delivery?: Json | null;
   products?: Json[];
+  shop?: Json; // extra fields on the public shop
 }
 
 async function mockBackend(page: Page, opts: MockOptions = {}) {
@@ -119,6 +120,7 @@ async function mockBackend(page: Page, opts: MockOptions = {}) {
         },
         orderLimitReached: opts.orderLimitReached ?? false,
         branding: null,
+        ...opts.shop,
       }),
     ),
   );
@@ -1381,5 +1383,87 @@ test.describe('Combos in German', () => {
     await expect(page.getByTestId('combo-badge')).toHaveText('Menü');
     await page.getByRole('button', { name: /Pasta Menu/ }).first().click();
     await expect(page.getByRole('button', { name: 'Zur Bestellung' })).toBeVisible();
+  });
+});
+
+test.describe('Shop info footer', () => {
+  test.use({ locale: 'en-US' });
+  const week = (open: string, close: string) =>
+    Object.fromEntries(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'].map((d) => [d, [{ open, close }]]));
+  const ADDRESS = { street: 'Gartenstraße 31', postcode: '60596', city: 'Frankfurt am Main', country: 'Deutschland' };
+
+  test('shows address, grouped hours, phone and a route link, with no map loaded', async ({ page }) => {
+    const google: string[] = [];
+    page.on('request', (r) => {
+      if (/google\./.test(r.url())) google.push(r.url());
+    });
+    await mockBackend(page, {
+      shop: {
+        address: ADDRESS,
+        openingHours: { ...week('11:30', '21:00'), sun: [{ open: '12:00', close: '20:00' }], tue: [] },
+        phone: '069 / 2028 4438',
+      },
+    });
+    await page.goto('/shops/test-shop');
+    const info = page.getByTestId('shop-info');
+    await expect(info.getByText('Gartenstraße 31')).toBeVisible();
+    await expect(info.getByText('60596 Frankfurt am Main')).toBeVisible();
+    await expect(info.getByText('Mon: 11:30 – 21:00')).toBeVisible();
+    await expect(info.getByText('Tue: Closed')).toBeVisible();
+    await expect(info.getByText('Wed – Sat: 11:30 – 21:00')).toBeVisible();
+    await expect(info.getByText('Sun: 12:00 – 20:00')).toBeVisible();
+    await expect(info.getByRole('link', { name: '069 / 2028 4438' })).toHaveAttribute('href', 'tel:06920284438');
+    const route = info.getByRole('link', { name: 'Get directions' });
+    await expect(route).toHaveAttribute(
+      'href',
+      'https://www.google.com/maps/dir/?api=1&destination=' +
+        encodeURIComponent('Gartenstraße 31, 60596 Frankfurt am Main, Deutschland'),
+    );
+    await expect(route).toHaveAttribute('target', '_blank');
+    expect(google).toEqual([]);
+  });
+
+  test('round-the-clock every day is one line; no phone means no phone line', async ({ page }) => {
+    await mockBackend(page, { shop: { address: ADDRESS, openingHours: week('00:00', '00:00'), phone: null } });
+    await page.goto('/shops/test-shop');
+    const info = page.getByTestId('shop-info');
+    await expect(info.getByText('Daily: Open 24 hours')).toBeVisible();
+    await expect(info.getByText('Phone')).toHaveCount(0);
+  });
+
+  test('delivery with its own hours gets its own lines', async ({ page }) => {
+    await mockBackend(page, {
+      modes: ['collection', 'delivery'],
+      delivery: {
+        zones: [{ postcode: '10115', feeCents: 250, minOrderCents: 1500 }],
+        hours: week('17:00', '21:00'),
+      },
+      shop: { address: ADDRESS, openingHours: week('11:30', '21:00') },
+    });
+    await page.goto('/shops/test-shop');
+    const info = page.getByTestId('shop-info');
+    await expect(info.getByText('Daily: 11:30 – 21:00')).toBeVisible();
+    await expect(info.getByText('Delivery', { exact: true })).toBeVisible();
+    await expect(info.getByText('Daily: 17:00 – 21:00')).toBeVisible();
+  });
+
+  test('German wording', async ({ page }) => {
+    await mockBackend(page, {
+      language: 'de',
+      shop: { address: ADDRESS, openingHours: { ...week('11:30', '21:00'), sun: [] }, phone: '069 1234' },
+    });
+    await page.goto('/shops/test-shop');
+    const info = page.getByTestId('shop-info');
+    await expect(info.getByText('Öffnungszeiten')).toBeVisible();
+    await expect(info.getByText('Mo – Sa: 11:30 – 21:00')).toBeVisible();
+    await expect(info.getByText('So: Ruhetag')).toBeVisible();
+    await expect(info.getByRole('link', { name: 'Route planen' })).toBeVisible();
+  });
+
+  test('no address, hours or phone means no info block', async ({ page }) => {
+    await mockBackend(page);
+    await page.goto('/shops/test-shop');
+    await expect(page.getByText('Carbonara').first()).toBeVisible();
+    await expect(page.getByTestId('shop-info')).toHaveCount(0);
   });
 });
