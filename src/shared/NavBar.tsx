@@ -95,7 +95,7 @@ const NavBar: React.FC<NavBarProps> = ({
       <header className="bg-white/80 backdrop-blur-md border-b border-gray-100 shadow-sm">
         <div className="max-w-7xl mx-auto px-6 flex justify-between items-center h-16">
           <button
-            className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+            className="flex min-w-0 items-center gap-2 hover:opacity-80 transition-opacity"
             onClick={() => navigate(`/shops/${shopId}`)}
             aria-label={`Go to ${shopName}`}
           >
@@ -103,9 +103,10 @@ const NavBar: React.FC<NavBarProps> = ({
               name={shopName}
               logoUrl={logoUrl}
               className="h-8 w-8 rounded ring-2 ring-[var(--brand-accent)]"
+              wideClassName="h-8 w-auto max-w-32 rounded ring-2 ring-[var(--brand-accent)]"
               textClassName="text-xs"
             />
-            <span className="font-bold text-xl text-gray-900">{shopName}</span>
+            <span className="truncate font-bold text-xl text-gray-900">{shopName}</span>
           </button>
 
           <div className="flex items-center gap-4 relative">
