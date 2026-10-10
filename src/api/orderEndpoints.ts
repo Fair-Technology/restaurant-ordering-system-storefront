@@ -1,3 +1,4 @@
+import type { WeeklyHours } from '../utils/openingHours';
 // Hand-written endpoints for collection orders. Kept out of endpoints.ts because
 // that file is generated; shapes mirror the backend's src/application/order DTOs.
 import { api } from './endpoints';
@@ -251,7 +252,7 @@ export interface CustomerDocumentArg extends CustomerOrderArg {
 export interface ShopFulfilment {
   modes: FulfilmentMode[];
   prepMinutes: Record<FulfilmentMode, number>;
-  delivery?: { zones: DeliveryZoneDto[] } | null;
+  delivery?: { zones: DeliveryZoneDto[]; hours?: WeeklyHours | null } | null;
 }
 
 export const orderApi = api.injectEndpoints({

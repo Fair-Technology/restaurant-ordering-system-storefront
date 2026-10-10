@@ -122,6 +122,15 @@ export interface OrderCopy {
   comboAdd: string;
   comboCancel: string;
   comboIncomplete: string;
+  infoAddress: string;
+  infoRoute: string;
+  infoHours: string;
+  infoDeliveryHours: string;
+  infoPhone: string;
+  infoDaily: string;
+  infoClosed: string;
+  infoAllDay: string;
+  infoDayShort: Record<'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun', string>;
   comboTotal: (amount: string) => string;
 }
 
@@ -266,6 +275,15 @@ const en: OrderCopy = {
   comboCancel: 'Cancel',
   comboIncomplete: 'Choose one dish in every group.',
   comboTotal: (a) => `Total ${a}`,
+  infoAddress: 'Address',
+  infoRoute: 'Get directions',
+  infoHours: 'Opening hours',
+  infoDeliveryHours: 'Delivery',
+  infoPhone: 'Phone',
+  infoDaily: 'Daily',
+  infoClosed: 'Closed',
+  infoAllDay: 'Open 24 hours',
+  infoDayShort: { mon: 'Mon', tue: 'Tue', wed: 'Wed', thu: 'Thu', fri: 'Fri', sat: 'Sat', sun: 'Sun' },
 };
 
 const de: OrderCopy = {
@@ -415,6 +433,15 @@ const de: OrderCopy = {
   comboCancel: 'Abbrechen',
   comboIncomplete: 'Bitte wählen Sie in jeder Gruppe ein Gericht.',
   comboTotal: (a) => `Gesamt ${a}`,
+  infoAddress: 'Adresse',
+  infoRoute: 'Route planen',
+  infoHours: 'Öffnungszeiten',
+  infoDeliveryHours: 'Lieferung',
+  infoPhone: 'Telefon',
+  infoDaily: 'Täglich',
+  infoClosed: 'Ruhetag',
+  infoAllDay: 'durchgehend geöffnet',
+  infoDayShort: { mon: 'Mo', tue: 'Di', wed: 'Mi', thu: 'Do', fri: 'Fr', sat: 'Sa', sun: 'So' },
 };
 
 export function orderCopy(lang: string): OrderCopy {

@@ -17,6 +17,8 @@ import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { setActiveShop, setMenuLanguage, setResolvedMenuLanguage, type FulfilmentMode } from '../../store/slices/shopSlice';
 import FulfilmentModeBar from './FulfilmentModeBar';
 import DeliveryPostcodeBox from './DeliveryPostcodeBox';
+import ShopInfoFooter from './ShopInfoFooter';
+import type { WeeklyHours } from '../../utils/openingHours';
 import { orderCopy } from '../../utils/orderCopy';
 import type { ShopFulfilment } from '../../api/orderEndpoints';
 import {
@@ -330,7 +332,17 @@ const ShopView = () => {
           onAddToCart={() => {}}
         />
       </div>
-      <Footer slug={slug} />
+      {resolvedShopData && (
+        <ShopInfoFooter
+          name={resolvedShopData.name ?? ''}
+          address={(resolvedShopData as { address?: { street?: string; postcode?: string; city?: string } }).address}
+          openingHours={(resolvedShopData as { openingHours?: WeeklyHours }).openingHours}
+          deliveryHours={fulfilment?.modes.includes('delivery') ? fulfilment.delivery?.hours : null}
+          phone={(resolvedShopData as { phone?: string | null }).phone}
+          copy={copy}
+        />
+      )}
+      <Footer slug={slug} flush={!!resolvedShopData} />
     </div>
   );
 };
