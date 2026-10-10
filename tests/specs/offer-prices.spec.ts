@@ -79,3 +79,10 @@ test('the dish popup and the basket charge the offer price plus the size surchar
   await expect(page.getByText('Total €11.00')).toBeVisible();
   await expect(page.getByText('€13.50')).toHaveCSS('text-decoration-line', 'line-through');
 });
+
+test('the dish card has no "View details" button and opens from its name', async ({ page }) => {
+  await page.goto('/shops/test-shop');
+  await expect(page.getByRole('button', { name: 'View Details', exact: true })).toHaveCount(0);
+  await page.getByRole('heading', { name: 'Carbonara' }).click();
+  await expect(page.getByText('Total €11.00')).toBeVisible();
+});

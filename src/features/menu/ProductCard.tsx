@@ -1,6 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { UtensilsCrossed } from 'lucide-react';
-import Button from '../../shared/Button';
 import ProductModal from './ProductModal';
 import ComboModal from './ComboModal';
 import { orderCopy } from '../../utils/orderCopy';
@@ -24,7 +23,8 @@ type ProductCardProps = {
 /**
  * ProductCard — Presentational card for a single menu product.
  *
- * Clicking the card image or "View Details" button opens ProductModal.
+ * Clicking anywhere on the card opens ProductModal. The picture is the keyboard-reachable
+ * button; the rest of the card is a plain click target for mouse and touch.
  *
  * A custom DOM event (`product-modal-open`) is dispatched when a modal opens,
  * allowing other open ProductCard instances to close their own modal. The
@@ -72,7 +72,10 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }) => {
 
   return (
     <>
-      <div className="group/card rounded-2xl bg-white border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.06)] hover:shadow-[0_12px_40px_rgba(0,0,0,0.13)] hover:-translate-y-1 transition-all duration-300 flex flex-col h-full overflow-hidden">
+      <div
+        onClick={openModal}
+        className="group/card cursor-pointer rounded-2xl bg-white border border-gray-100 shadow-[0_2px_12px_rgba(0,0,0,0.06)] hover:shadow-[0_12px_40px_rgba(0,0,0,0.13)] hover:-translate-y-1 transition-all duration-300 flex flex-col h-full overflow-hidden"
+      >
         <button
           type="button"
           className="relative w-full aspect-[4/3] overflow-hidden cursor-pointer"
@@ -135,16 +138,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }) => {
               )}
             </div>
           )}
-
-          <div className="flex gap-2 mt-2">
-            <Button
-              variant="outline"
-              className="w-full text-xs sm:text-sm"
-              onClick={openModal}
-            >
-              View Details
-            </Button>
-          </div>
         </div>
       </div>
 
