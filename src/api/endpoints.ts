@@ -421,6 +421,8 @@ export type ShopBranding = {
   heroImageUrl?: string | null;
   /** Accent color (hex) */
   accentColor?: string | null;
+  /** Whether the shop page shows its banner (cover image). Missing means true. */
+  showHero?: boolean;
 } | null;
 export type OpeningTimeSlot = {
   /** Opening time (HH:mm, 24-hour) */

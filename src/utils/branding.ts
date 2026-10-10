@@ -5,6 +5,7 @@ export type ShopBranding = {
   logoUrl?: string | null;
   heroImageUrl?: string | null;
   accentColor?: string | null;
+  showHero?: boolean;
 };
 
 export type ShopWithBranding = ShopResponse & {
@@ -19,6 +20,8 @@ export type ResolvedBranding = {
   // null when no logo is uploaded — render <ShopLogo> to show initials instead
   logoUrl: string | null;
   heroImageUrl: string;
+  // false when the shop switched its banner off: show no banner at all, not even the default photo
+  showHero: boolean;
   accentColor: string;
 };
 
@@ -29,6 +32,7 @@ export const resolveShopBranding = (
 ): ResolvedBranding => ({
   logoUrl: branding?.logoUrl || null,
   heroImageUrl: branding?.heroImageUrl || DEFAULT_BRANDING.heroImageUrl,
+  showHero: branding?.showHero !== false,
   accentColor: HEX_COLOR_PATTERN.test(branding?.accentColor ?? '')
     ? (branding!.accentColor as string)
     : DEFAULT_ACCENT,

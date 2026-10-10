@@ -4,15 +4,16 @@ interface HeroSectionProps {
   heroImageUrl: string;
 }
 
-// The whole banner is always shown (object-contain). A blurred, enlarged copy of
-// it fills the full-width band behind. Once the picture has loaded, the sharp
-// frame takes its shape (aspect-ratio): the full window width up to 1232px (the shop
-// content below: max-w-7xl minus px-6), then centred; height is clamped to 160px
-// at the least and 70vh at the most. Until then (or on error) the frame keeps the fixed heights.
+// The whole banner is always shown (object-contain). Once the picture has loaded, the sharp
+// frame takes its exact shape (aspect-ratio): the full window width up to 1232px (the shop
+// content below: max-w-7xl minus px-6), then centred, so there is never blur above or below it;
+// only a tall picture hitting the 70vh cap is narrower than its frame. A blurred, enlarged copy
+// fills the full-width band behind, so blur shows left and right only. Until the picture has
+// loaded (or on error) the frame keeps the fixed heights.
 const HeroSection: React.FC<HeroSectionProps> = ({ heroImageUrl }) => {
   const [ratio, setRatio] = useState<number | null>(null);
   const sizing =
-    ratio === null ? 'h-72 md:h-96' : 'min-h-40 max-h-[70vh] md:min-h-0';
+    ratio === null ? 'h-72 md:h-96' : 'max-h-[70vh]';
   return (
     <section data-testid="shop-hero" className="relative overflow-hidden">
       <div

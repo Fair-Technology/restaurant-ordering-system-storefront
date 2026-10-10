@@ -259,7 +259,7 @@ const ShopView = () => {
           onCheckout={() => navigate(`/shops/${slug}/checkout`)}
         />
       </div>
-      <HeroSection heroImageUrl={resolvedBranding.heroImageUrl} />
+      {resolvedBranding.showHero && <HeroSection heroImageUrl={resolvedBranding.heroImageUrl} />}
       {orderLimitReached && (
         <p role="status" className="max-w-7xl mx-auto px-6 pt-3 text-sm font-medium text-red-700">
           {copy.orderingPaused}
