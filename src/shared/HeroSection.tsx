@@ -6,15 +6,13 @@ interface HeroSectionProps {
 
 // The whole banner is always shown (object-contain). A blurred, enlarged copy of
 // it fills the full-width band behind. Once the picture has loaded, the sharp
-// frame takes its shape (aspect-ratio): on phones clamped to 160-288px, from md up
-// as wide as the shop content below (max-w-7xl, px-6) with only a 70vh cap for
-// tall pictures. Until then (or on error) the frame keeps the fixed heights.
+// frame takes its shape (aspect-ratio): the full window width up to 1232px (the shop
+// content below: max-w-7xl minus px-6), then centred; height is clamped to 160px
+// at the least and 70vh at the most. Until then (or on error) the frame keeps the fixed heights.
 const HeroSection: React.FC<HeroSectionProps> = ({ heroImageUrl }) => {
   const [ratio, setRatio] = useState<number | null>(null);
   const sizing =
-    ratio === null
-      ? 'h-72 md:h-96'
-      : 'w-full min-h-40 max-h-72 md:min-h-0 md:max-h-[70vh]';
+    ratio === null ? 'h-72 md:h-96' : 'min-h-40 max-h-[70vh] md:min-h-0';
   return (
     <section data-testid="shop-hero" className="relative overflow-hidden">
       <div
@@ -24,28 +22,26 @@ const HeroSection: React.FC<HeroSectionProps> = ({ heroImageUrl }) => {
         style={{ backgroundImage: `url('${heroImageUrl}')` }}
       />
       <div className="absolute inset-0 bg-black/10" />
-      <div className="relative md:max-w-7xl md:mx-auto md:px-6">
-        <div
-          data-testid="shop-hero-frame"
-          className={sizing}
-          style={ratio === null ? undefined : { aspectRatio: String(ratio) }}
-        >
-          <img
-            data-testid="shop-hero-image"
-            src={heroImageUrl}
-            alt=""
-            onLoad={(e) => {
-              const { naturalWidth, naturalHeight } = e.currentTarget;
-              setRatio(
-                naturalWidth > 0 && naturalHeight > 0
-                  ? naturalWidth / naturalHeight
-                  : null,
-              );
-            }}
-            onError={() => setRatio(null)}
-            className="w-full h-full object-contain"
-          />
-        </div>
+      <div
+        data-testid="shop-hero-frame"
+        className={`relative w-full max-w-[1232px] mx-auto ${sizing}`}
+        style={ratio === null ? undefined : { aspectRatio: String(ratio) }}
+      >
+        <img
+          data-testid="shop-hero-image"
+          src={heroImageUrl}
+          alt=""
+          onLoad={(e) => {
+            const { naturalWidth, naturalHeight } = e.currentTarget;
+            setRatio(
+              naturalWidth > 0 && naturalHeight > 0
+                ? naturalWidth / naturalHeight
+                : null,
+            );
+          }}
+          onError={() => setRatio(null)}
+          className="w-full h-full object-contain"
+        />
       </div>
       <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-transparent" />
     </section>

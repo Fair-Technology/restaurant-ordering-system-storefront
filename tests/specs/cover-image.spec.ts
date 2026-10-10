@@ -103,6 +103,20 @@ test.describe('Cover image', () => {
     expect(band?.height).toBeCloseTo(1232 / 2.4, 0);
   });
 
+  test('below the content width the picture touches the screen edges', async ({ page }) => {
+    await heightFor(page, 2400, 1000, 1000);
+    const box = await page.getByTestId('shop-hero-frame').boundingBox();
+    expect(box?.x).toBe(0);
+    expect(box?.width).toBe(1000);
+  });
+
+  test('just below md the picture is not shrunk by the old phone cap', async ({ page }) => {
+    await heightFor(page, 2400, 1000, 740);
+    const box = await page.getByTestId('shop-hero-frame').boundingBox();
+    expect(box?.width).toBe(740);
+    expect(box?.height).toBeCloseTo(740 / 2.4, 0);
+  });
+
   test('on desktop a tall portrait picture is capped at 70vh', async ({ page }) => {
     expect(await heightFor(page, 1000, 2000, 1600)).toBe(630);
   });
