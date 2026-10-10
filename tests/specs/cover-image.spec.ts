@@ -143,7 +143,23 @@ test.describe('Cover image', () => {
     expect(await heightFor(page, 1000, 2000, 1600)).toBe(630);
   });
 
-  test('a very wide 6:1 picture gets the 160px minimum on a phone', async ({ page }) => {
-    expect(await heightFor(page, 2400, 400, 390)).toBe(160);
+  test('a very wide 6:1 picture makes a thin banner on a phone, with no minimum height', async ({ page }) => {
+    expect(await heightFor(page, 2400, 400, 390)).toBeCloseTo(65, 0);
+  });
+
+  test('the picture fills the banner top to bottom whenever it is not capped (no blur above or below)', async ({ page }) => {
+    for (const [w, h, vw] of [[2400, 1000, 390], [2400, 1000, 1600], [2400, 400, 390], [1000, 1000, 390]]) {
+      const height = await heightFor(page, w, h, vw);
+      const frame = await page.getByTestId('shop-hero-frame').boundingBox();
+      expect(height).toBeCloseTo((frame?.width ?? 0) / (w / h), 0);
+    }
+  });
+
+  test('a capped tall picture leaves room only at the sides, never above or below', async ({ page }) => {
+    await heightFor(page, 1000, 2000, 1600);
+    const frame = await page.getByTestId('shop-hero-frame').boundingBox();
+    expect(frame?.height).toBe(630);
+    // contained at 630px tall, a 1:2 picture is 315px wide, centred in the 1232px frame
+    expect(315).toBeLessThan(frame?.width ?? 0);
   });
 });
