@@ -62,13 +62,41 @@ test.describe('Cover image', () => {
     await expect(page.getByTestId('shop-hero-image')).toHaveAttribute('src', /default-cover/);
   });
 
-  test('keeps the hero box size on wide and narrow screens', async ({ page }) => {
-    await mockShop(page, null);
+  test('uses the fixed heights until the picture loads, or if it fails', async ({ page }) => {
+    await mockShop(page, { heroImageUrl: 'https://cover.test/broken.jpg' });
     await page.setViewportSize({ width: 1600, height: 900 });
     await page.goto('/shops/test-shop');
     const hero = page.getByTestId('shop-hero');
     expect((await hero.boundingBox())?.height).toBe(384);
     await page.setViewportSize({ width: 390, height: 800 });
     expect((await hero.boundingBox())?.height).toBe(288);
+  });
+
+  const svg = (w: number, h: number) =>
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><rect width="${w}" height="${h}" fill="red"/></svg>`;
+
+  const heightFor = async (page: Page, w: number, h: number, viewportWidth: number) => {
+    await page.unroute('https://cover.test/**');
+    await page.route('https://cover.test/**', (r) =>
+      r.fulfill({ status: 200, contentType: 'image/svg+xml', body: svg(w, h) }),
+    );
+    await mockShop(page, { heroImageUrl: 'https://cover.test/pic.svg' });
+    await page.setViewportSize({ width: viewportWidth, height: 900 });
+    await page.goto('/shops/test-shop');
+    const hero = page.getByTestId('shop-hero');
+    await expect(hero).toHaveAttribute('style', /aspect-ratio/);
+    return (await hero.boundingBox())?.height ?? 0;
+  };
+
+  test('box follows a 2.4:1 picture on a phone', async ({ page }) => {
+    expect(await heightFor(page, 2400, 1000, 390)).toBeCloseTo(162.5, 0);
+  });
+
+  test('box is capped at 384px on a wide screen', async ({ page }) => {
+    expect(await heightFor(page, 2400, 1000, 1600)).toBe(384);
+  });
+
+  test('a very wide 6:1 picture gets the 160px minimum on a phone', async ({ page }) => {
+    expect(await heightFor(page, 2400, 400, 390)).toBe(160);
   });
 });
