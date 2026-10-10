@@ -366,6 +366,39 @@ test.describe('Card order', () => {
     expect(calls).toBeGreaterThanOrEqual(3);
   });
 
+  test('a brief "not found" right after payment does not stop the order page', async ({ page }) => {
+    await mockBackend(page);
+    let calls = 0;
+    await page.route('**/api/customer-orders/o1/view', async (route) => {
+      calls += 1;
+      if (calls === 1) {
+        await route.fulfill(fulfil({ error: 'Your payment is being confirmed' }, 404));
+      } else if (calls === 2) {
+        // Stripe's confirmation landed between the server's two lookups
+        await route.fulfill(fulfil({ error: 'Order not found' }, 404));
+      } else {
+        await route.fulfill(fulfil(PLACED_ORDER));
+      }
+    });
+    await page.goto(ORDER_URL);
+
+    await expect(page.getByText('Order AB3-K7P')).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText('We could not find this order')).toHaveCount(0);
+  });
+
+  test('a wrong link says the order cannot be found once the wait is over', async ({ page }) => {
+    await page.clock.install();
+    await mockBackend(page);
+    await page.route('**/api/customer-orders/o1/view', (route) =>
+      route.fulfill(fulfil({ error: 'Order not found' }, 404)),
+    );
+    await page.goto(ORDER_URL);
+
+    await expect(page.getByText('We could not find this order')).toHaveCount(0);
+    await page.clock.runFor(21_000);
+    await expect(page.getByText('We could not find this order')).toBeVisible();
+  });
+
   test('a declined order says nothing was charged', async ({ page }) => {
     await mockBackend(page, {
       order: {
