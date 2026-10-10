@@ -21,6 +21,9 @@ import { slotLabel } from '../../utils/slots';
 
 const LIVE_STATES = ['PLACED', 'ACCEPTED', 'READY', 'OUT_FOR_DELIVERY'];
 const CONFIRMING_POLL_MS = 3000;
+// Right after payment the order can briefly look missing while Stripe's confirmation is
+// being stored, so "not found" is only believed once it persists this long.
+const NOT_FOUND_GRACE_MS = 20000;
 
 const CustomerOrderPage: React.FC = () => {
   const { slug, orderId } = useParams<{ slug: string; orderId: string }>();
@@ -37,17 +40,23 @@ const CustomerOrderPage: React.FC = () => {
     { orderId: orderId ?? '', token },
     { skip: !orderId },
   );
+  const [graceOver, setGraceOver] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setGraceOver(true), NOT_FOUND_GRACE_MS);
+    return () => clearTimeout(timer);
+  }, []);
   // The backend answers "payment is being confirmed" until Stripe has told it the card
   // reservation went through (the order is created only then), so keep asking quickly.
   const isConfirming =
     !data && (error as { data?: { error?: string } } | undefined)?.data?.error === PAYMENT_CONFIRMING_ERROR;
+  const isRetrying = !data && isError && !isConfirming && !graceOver;
   // Poll while the order is still moving so acceptance and ready-time show up on
   // their own. Same arguments as above, so both hooks share one cache entry.
   useGetCustomerOrderQuery(
     { orderId: orderId ?? '', token },
     {
-      skip: !orderId || (!data && !isConfirming),
-      pollingInterval: isConfirming
+      skip: !orderId || (!data && !isConfirming && !isRetrying),
+      pollingInterval: isConfirming || isRetrying
         ? CONFIRMING_POLL_MS
         : data && LIVE_STATES.includes(data.state)
           ? 15000
@@ -178,9 +187,9 @@ const CustomerOrderPage: React.FC = () => {
       </div>
 
       <div className="flex-1 max-w-lg w-full mx-auto px-4 py-8">
-        {isLoading && <p className="text-gray-500">{copy.loading}</p>}
+        {(isLoading || (isRetrying && !order)) && <p className="text-gray-500">{copy.loading}</p>}
         {isConfirming && !order && <p className="text-gray-700">{copy.confirmingPayment}</p>}
-        {isError && !isConfirming && !order && (
+        {isError && !isConfirming && !isRetrying && !order && (
           <p className="text-red-600">{copy.orderNotFound}</p>
         )}
 
