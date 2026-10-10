@@ -77,7 +77,7 @@ test.describe('Shop logo shows whole', () => {
     await mockShop(page);
     await page.goto('/shops/test-shop');
     const logo = page.locator('header img[alt="Test Shop"]');
-    await expect(logo).toHaveCSS('object-fit', 'cover');
+    await expect(logo).toHaveCSS('object-fit', 'contain');
     const box = await logo.boundingBox();
     expect(box?.width).toBe(32);
     expect(box?.height).toBe(32);
@@ -90,7 +90,6 @@ test.describe('Shop logo shows whole', () => {
     await page.goto('/shops/test-shop');
     const cart = await page.getByRole('button', { name: 'Cart' }).boundingBox();
     expect(cart!.x + cart!.width).toBeLessThanOrEqual(390);
-    await expect(page.locator('header').getByText('A Rather Long Restaurant Name')).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
   });
 
@@ -114,5 +113,56 @@ test.describe('Shop logo shows whole', () => {
     const box = await page.locator('[data-testid="shop-card"] img').boundingBox();
     expect(box?.width).toBe(64);
     expect(box?.height).toBe(64);
+  });
+
+  test('an uploaded logo is bare and replaces the shop name in the nav bar', async ({ page }) => {
+    await mockLogo(page, 200, 200);
+    await mockShop(page);
+    await page.goto('/shops/test-shop');
+    const logo = page.locator('header img[alt="Test Shop"]');
+    await expect(logo).toBeVisible();
+    await expect(page.locator('header').getByText('Test Shop', { exact: true })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Go to Test Shop' })).toBeVisible();
+    await expect(logo).toHaveCSS('box-shadow', 'none');
+    await expect(logo).toHaveCSS('border-top-width', '0px');
+    await expect(logo).toHaveCSS('border-radius', '0px');
+    await expect(logo).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+  });
+
+  test('a wide uploaded logo is bare too', async ({ page }) => {
+    await mockLogo(page, 400, 100);
+    await mockShop(page);
+    await page.goto('/shops/test-shop');
+    const logo = page.locator('header img[alt="Test Shop"]');
+    await expect(logo).toHaveCSS('box-shadow', 'none');
+    await expect(logo).toHaveCSS('border-radius', '0px');
+    await expect(logo).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+  });
+
+  test('home list logo is bare but the card still shows the shop name', async ({ page }) => {
+    await mockLogo(page, 400, 100);
+    await mockHome(page);
+    await page.goto('/');
+    const logo = page.locator('[data-testid="shop-card"] img');
+    await expect(logo).toHaveCSS('box-shadow', 'none');
+    await expect(logo).toHaveCSS('border-radius', '0px');
+    await expect(logo).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+    await expect(page.getByTestId('shop-name')).toHaveText('Test Shop');
+  });
+
+  test('without a logo the nav bar shows initials and the shop name', async ({ page }) => {
+    await page.route('**/api/shops/slug/test-shop', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ id: 'shop-t', slug: 'test-shop', name: 'Test Shop', branding: null }),
+      }),
+    );
+    await page.route('**/api/shops/shop-t/catalog**', (route) =>
+      route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ categories: [] }) }),
+    );
+    await page.goto('/shops/test-shop');
+    await expect(page.locator('header').getByRole('img', { name: 'Test Shop' })).toHaveText('TE');
+    await expect(page.locator('header').getByText('Test Shop', { exact: true })).toBeVisible();
   });
 });

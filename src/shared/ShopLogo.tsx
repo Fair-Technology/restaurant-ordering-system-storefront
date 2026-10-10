@@ -9,8 +9,11 @@ export const shopInitials = (name: string): string =>
 interface ShopLogoProps {
   name: string;
   logoUrl: string | null;
+  // Size and look of the initials fallback
   className: string;
-  // Classes for an uploaded logo that isn't square: same height as the square,
+  // An uploaded logo is shown bare — size only, no border, ring, fill or rounding
+  logoClassName: string;
+  // Size of an uploaded logo that isn't square: same height as the square,
   // width follows the logo (w-auto) up to a cap, and the whole logo is shown
   wideClassName: string;
   textClassName: string;
@@ -25,6 +28,7 @@ const ShopLogo: React.FC<ShopLogoProps> = ({
   name,
   logoUrl,
   className,
+  logoClassName,
   wideClassName,
   textClassName,
   accentColor,
@@ -44,7 +48,7 @@ const ShopLogo: React.FC<ShopLogoProps> = ({
       }}
       className={
         square
-          ? `${className} object-cover`
+          ? `${logoClassName} object-contain`
           : `${wideClassName} shrink-0 object-contain`
       }
     />

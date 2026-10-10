@@ -66,7 +66,8 @@ const HomePage = () => {
                       logoUrl={branding.logoUrl}
                       accentColor={branding.accentColor}
                       className="h-16 w-16 rounded-full bg-gray-100"
-                      wideClassName="h-16 w-auto max-w-64 rounded-lg bg-gray-100"
+                      logoClassName="h-16 w-16"
+                      wideClassName="h-16 w-auto max-w-64"
                       textClassName="text-lg"
                     />
                     {/* data-testid="shop-name" — lets tests check the shop name text */}

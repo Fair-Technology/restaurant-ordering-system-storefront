@@ -103,10 +103,15 @@ const NavBar: React.FC<NavBarProps> = ({
               name={shopName}
               logoUrl={logoUrl}
               className="h-8 w-8 rounded ring-2 ring-[var(--brand-accent)]"
-              wideClassName="h-8 w-auto max-w-32 rounded ring-2 ring-[var(--brand-accent)]"
+              logoClassName="h-8 w-8"
+              wideClassName="h-8 w-auto max-w-32"
               textClassName="text-xs"
             />
-            <span className="truncate font-bold text-xl text-gray-900">{shopName}</span>
+            {!logoUrl && (
+              <span className="truncate font-bold text-xl text-gray-900">
+                {shopName}
+              </span>
+            )}
           </button>
 
           <div className="flex items-center gap-4 relative">
