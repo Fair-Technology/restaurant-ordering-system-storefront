@@ -43,7 +43,7 @@ const ShopIntro: React.FC<ShopIntroProps> = ({
       <div className="mx-auto max-w-7xl px-4 sm:px-6">
         {/* The row starts below the banner; only the badge reaches up into it (negative margin),
             so the name and buttons never sit on top of the picture */}
-        <div className={`flex flex-wrap items-end gap-x-5 gap-y-3 md:flex-nowrap ${overlapsHero ? 'pt-0' : 'pt-6'}`}>
+        <div className={`flex flex-wrap items-end gap-x-5 gap-y-3 lg:flex-nowrap ${overlapsHero ? 'pt-0' : 'pt-6'}`}>
           {/* Logo badge */}
           <div
             className={`relative z-10 flex h-[88px] w-[88px] shrink-0 items-center justify-center overflow-hidden rounded-full border-4 border-white bg-white shadow-[0_4px_16px_rgba(31,26,23,0.15)] md:h-28 md:w-28 ${
@@ -70,11 +70,11 @@ const ShopIntro: React.FC<ShopIntroProps> = ({
           {/* Phones only: the language switcher top right, beside the badge */}
           {languageSwitcher && <div className="ml-auto sm:hidden">{languageSwitcher}</div>}
 
-          {/* Status, pickup time and Info as one row of pills: under the name on phones,
-              on the right beside the name from md */}
+          {/* Status, pickup time and Info as one row of pills: under the name on phones and
+              tablets (so a long address keeps its room), on the right beside the name from lg */}
           <div
-            className={`order-4 flex w-full flex-wrap items-center gap-2 text-[13px] md:order-none md:ml-auto md:w-auto md:shrink-0 md:justify-end md:pb-1 md:text-sm ${
-              overlapsHero ? 'md:self-start md:pt-6' : ''
+            className={`order-4 flex w-full flex-wrap items-center gap-2 text-[13px] md:pl-[132px] md:text-sm lg:order-none lg:ml-auto lg:w-auto lg:shrink-0 lg:justify-end lg:pb-1 lg:pl-0 ${
+              overlapsHero ? 'lg:self-start lg:pt-6' : ''
             }`}
           >
             {status &&
