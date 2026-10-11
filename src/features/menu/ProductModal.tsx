@@ -8,6 +8,7 @@ import { menuLabels } from '../../utils/menuLabels';
 import { orderCopy } from '../../utils/orderCopy';
 import { currentChoice, pageLanguageOf } from '../../utils/pageLanguage';
 import { toggleAddonSelection, unmetAddonGroups } from '../../utils/addonSelection';
+import { DISH_IMAGE } from '../../constants/image-shapes';
 import type { CatalogAdditive, CatalogLabel } from '../../types/Product';
 
 type VariantOption = {
@@ -79,6 +80,9 @@ const ACCENT_TINT = 'color-mix(in srgb, var(--brand-accent) 9%, white)';
  * Rendered via createPortal to document.body so it overlays the full viewport
  * regardless of the parent component's stacking context.
  */
+// The dish photo area is always 4:3 (the stored shape), on the desktop left panel and the phone header
+const dishRatioStyle = { '--dish-ratio': DISH_IMAGE.ratio } as React.CSSProperties;
+
 const ProductModal: React.FC<ProductModalProps> = ({
   product,
   isOpen,
@@ -275,10 +279,12 @@ const ProductModal: React.FC<ProductModalProps> = ({
                 <img
                   src={product.imageURL}
                   alt={product.label}
-                  className="block h-60 w-full object-cover md:h-[280px]"
+                  className="block aspect-[var(--dish-ratio)] w-full object-cover"
+                  style={dishRatioStyle}
                 />
               ) : (
-                <div className="flex h-40 w-full items-center justify-center bg-[#f6f1eb] text-gray-400 md:h-[280px]">
+                <div className="flex aspect-[var(--dish-ratio)] w-full items-center justify-center bg-[#f6f1eb] text-gray-400"
+                  style={dishRatioStyle}>
                   <UtensilsCrossed className="h-10 w-10" aria-hidden="true" />
                 </div>
               )}
