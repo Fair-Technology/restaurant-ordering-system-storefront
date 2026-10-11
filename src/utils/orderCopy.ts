@@ -122,6 +122,28 @@ export interface OrderCopy {
   secureNote: string;
   showOrder: (items: string) => string;
   recapChange: string;
+  orderSent: string;
+  progressLabel: string;
+  stepSent: string;
+  stepAccepted: string;
+  stepReady: string;
+  stepOnTheWay: string;
+  stepDelivered: string;
+  stepPaymentConfirming: string;
+  stepPaymentReserved: string;
+  stepWaiting: string;
+  stepPreparing: string;
+  stepPickUpNow: string;
+  liveUpdates: string;
+  timeReadyAt: string;
+  timeDeliveryAround: string;
+  placeCollection: string;
+  placeDelivery: string;
+  placeTable: string;
+  callButton: (phone: string) => string;
+  cancelHint: string;
+  orderAgain: string;
+  emailedCopy: string;
   tableBanner: (label: string) => string;
   leaveTable: string;
   tableInvalid: string;
@@ -332,6 +354,28 @@ const en: OrderCopy = {
   secureNote: 'Payments are handled securely by Stripe. Neither the restaurant nor the ordering platform sees your card details.',
   showOrder: (items) => `Show order (${items})`,
   recapChange: 'Change',
+  orderSent: 'Order sent!',
+  progressLabel: 'Order progress',
+  stepSent: 'Sent',
+  stepAccepted: 'Accepted',
+  stepReady: 'Ready',
+  stepOnTheWay: 'On the way',
+  stepDelivered: 'Delivered',
+  stepPaymentConfirming: 'Confirming payment…',
+  stepPaymentReserved: 'Payment reserved',
+  stepWaiting: 'Waiting for the restaurant…',
+  stepPreparing: 'Being prepared',
+  stepPickUpNow: 'Pick it up now',
+  liveUpdates: 'This page updates by itself',
+  timeReadyAt: 'Ready at',
+  timeDeliveryAround: 'Delivery around',
+  placeCollection: 'Collection',
+  placeDelivery: 'Delivery',
+  placeTable: 'At your table',
+  callButton: (p) => `Call ${p}`,
+  cancelHint: 'Changed your mind? You can cancel until the restaurant accepts.',
+  orderAgain: 'Order again',
+  emailedCopy: 'We have emailed you a confirmation.',
   tableBanner: (l) => `Table ${l} · Dine in`,
   leaveTable: 'Not at this table? Order for collection instead',
   tableInvalid: 'This table QR code is not valid. Please ask a member of staff.',
@@ -549,6 +593,28 @@ const de: OrderCopy = {
   secureNote: 'Zahlungen werden sicher über Stripe abgewickelt. Ihre Kartendaten sieht weder das Restaurant noch die Bestellplattform.',
   showOrder: (items) => `Bestellung anzeigen (${items})`,
   recapChange: 'Ändern',
+  orderSent: 'Bestellung gesendet!',
+  progressLabel: 'Fortschritt der Bestellung',
+  stepSent: 'Gesendet',
+  stepAccepted: 'Angenommen',
+  stepReady: 'Fertig',
+  stepOnTheWay: 'Unterwegs',
+  stepDelivered: 'Geliefert',
+  stepPaymentConfirming: 'Zahlung wird bestätigt…',
+  stepPaymentReserved: 'Zahlung reserviert',
+  stepWaiting: 'Wartet auf das Restaurant…',
+  stepPreparing: 'Wird zubereitet',
+  stepPickUpNow: 'Jetzt abholen',
+  liveUpdates: 'Diese Seite aktualisiert sich automatisch',
+  timeReadyAt: 'Fertig um',
+  timeDeliveryAround: 'Lieferung gegen',
+  placeCollection: 'Abholung',
+  placeDelivery: 'Lieferung',
+  placeTable: 'An Ihrem Tisch',
+  callButton: (p) => `${p} anrufen`,
+  cancelHint: 'Doch anders entschieden? Stornieren ist möglich, bis das Restaurant annimmt.',
+  orderAgain: 'Erneut bestellen',
+  emailedCopy: 'Wir haben Ihnen eine Bestätigung per E-Mail geschickt.',
   tableBanner: (l) => `Tisch ${l} · Vor Ort`,
   leaveTable: 'Nicht an diesem Tisch? Stattdessen abholen',
   tableInvalid: 'Dieser Tisch-QR-Code ist ungültig. Bitte wenden Sie sich an das Personal.',

@@ -17,6 +17,8 @@ interface NavBarProps {
   onCheckout?: () => void;
   /** Shown from sm up, left of the cart (phones show it in the shop intro instead) */
   languageSwitcher?: React.ReactNode;
+  /** Pages after ordering (the order status page) have no use for the cart */
+  hideCart?: boolean;
 }
 
 const NavBar: React.FC<NavBarProps> = ({
@@ -25,6 +27,7 @@ const NavBar: React.FC<NavBarProps> = ({
   logoUrl,
   onCheckout,
   languageSwitcher,
+  hideCart = false,
 }) => {
   const storedLanguage = useAppSelector((state) => state.shop.menuLanguage);
   const copy = orderCopy(pageLanguageOf(currentChoice(storedLanguage, navigator.language)));
@@ -123,6 +126,7 @@ const NavBar: React.FC<NavBarProps> = ({
 
           <div className="flex items-center gap-3 relative">
             {languageSwitcher && <div className="hidden sm:block">{languageSwitcher}</div>}
+            {!hideCart && (
             <button
               ref={buttonRef}
               className="relative flex h-11 items-center gap-2 rounded-full bg-gray-900 px-3 text-sm font-bold text-white transition-colors hover:bg-black sm:px-4"
@@ -135,6 +139,7 @@ const NavBar: React.FC<NavBarProps> = ({
                 {cartCount}
               </span>
             </button>
+            )}
 
             {/* Render dropdown via portal anchored below the cart button */}
             {isCartOpen &&
