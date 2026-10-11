@@ -92,3 +92,35 @@ export function openState(
   }
   return { open: false };
 }
+
+/**
+ * When the shop next opens after `now` (in `timeZone`): days from today (0 = later today)
+ * plus that day and the opening time. Null when no opening is set in the coming week.
+ */
+export function nextOpening(
+  hours: WeeklyHours,
+  now: Date = new Date(),
+  timeZone?: string,
+): { inDays: number; day: WeekDay; time: string } | null {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone,
+    weekday: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(now);
+  const today = (parts.find((p) => p.type === 'weekday')?.value ?? '').toLowerCase().slice(0, 3) as WeekDay;
+  const idx = WEEK_DAYS.indexOf(today);
+  if (idx < 0) return null;
+  const minutes = toMinutes(`${parts.find((p) => p.type === 'hour')?.value}:${parts.find((p) => p.type === 'minute')?.value}`);
+
+  for (let inDays = 0; inDays <= 7; inDays++) {
+    const day = WEEK_DAYS[(idx + inDays) % 7];
+    const opens = (hours[day] ?? [])
+      .map((s) => s.open)
+      .filter((o) => inDays > 0 || toMinutes(o) > minutes)
+      .sort((a, b) => toMinutes(a) - toMinutes(b));
+    if (opens.length) return { inDays, day, time: opens[0] };
+  }
+  return null;
+}

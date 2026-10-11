@@ -166,6 +166,16 @@ export interface OrderCopy {
   statusReadyDineIn: string;
   statusCompletedDineIn: string;
   orderingPaused: string;
+  noticeOk: string;
+  noticePausedTitle: string;
+  noticePausedText: string;
+  noticeCallUs: string;
+  noticeOfflineTitle: string;
+  noticeOfflineText: string;
+  noticeClosedTitle: string;
+  noticeOpensAt: (inDays: number, day: string, time: string) => string;
+  noticeClosedText: string;
+  weekdayLong: Record<'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun', string>;
   deliveryPostcodeLabel: string;
   deliveryCheck: string;
   deliveryNotServed: (postcode: string) => string;
@@ -455,6 +465,17 @@ const en: OrderCopy = {
   codeTooSmall: 'This order is too small for this code.',
   discountChanged: 'Your discount has changed. Please check the total and try again.',
   loyaltyOptIn: (amount, n, shop) => `Email me a voucher worth ${amount} after every ${n}th order at ${shop}.`,
+  noticeOk: 'OK',
+  noticePausedTitle: 'Online ordering is paused',
+  noticePausedText: "We can't take orders right now. Please try again later.",
+  noticeCallUs: 'Order by phone:',
+  noticeOfflineTitle: 'This restaurant is offline',
+  noticeOfflineText: "It isn't taking orders online at the moment.",
+  noticeClosedTitle: 'Closed right now',
+  noticeOpensAt: (n, d, t) =>
+    n === 0 ? `We open again today at ${t}.` : n === 1 ? `We open again tomorrow at ${t}.` : `We open again on ${d} at ${t}.`,
+  noticeClosedText: 'You can still look through the menu. If the restaurant takes orders for later, you can choose a time at checkout.',
+  weekdayLong: { mon: 'Monday', tue: 'Tuesday', wed: 'Wednesday', thu: 'Thursday', fri: 'Friday', sat: 'Saturday', sun: 'Sunday' },
   orderingPaused:
     'Online ordering is paused at the moment. Please try again later or contact the restaurant directly.',
   comboBadge: 'Combo',
@@ -719,6 +740,17 @@ const de: OrderCopy = {
   discountChanged: 'Ihr Rabatt hat sich geändert. Bitte prüfen Sie die Summe und versuchen Sie es erneut.',
   loyaltyOptIn: (amount, n, shop) =>
     `Schicken Sie mir nach jeder ${n}. Bestellung bei ${shop} einen Gutschein über ${amount} per E-Mail.`,
+  noticeOk: 'OK',
+  noticePausedTitle: 'Online-Bestellungen pausiert',
+  noticePausedText: 'Wir können gerade keine Bestellungen annehmen. Bitte versuchen Sie es später noch einmal.',
+  noticeCallUs: 'Telefonisch bestellen:',
+  noticeOfflineTitle: 'Dieses Restaurant ist offline',
+  noticeOfflineText: 'Es nimmt im Moment keine Online-Bestellungen an.',
+  noticeClosedTitle: 'Gerade geschlossen',
+  noticeOpensAt: (n, d, t) =>
+    n === 0 ? `Wir öffnen heute wieder um ${t} Uhr.` : n === 1 ? `Wir öffnen morgen wieder um ${t} Uhr.` : `Wir öffnen wieder am ${d} um ${t} Uhr.`,
+  noticeClosedText: 'Sie können sich die Speisekarte trotzdem ansehen. Nimmt das Restaurant Bestellungen für später an, wählen Sie an der Kasse eine Zeit.',
+  weekdayLong: { mon: 'Montag', tue: 'Dienstag', wed: 'Mittwoch', thu: 'Donnerstag', fri: 'Freitag', sat: 'Samstag', sun: 'Sonntag' },
   orderingPaused:
     'Online-Bestellungen sind im Moment pausiert. Bitte versuchen Sie es später erneut oder wenden Sie sich direkt an das Restaurant.',
   comboBadge: 'Menü',

@@ -21,9 +21,10 @@ import ShopInfoFooter from './ShopInfoFooter';
 import ShopIntro from './ShopIntro';
 import MobileCartBar from './MobileCartBar';
 import LogoLoader from '../../shared/LogoLoader';
-import type { WeeklyHours } from '../../utils/openingHours';
+import { nextOpening, openState, type WeeklyHours } from '../../utils/openingHours';
+import ShopNoticeModal from './ShopNoticeModal';
 import { orderCopy } from '../../utils/orderCopy';
-import type { ShopFulfilment } from '../../api/orderEndpoints';
+import type { ShopFulfilment, ShopNoticeFields } from '../../api/orderEndpoints';
 import {
   resolveShopBranding,
   type ShopWithBranding,
@@ -103,9 +104,11 @@ const ShopView = () => {
   const storedMenuLanguage = useAppSelector((state) => state.shop.menuLanguage);
   const lang = currentChoice(storedMenuLanguage, navigator.language);
 
+  // Offline shops refuse the catalog (403), so don't ask for it
+  const shopIsOffline = (resolvedShopData as ShopNoticeFields | undefined)?.isOffline === true;
   const { data: catalogData, isLoading: isCatalogLoading } = useGetCatalogQuery(
     { shopId: resolvedShopId, lang },
-    { skip: !resolvedShopId },
+    { skip: !resolvedShopId || shopIsOffline },
   );
 
   // Two separate things: the language the menu came back in, and the language of the page's own text
@@ -156,6 +159,50 @@ const ShopView = () => {
     }
     navigate(`/shops/${slug}`, { replace: true }); // the tab session is the one source of truth
   }, [slug, scanned, fulfilment, dineInOn, bind, unbind, navigate]);
+
+  // Closed, paused or offline: a popup over the page instead of a banner pushing the menu down
+  const openingHours = (resolvedShopData as { openingHours?: WeeklyHours } | undefined)?.openingHours;
+  const shopTimeZone = (resolvedShopData as { timeZone?: string } | undefined)?.timeZone;
+  const noticeFields = (resolvedShopData ?? {}) as ShopNoticeFields;
+  // Offline: the owner or the platform took the shop off the web. Nothing of the menu is shown.
+  const isOffline = noticeFields.isOffline === true;
+  // Paused: the owner stopped new orders for now (optional message of their own), or the monthly limit is used up
+  const ordersPaused = noticeFields.ordersPaused === true || orderLimitReached;
+  const ordersPausedMessage = noticeFields.ordersPausedMessage?.trim();
+  const noticeKind: 'offline' | 'paused' | 'closed' | null = isOffline
+    ? 'offline'
+    : ordersPaused
+      ? 'paused'
+      : openingHours && !openState(openingHours, new Date(), shopTimeZone).open
+        ? 'closed'
+        : null;
+  // Only the "closed" popup is remembered per visit. Paused shows on every page load; offline cannot be closed.
+  const noticeKey = slug && noticeKind === 'closed' ? `shop_notice_seen_v1:${slug}:${noticeKind}` : null;
+  const [dismissedNotice, setDismissedNotice] = useState<string | null>(null);
+  const [pausedClosed, setPausedClosed] = useState(false);
+  const noticeSeen = (() => {
+    if (noticeKind === 'paused') return pausedClosed;
+    if (!noticeKey) return noticeKind !== 'offline';
+    if (dismissedNotice === noticeKey) return true;
+    try {
+      return sessionStorage.getItem(noticeKey) === '1';
+    } catch {
+      return false;
+    }
+  })();
+  const dismissNotice = () => {
+    if (noticeKind === 'paused') {
+      setPausedClosed(true);
+      return;
+    }
+    if (!noticeKey) return;
+    try {
+      sessionStorage.setItem(noticeKey, '1');
+    } catch {
+      // private mode: it just shows again next visit
+    }
+    setDismissedNotice(noticeKey);
+  };
   // Dishes a combo may offer right now: not a combo, on the menu, and offered for this mode
   const dishes = useMemo(
     () =>
@@ -301,17 +348,42 @@ const ShopView = () => {
         languageSwitcher={languageSwitcher}
         copy={copy}
       />
-      {orderLimitReached && (
-        <p role="status" className="max-w-7xl mx-auto px-6 pt-3 text-sm font-medium text-red-700">
-          {copy.orderingPaused}
-        </p>
+      {noticeKind && !noticeSeen && (
+        <ShopNoticeModal
+          kind={noticeKind}
+          title={
+            noticeKind === 'offline'
+              ? copy.noticeOfflineTitle
+              : noticeKind === 'paused'
+                ? copy.noticePausedTitle
+                : copy.noticeClosedTitle
+          }
+          dismissible={noticeKind !== 'offline'}
+          lines={
+            noticeKind === 'offline'
+              ? [copy.noticeOfflineText]
+              : noticeKind === 'paused'
+                ? [ordersPausedMessage || copy.noticePausedText]
+                : [
+                  ...(() => {
+                    const next = openingHours ? nextOpening(openingHours, new Date(), shopTimeZone) : null;
+                    return next ? [copy.noticeOpensAt(next.inDays, copy.weekdayLong[next.day], next.time)] : [];
+                  })(),
+                  copy.noticeClosedText,
+                ]
+          }
+          phone={noticeKind !== 'closed' ? (resolvedShopData as { phone?: string | null } | undefined)?.phone : null}
+          phoneLabel={copy.noticeCallUs}
+          okLabel={copy.noticeOk}
+          onClose={dismissNotice}
+        />
       )}
-      {tableInvalid && (
+      {!isOffline && tableInvalid && (
         <p role="status" className="max-w-7xl mx-auto px-6 pt-3 text-sm text-amber-800">
           {copy.tableInvalid}
         </p>
       )}
-      {table ? (
+      {isOffline ? null : table ? (
         <div className="max-w-7xl mx-auto px-6 pt-3 flex flex-wrap items-center gap-3">
           <span className="inline-block rounded-full bg-white border border-gray-200 px-3 py-1 text-sm font-semibold text-gray-900">
             {copy.tableBanner(table)}
@@ -354,7 +426,7 @@ const ShopView = () => {
           )}
         </>
       )}
-      {isCatalogLoading ? (
+      {isOffline ? null : isCatalogLoading ? (
         // The shop arrives before its dishes: show that the menu is still on its way
         <div
           role="status"
@@ -389,7 +461,7 @@ const ShopView = () => {
         />
       )}
       <Footer slug={slug} flush={!!resolvedShopData} />
-      <MobileCartBar onCheckout={() => navigate(`/shops/${slug}/checkout`)} copy={copy} />
+      {!isOffline && <MobileCartBar onCheckout={() => navigate(`/shops/${slug}/checkout`)} copy={copy} />}
     </div>
   );
 };
