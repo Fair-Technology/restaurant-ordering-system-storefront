@@ -76,7 +76,11 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
 
       <PaymentElement
         onReady={() => setElementReady(true)}
-        options={country ? { defaultValues: { billingDetails: { address: { country } } } } : undefined}
+        options={{
+          // No Stripe Link: it would offer to open a Link account with the diner's email, phone and name
+          wallets: { link: 'never' },
+          ...(country ? { defaultValues: { billingDetails: { address: { country } } } } : {}),
+        }}
       />
 
       <div className="flex items-start gap-3 rounded-2xl bg-[#e6f3ea] px-4 py-3.5 text-sm leading-relaxed text-[#1d4a2c]">

@@ -232,6 +232,8 @@ test.describe('Card order', () => {
     // Stripe was loaded for the restaurant's own account, not the platform's
     const calls = await fakeStripeCalls(page);
     expect(calls.init?.options.stripeAccount).toBe('acct_test');
+    // Stripe Link is off: no optional "save my details" box asking for email, phone and name
+    expect(calls.createOptions?.wallets?.link).toBe('never');
     expect(calls.confirmParams?.return_url).toContain('/shops/test-shop/checkout');
   });
 
@@ -842,6 +844,7 @@ test.describe('Delivery order', () => {
     expect((placed as unknown as Json).customerAddress).toBeUndefined();
     const calls = await fakeStripeCalls(page);
     expect(calls.createOptions?.defaultValues?.billingDetails?.address?.country).toBe('DE');
+    expect(calls.createOptions?.wallets?.link).toBe('never');
   });
 
   test('a postcode no longer served blocks checkout', async ({ page }) => {
