@@ -4,7 +4,7 @@ import type { Page } from '@playwright/test';
 export interface FakeStripeCalls {
   init: { key: string; options: { stripeAccount?: string } } | null;
   confirmParams: { return_url?: string } | null;
-  createOptions: { defaultValues?: { billingDetails?: { address?: { country?: string } } } } | null;
+  createOptions: { wallets?: { link?: string }; defaultValues?: { billingDetails?: { address?: { country?: string } } } } | null;
 }
 
 // Runs inside the page. Stands in for Stripe.js so no test ever reaches the real Stripe.
