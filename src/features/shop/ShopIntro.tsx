@@ -67,20 +67,16 @@ const ShopIntro: React.FC<ShopIntroProps> = ({
             {place && <p className="mt-0.5 truncate text-[15px] text-[#5c524b]">{place}</p>}
           </div>
 
-          <div className="ml-auto flex items-center gap-2 md:ml-0 md:pb-1">
-            {languageSwitcher && <div className="sm:hidden">{languageSwitcher}</div>}
-            <a
-              href="#shop-info"
-              className="inline-flex h-11 items-center gap-1.5 rounded-full border-[1.5px] border-[#e3d9ce] bg-white px-4 text-sm font-bold text-gray-900 transition-colors hover:border-gray-400"
-            >
-              <Info className="h-4 w-4" aria-hidden="true" />
-              {copy.introInfo}
-            </a>
-          </div>
-        </div>
+          {/* Phones only: the language switcher top right, beside the badge */}
+          {languageSwitcher && <div className="ml-auto sm:hidden">{languageSwitcher}</div>}
 
-        {(status || (pickupMinutes ?? 0) > 0) && (
-          <div className="flex flex-wrap gap-2 pb-5 pt-3 text-[13px] md:pl-[132px] md:text-sm">
+          {/* Status, pickup time and Info as one row of pills: under the name on phones,
+              on the right beside the name from md */}
+          <div
+            className={`order-4 flex w-full flex-wrap items-center gap-2 text-[13px] md:order-none md:ml-auto md:w-auto md:shrink-0 md:justify-end md:pb-1 md:text-sm ${
+              overlapsHero ? 'md:self-start md:pt-6' : ''
+            }`}
+          >
             {status &&
               (status.open ? (
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-[#e6f3ea] px-3 py-1 font-semibold text-[#1d5a32]">
@@ -98,9 +94,16 @@ const ShopIntro: React.FC<ShopIntroProps> = ({
                 {copy.introPickupIn(pickupMinutes as number)}
               </span>
             )}
+            <a
+              href="#shop-info"
+              className="inline-flex items-center gap-1.5 rounded-full bg-[#f6f1eb] px-3 py-1 font-semibold text-[#4a413b] transition-colors hover:bg-[#ece3d9]"
+            >
+              <Info className="h-3.5 w-3.5" aria-hidden="true" />
+              {copy.introInfo}
+            </a>
           </div>
-        )}
-        {!status && !((pickupMinutes ?? 0) > 0) && <div className="pb-5" />}
+        </div>
+        <div className="pb-5" />
       </div>
     </section>
   );
