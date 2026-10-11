@@ -47,7 +47,7 @@ const ShopIntro: React.FC<ShopIntroProps> = ({
           {/* Logo badge */}
           <div
             className={`relative z-10 flex h-[88px] w-[88px] shrink-0 items-center justify-center overflow-hidden rounded-full border-4 border-white bg-white shadow-[0_4px_16px_rgba(31,26,23,0.15)] md:h-28 md:w-28 ${
-              overlapsHero ? '-mt-[56px] md:-mt-[76px]' : ''
+              overlapsHero ? '-mt-[56px] md:-mt-[42px] md:self-start' : ''
             }`}
           >
             {logoUrl ? (
@@ -60,7 +60,7 @@ const ShopIntro: React.FC<ShopIntroProps> = ({
           </div>
 
           {/* Name + address: own row on phones, beside the badge from md */}
-          <div className="order-3 w-full min-w-0 md:order-none md:w-auto md:flex-1 md:pb-1">
+          <div className={`order-3 w-full min-w-0 md:order-none md:w-auto md:flex-1 md:pb-1 ${overlapsHero ? 'md:self-start md:pt-4' : ''}`}>
             <h1 className="font-display text-[28px] font-semibold leading-tight text-gray-900 md:text-[34px]">
               {name}
             </h1>

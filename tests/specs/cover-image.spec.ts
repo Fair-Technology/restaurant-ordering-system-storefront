@@ -146,4 +146,17 @@ test.describe('Cover image', () => {
       expect((badge?.y ?? 0) + (badge?.height ?? 0)).toBeGreaterThan(bannerBottom);
     }
   });
+
+  test('the shop name keeps a clear gap below the banner at 390, 768 and 1280 px', async ({ page }) => {
+    await mockShop(page, { heroImageUrl: 'https://cover.test/broken.jpg' });
+    for (const width of [390, 768, 1280]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto('/shops/test-shop');
+      const hero = await page.getByTestId('shop-hero').boundingBox();
+      const name = await page.getByTestId('shop-intro').getByRole('heading', { level: 1 }).boundingBox();
+      const gap = (name?.y ?? 0) - ((hero?.y ?? 0) + (hero?.height ?? 0));
+      console.log(`name gap at ${width}px: ${gap.toFixed(1)}`);
+      expect(gap).toBeGreaterThanOrEqual(14);
+    }
+  });
 });
