@@ -22,6 +22,9 @@ async function mockShop(page: Page, branding: Record<string, unknown> | null) {
   });
 }
 
+const svg = (w: number, h: number) =>
+  `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><rect width="${w}" height="${h}" fill="red"/></svg>`;
+
 test.describe('Cover image', () => {
   let requested: string[];
 
@@ -31,27 +34,20 @@ test.describe('Cover image', () => {
     page.on('request', (r) => requested.push(r.url()));
   });
 
-  test("shows the shop's cover when set", async ({ page }) => {
+  test("shows the shop's cover when set, cropped to fill (object-fit cover, centred), with no blurred backdrop", async ({ page }) => {
     await mockShop(page, { heroImageUrl: 'https://cover.test/shops/shop-t/cover.jpg' });
     await page.goto('/shops/test-shop');
-    await expect(page.getByTestId('shop-hero-image')).toHaveAttribute(
-      'src',
-      'https://cover.test/shops/shop-t/cover.jpg',
-    );
-    await expect(page.getByTestId('shop-hero-backdrop')).toHaveAttribute(
-      'style',
-      /https:\/\/cover\.test\/shops\/shop-t\/cover\.jpg/,
-    );
-    await expect(page.getByTestId('shop-hero-image')).toHaveCSS('object-fit', 'contain');
+    const image = page.getByTestId('shop-hero-image');
+    await expect(image).toHaveAttribute('src', 'https://cover.test/shops/shop-t/cover.jpg');
+    await expect(image).toHaveCSS('object-fit', 'cover');
+    await expect(image).toHaveCSS('object-position', '50% 50%');
+    await expect(page.getByTestId('shop-hero-backdrop')).toHaveCount(0);
   });
 
   test('shows the bundled default when no cover is set', async ({ page }) => {
     await mockShop(page, null);
     await page.goto('/shops/test-shop');
-    const backdrop = page.getByTestId('shop-hero-backdrop');
-    await expect(backdrop).toHaveAttribute('style', /default-cover/);
     await expect(page.getByTestId('shop-hero-image')).toHaveAttribute('src', /default-cover/);
-    expect(await backdrop.getAttribute('style')).not.toContain('unsplash');
     await page.waitForLoadState('networkidle');
     expect(requested.some((u) => u.includes('images.unsplash.com'))).toBe(false);
   });
@@ -84,82 +80,70 @@ test.describe('Cover image', () => {
     await expect(page.getByTestId('shop-hero-image')).toHaveAttribute('src', /default-cover/);
   });
 
-  test('uses the fixed heights until the picture loads, or if it fails', async ({ page }) => {
+  test('is a fixed 2:1 box across the full width on a phone, whatever the picture is (even a broken one)', async ({ page }) => {
     await mockShop(page, { heroImageUrl: 'https://cover.test/broken.jpg' });
-    await page.setViewportSize({ width: 1600, height: 900 });
-    await page.goto('/shops/test-shop');
-    const hero = page.getByTestId('shop-hero');
-    expect((await hero.boundingBox())?.height).toBe(384);
     await page.setViewportSize({ width: 390, height: 800 });
-    expect((await hero.boundingBox())?.height).toBe(288);
-  });
-
-  const svg = (w: number, h: number) =>
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}"><rect width="${w}" height="${h}" fill="red"/></svg>`;
-
-  const heightFor = async (page: Page, w: number, h: number, viewportWidth: number) => {
-    await page.unroute('https://cover.test/**');
-    await page.route('https://cover.test/**', (r) =>
-      r.fulfill({ status: 200, contentType: 'image/svg+xml', body: svg(w, h) }),
-    );
-    await mockShop(page, { heroImageUrl: 'https://cover.test/pic.svg' });
-    await page.setViewportSize({ width: viewportWidth, height: 900 });
     await page.goto('/shops/test-shop');
-    const frame = page.getByTestId('shop-hero-frame');
-    await expect(frame).toHaveAttribute('style', /aspect-ratio/);
-    return (await frame.boundingBox())?.height ?? 0;
-  };
-
-  test('box follows a 2.4:1 picture on a phone', async ({ page }) => {
-    expect(await heightFor(page, 2400, 1000, 390)).toBeCloseTo(162.5, 0);
-  });
-
-  test('on desktop the box matches the content width and follows the picture', async ({ page }) => {
-    await heightFor(page, 2400, 1000, 1600);
-    const box = await page.getByTestId('shop-hero-frame').boundingBox();
-    expect(box?.width).toBe(1232); // max-w-7xl (1280) minus px-6 on both sides
-    expect(box?.height).toBeCloseTo(1232 / 2.4, 0);
-    // the blurred band behind it spans the whole window and is as tall as the frame
-    const band = await page.getByTestId('shop-hero').boundingBox();
-    expect(band?.width).toBe(1600);
-    expect(band?.height).toBeCloseTo(1232 / 2.4, 0);
-  });
-
-  test('below the content width the picture touches the screen edges', async ({ page }) => {
-    await heightFor(page, 2400, 1000, 1000);
     const box = await page.getByTestId('shop-hero-frame').boundingBox();
     expect(box?.x).toBe(0);
-    expect(box?.width).toBe(1000);
+    expect(box?.width).toBe(390);
+    expect(box?.height).toBe(195);
   });
 
-  test('just below md the picture is not shrunk by the old phone cap', async ({ page }) => {
-    await heightFor(page, 2400, 1000, 740);
-    const box = await page.getByTestId('shop-hero-frame').boundingBox();
-    expect(box?.width).toBe(740);
-    expect(box?.height).toBeCloseTo(740 / 2.4, 0);
+  test('is a fixed 3:1 box from sm up, as wide as the menu (max-w-7xl) and centred', async ({ page }) => {
+    await mockShop(page, { heroImageUrl: 'https://cover.test/broken.jpg' });
+    await page.setViewportSize({ width: 768, height: 900 });
+    await page.goto('/shops/test-shop');
+    let box = await page.getByTestId('shop-hero-frame').boundingBox();
+    expect(box?.width).toBe(768);
+    expect(box?.height).toBe(256);
+
+    await page.setViewportSize({ width: 1600, height: 900 });
+    box = await page.getByTestId('shop-hero-frame').boundingBox();
+    expect(box?.width).toBe(1280);
+    expect(box?.height).toBeCloseTo(1280 / 3, 0);
+    expect(box?.x).toBe(160);
   });
 
-  test('on desktop a tall portrait picture is capped at 70vh', async ({ page }) => {
-    expect(await heightFor(page, 1000, 2000, 1600)).toBe(630);
+  test('switches from 2:1 to 3:1 at the sm breakpoint (640px)', async ({ page }) => {
+    await mockShop(page, { heroImageUrl: 'https://cover.test/broken.jpg' });
+    await page.setViewportSize({ width: 639, height: 900 });
+    await page.goto('/shops/test-shop');
+    const frame = page.getByTestId('shop-hero-frame');
+    expect((await frame.boundingBox())?.height).toBeCloseTo(319.5, 0);
+    await page.setViewportSize({ width: 640, height: 900 });
+    expect((await frame.boundingBox())?.height).toBeCloseTo(640 / 3, 0);
   });
 
-  test('a very wide 6:1 picture makes a thin banner on a phone, with no minimum height', async ({ page }) => {
-    expect(await heightFor(page, 2400, 400, 390)).toBeCloseTo(65, 0);
-  });
-
-  test('the picture fills the banner top to bottom whenever it is not capped (no blur above or below)', async ({ page }) => {
-    for (const [w, h, vw] of [[2400, 1000, 390], [2400, 1000, 1600], [2400, 400, 390], [1000, 1000, 390]]) {
-      const height = await heightFor(page, w, h, vw);
+  test('an old differently shaped cover is cropped to fill the box, never changing its size', async ({ page }) => {
+    for (const [w, h] of [[2400, 1000], [1000, 2000], [2400, 400]]) {
+      await page.unroute('https://cover.test/**');
+      await page.route('https://cover.test/**', (r) =>
+        r.fulfill({ status: 200, contentType: 'image/svg+xml', body: svg(w, h) }),
+      );
+      await mockShop(page, { heroImageUrl: 'https://cover.test/pic.svg' });
+      await page.setViewportSize({ width: 1600, height: 900 });
+      await page.goto('/shops/test-shop');
+      const image = page.getByTestId('shop-hero-image');
+      await expect(image).toHaveCSS('object-fit', 'cover');
       const frame = await page.getByTestId('shop-hero-frame').boundingBox();
-      expect(height).toBeCloseTo((frame?.width ?? 0) / (w / h), 0);
+      const img = await image.boundingBox();
+      expect(frame?.height).toBeCloseTo(1280 / 3, 0);
+      expect(img?.width).toBeCloseTo(frame?.width ?? 0, 0);
+      expect(img?.height).toBeCloseTo(frame?.height ?? 0, 0);
     }
   });
 
-  test('a capped tall picture leaves room only at the sides, never above or below', async ({ page }) => {
-    await heightFor(page, 1000, 2000, 1600);
-    const frame = await page.getByTestId('shop-hero-frame').boundingBox();
-    expect(frame?.height).toBe(630);
-    // contained at 630px tall, a 1:2 picture is 315px wide, centred in the 1232px frame
-    expect(315).toBeLessThan(frame?.width ?? 0);
+  test('the logo badge in the shop intro overlaps the banner bottom edge at 390, 768 and 1280 px', async ({ page }) => {
+    await mockShop(page, { heroImageUrl: 'https://cover.test/broken.jpg' });
+    for (const width of [390, 768, 1280]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto('/shops/test-shop');
+      const hero = await page.getByTestId('shop-hero').boundingBox();
+      const badge = await page.getByTestId('shop-intro').locator('div.rounded-full').first().boundingBox();
+      const bannerBottom = (hero?.y ?? 0) + (hero?.height ?? 0);
+      expect(badge?.y).toBeLessThan(bannerBottom);
+      expect((badge?.y ?? 0) + (badge?.height ?? 0)).toBeGreaterThan(bannerBottom);
+    }
   });
 });
