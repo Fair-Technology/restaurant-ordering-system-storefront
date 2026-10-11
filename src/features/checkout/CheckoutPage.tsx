@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { toComboChoiceDtos } from '../../utils/combo';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Check, ChevronLeft, ChevronRight, Lock } from 'lucide-react';
 import { Elements } from '@stripe/react-stripe-js';
 import { CheckoutPageSkeleton } from '../../shared/Skeletons';
 import NavBar from '../../shared/NavBar';
@@ -43,8 +44,8 @@ import QuoteNotice from './components/QuoteNotice';
 import { useGetShopLegalQuery } from '../../api/legalEndpoints';
 import { legalCopy } from '../../utils/legalCopy';
 import { currentChoice, pageLanguageOf } from '../../utils/pageLanguage';
-import CartSummary from './components/CartSummary';
-import CustomerDetailsForm, { type CustomerFormData } from './components/CustomerDetailsForm';
+import CartSummary, { itemDetail } from './components/CartSummary';
+import CustomerDetailsForm, { inputClass, type CustomerFormData } from './components/CustomerDetailsForm';
 import PaymentStep from './components/PaymentStep';
 
 /** The diner's order page; the access token in the link is what lets them see it. */
@@ -311,254 +312,473 @@ const CheckoutPage: React.FC = () => {
     [checkoutData],
   );
 
+  // Stripe's card form is drawn inside its own frame; this theme makes it match the page
+  const stripeAppearance = useMemo(
+    () => ({
+      theme: 'stripe' as const,
+      variables: {
+        colorPrimary: resolvedBranding.accentColor,
+        colorText: '#1f1a17',
+        colorTextSecondary: '#5c524b',
+        colorDanger: '#8a1f12',
+        borderRadius: '12px',
+        fontFamily: 'system-ui, Avenir, Helvetica, Arial, sans-serif',
+        fontSizeBase: '15px',
+        spacingUnit: '4px',
+      },
+      rules: {
+        '.Input': { border: '1.5px solid #e3d9ce', boxShadow: 'none', padding: '12px 14px' },
+        '.Input:focus': { borderColor: '#1f1a17', boxShadow: '0 0 0 3px rgba(31, 26, 23, 0.08)' },
+        '.Label': { fontWeight: '600', color: '#4a413b', fontSize: '13px' },
+        '.Tab': { border: '1.5px solid #e3d9ce', boxShadow: 'none' },
+        '.Tab--selected': { borderColor: '#1f1a17', boxShadow: 'none' },
+      },
+    }),
+    [resolvedBranding.accentColor],
+  );
+  const [recapOpen, setRecapOpen] = useState(false);
+  // Each step starts at the top of the page (on a phone the button sits far below the title)
+  useEffect(() => {
+    window.scrollTo({ top: 0 });
+  }, [step]);
+
   if (isShopLoading) return <CheckoutPageSkeleton />;
 
+  const legalWords = legalCopy(pageLanguage);
+  const itemCount = cartItems.reduce((n, i) => n + i.quantity, 0);
+  const card = 'rounded-[20px] border border-[#efe7de] bg-white p-5 sm:p-6';
+  const errorBox = 'rounded-2xl bg-[#fdecea] px-4 py-3 text-sm leading-relaxed text-[#8a1f12]';
+  const warnBox = 'rounded-2xl bg-amber-50 px-4 py-3 text-sm leading-relaxed text-amber-900';
+  const totalCents = quote ? quote.totalCents ?? quote.subtotalCents : null;
+  const submitError = placeError ?? (quoteFailed ? copy.orderFailed : undefined);
+  const backClass =
+    'inline-flex min-h-11 items-center gap-1.5 self-start text-sm font-semibold text-[#5c524b] hover:text-gray-900';
+
   return (
-    <div className="bg-gray-50/60 min-h-screen flex flex-col" style={brandStyle}>
+    <div className="flex min-h-screen flex-col bg-[#faf6f1] pb-24 lg:pb-0" style={brandStyle}>
       <div className="sticky top-0 z-50">
         <NavBar shopName={shopName} shopId={slug ?? ''} logoUrl={resolvedBranding.logoUrl} />
       </div>
 
-      <div className="flex-1 max-w-6xl w-full mx-auto px-4 py-8">
-        <h1
-          className="text-2xl font-bold mb-6"
-          style={{ color: resolvedBranding.accentColor }}
-        >
-          Checkout
-        </h1>
+      <main className="mx-auto w-full max-w-7xl flex-1 px-4 pb-10 pt-5 sm:px-6 lg:pb-16 lg:pt-7">
+        {/* Back link, title, steps */}
+        <div className="mb-5 flex flex-wrap items-end justify-between gap-4 lg:mb-6">
+          <div className="flex flex-col gap-1">
+            {step === 'info' ? (
+              <Link to={`/shops/${slug}`} className={backClass}>
+                <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+                {copy.backToMenu}
+              </Link>
+            ) : (
+              <button type="button" onClick={() => setStep('info')} className={backClass}>
+                <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+                {copy.backToDetails}
+              </button>
+            )}
+            <h1 className="font-display text-[32px] font-semibold leading-tight text-gray-900 sm:text-[40px]">
+              {step === 'info' ? copy.checkoutTitle : copy.paymentTitle}
+            </h1>
+          </div>
+          <ol aria-label={copy.stepsLabel} className="flex items-center gap-2.5 text-[13px] font-semibold sm:text-sm">
+            <li className={`flex items-center gap-2 ${step === 'payment' ? 'text-[#4a413b]' : 'text-gray-900'}`} aria-current={step === 'info' ? 'step' : undefined}>
+              {step === 'payment' ? (
+                <span className="flex h-[26px] w-[26px] items-center justify-center rounded-full bg-[#e6f3ea] text-[#1d5a32]">
+                  <Check className="h-3.5 w-3.5" strokeWidth={3} aria-hidden="true" />
+                </span>
+              ) : (
+                <span className="flex h-[26px] w-[26px] items-center justify-center rounded-full bg-gray-900 text-[13px] text-white">1</span>
+              )}
+              {copy.stepDetails}
+            </li>
+            <li aria-hidden="true" className={`h-0.5 w-7 ${step === 'payment' ? 'bg-gray-900' : 'bg-[#e3d9ce]'}`} />
+            <li className={`flex items-center gap-2 ${step === 'payment' ? 'text-gray-900' : 'text-[#6b6058]'}`} aria-current={step === 'payment' ? 'step' : undefined}>
+              <span
+                className={`flex h-[26px] w-[26px] items-center justify-center rounded-full text-[13px] ${
+                  step === 'payment' ? 'bg-gray-900 text-white' : 'border-[1.5px] border-[#cfc4b8]'
+                }`}
+              >
+                2
+              </span>
+              {copy.stepPayment}
+            </li>
+          </ol>
+        </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-            {/* Left — editable cart summary */}
-            <CartSummary slug={slug ?? ''} products={products} />
-
-            {/* Right — customer info form + payment */}
-            <div className="lg:sticky lg:top-24 bg-white rounded-xl shadow-md p-6">
-              {/* Stays mounted (only hidden) on the payment step, so "back to details" keeps what was typed */}
-              <div hidden={step !== 'info'}>
-                {tableNotice && <p className="mb-4 text-sm text-amber-800">{tableNotice}</p>}
-                {table && <p className="mb-4 text-sm font-medium">{copy.orderingForTable(table)}</p>}
-                {quote && !allOk && (
-                  <div className="mb-4">
-                    <QuoteNotice
-                      lines={quote.lines}
-                      cartItems={cartItems}
-                      copy={copy}
-                      formatCents={money.cents}
-                      onUpdate={applyQuoteChanges}
-                    />
-                  </div>
-                )}
-                {quote && quote.paymentMethods.length === 0 && (
-                  <p className="mb-4 text-sm text-red-600">{copy.noOnlinePayment}</p>
-                )}
-                {quote?.orderLimitReached && (
-                  <p className="mb-4 text-sm text-red-600">{copy.orderingPaused}</p>
-                )}
-                {quote && !quote.openNow && !hasSlots && (
-                  <p className="mb-4 text-sm text-red-600">{copy.closedNow}</p>
-                )}
-                {quote && !quote.openNow && hasSlots && (
-                  <p className="mb-4 text-sm text-amber-800">{copy.closedOrderLater}</p>
-                )}
-                {quote && hasSlots && (
-                  <fieldset className="mb-4 space-y-2" data-testid="when">
-                    <legend className="text-sm font-semibold">{copy.whenTitle}</legend>
-                    <label className="flex items-center gap-2 text-sm">
-                      <input
-                        type="radio"
-                        name="when"
-                        checked={when === 'asap'}
-                        disabled={!quote.openNow}
-                        onChange={() => setWhenChoice('asap')}
-                      />
-                      {copy.whenAsap(quote.prepMinutes)}
-                    </label>
-                    <label className="flex items-center gap-2 text-sm">
-                      <input
-                        type="radio"
-                        name="when"
-                        checked={when === 'later'}
-                        onChange={() => setWhenChoice('later')}
-                      />
-                      {copy.whenLater}
-                    </label>
-                    {when === 'later' && (
-                      <div className="flex gap-2">
-                        <select
-                          aria-label={copy.slotDay}
-                          className="border rounded px-2 py-1 text-sm"
-                          value={currentDay?.key ?? ''}
-                          onChange={(e) => {
-                            setWhenChoice('later');
-                            setDayChoice(e.target.value);
-                            setSlotChoice(null);
-                          }}
-                        >
-                          {days.map((d) => (
-                            <option key={d.key} value={d.key}>{d.label}</option>
-                          ))}
-                        </select>
-                        <select
-                          aria-label={copy.slotTime}
-                          className="border rounded px-2 py-1 text-sm"
-                          value={chosenSlot ?? ''}
-                          onChange={(e) => {
-                            setWhenChoice('later');
-                            setSlotChoice(e.target.value || null);
-                          }}
-                        >
-                          <option value="">{copy.slotPick}</option>
-                          {(currentDay?.times ?? []).map((t) => (
-                            <option key={t.iso} value={t.iso}>{t.label}</option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
-                    {when === 'later' && chosenSlot && quote.slotAvailable === false && !quoting && (
-                      <p className="text-sm text-red-600">{copy.slotGone}</p>
-                    )}
-                  </fieldset>
-                )}
-                {quote && mode === 'delivery' && quote.postcodeServed === false && (
-                  <p className="mb-4 text-sm text-red-600">{copy.deliveryNotServedNow}</p>
-                )}
-                {quote && showCodeBox && (
-                  <div className="mb-4 space-y-2" data-testid="discount">
-                    {!codeOpen && !appliedCode ? (
-                      <button type="button" className="text-sm underline" onClick={() => setCodeOpen(true)}>
-                        {copy.haveCode}
-                      </button>
-                    ) : (
-                      <div className="flex gap-2 items-end">
-                        <label className="flex-1 text-sm">
-                          <span className="block mb-1">{copy.codeLabel}</span>
-                          <input
-                            className="w-full border rounded px-2 py-1 uppercase"
-                            value={codeInput}
-                            onChange={(e) => setCodeInput(e.target.value)}
-                            disabled={appliedCode !== null}
-                            aria-label={copy.codeLabel}
-                          />
-                        </label>
-                        {appliedCode === null ? (
-                          <button
-                            type="button"
-                            className="border rounded px-3 py-1 text-sm"
-                            onClick={applyCode}
-                            disabled={codeInput.trim() === ''}
-                          >
-                            {copy.codeApply}
-                          </button>
-                        ) : (
-                          <button type="button" className="border rounded px-3 py-1 text-sm" onClick={removeCode}>
-                            {copy.codeRemove}
-                          </button>
-                        )}
-                      </div>
-                    )}
-                    {codeProblem && !quoting && (
-                      <p className="text-sm text-red-600">
-                        {discountProblemText(codeProblem, copy, money.cents(quote.discountMinSubtotalCents ?? 0))}
+        <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1fr)_380px] lg:gap-6">
+          {/* ── Left column ── */}
+          <div className="flex min-w-0 flex-col gap-5">
+            {/* Step 1. Stays mounted (only hidden) on the payment step, so "back to details" keeps what was typed */}
+            <div hidden={step !== 'info'}>
+              <div className="flex flex-col gap-5">
+                {(tableNotice || table || (quote && (!allOk || quote.paymentMethods.length === 0 || quote.orderLimitReached || !quote.openNow))) && (
+                  <div className="flex flex-col gap-3">
+                    {tableNotice && <p className={warnBox}>{tableNotice}</p>}
+                    {table && (
+                      <p className="rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-gray-900 ring-1 ring-[#efe7de]">
+                        {copy.orderingForTable(table)}
                       </p>
                     )}
+                    {quote && !allOk && (
+                      <QuoteNotice
+                        lines={quote.lines}
+                        cartItems={cartItems}
+                        copy={copy}
+                        formatCents={money.cents}
+                        onUpdate={applyQuoteChanges}
+                      />
+                    )}
+                    {quote && quote.paymentMethods.length === 0 && <p className={errorBox}>{copy.noOnlinePayment}</p>}
+                    {quote?.orderLimitReached && <p className={errorBox}>{copy.orderingPaused}</p>}
+                    {quote && !quote.openNow && !hasSlots && <p className={errorBox}>{copy.closedNow}</p>}
+                    {quote && !quote.openNow && hasSlots && <p className={warnBox}>{copy.closedOrderLater}</p>}
                   </div>
                 )}
-                {quote && ((mode === 'delivery' && quote.postcodeServed) || discount) && (
-                  <dl
-                    className="mb-4 text-sm space-y-1"
-                    data-testid={mode === 'delivery' ? 'delivery-totals' : 'order-totals'}
-                  >
-                    <div className="flex justify-between">
-                      <dt>{copy.itemsLine}</dt>
-                      <dd>{money.cents(quote.subtotalCents)}</dd>
-                    </div>
-                    {discount && (
-                      <div className="flex justify-between">
-                        <dt>{copy.discountLine(discount.code)}</dt>
-                        <dd>{money.cents(-discount.cents)}</dd>
-                      </div>
-                    )}
-                    {mode === 'delivery' && quote.postcodeServed && (
-                      <div className="flex justify-between">
-                        <dt>{copy.deliveryFeeLine}</dt>
-                        <dd>{money.cents(quote.deliveryFeeCents ?? 0)}</dd>
-                      </div>
-                    )}
-                    <div className="flex justify-between font-semibold">
-                      <dt>{copy.total}</dt>
-                      <dd>{money.cents(quote.totalCents ?? quote.subtotalCents)}</dd>
-                    </div>
-                  </dl>
-                )}
-                {quote && quote.belowMinimum && (
-                  <p className="mb-4 text-sm text-red-600">
-                    {copy.belowMinimum(money.cents(quote.minOrderAmountCents))}
-                  </p>
-                )}
-                {quote && loyalty && (
-                  <label className="mb-4 flex items-start gap-2 text-sm">
-                    <input
-                      type="checkbox"
-                      className="mt-0.5"
-                      checked={loyaltyTick}
-                      onChange={(e) => setLoyaltyTick(e.target.checked)}
-                    />
-                    <span>{copy.loyaltyOptIn(money.cents(loyalty.rewardCents), loyalty.everyOrders, shopName)}</span>
-                  </label>
-                )}
-                <CustomerDetailsForm
-                  onSubmit={handleInfoSubmit}
-                  isLoading={isInitiating}
-                  isCartEmpty={cartItems.length === 0}
-                  error={placeError ?? (quoteFailed ? copy.orderFailed : undefined)}
-                  submitLabel={
-                    method === null ? copy.loading : copy.continueToPayment
-                  }
-                  submitDisabled={!canSubmit}
-                  paymentNote={copy.payOnlineInfo}
-                  addressRequired={quote?.addressRequired ?? false}
-                  addressCopy={copy}
-                  deliveryPostcode={mode === 'delivery' ? deliveryPostcode : null}
-                  deliveryCopy={copy}
-                  defaultCountry={pageLanguage === 'de' ? 'Deutschland' : 'Germany'}
-                  legal={legalData}
-                  copy={legalCopy(pageLanguage)}
-                  slug={slug ?? ''}
-                />
-              </div>
 
-              {step === 'payment' && checkoutData && stripePromise && (
-                <div className="space-y-4">
-                  <h2 className="text-lg font-semibold">{copy.paymentTitle}</h2>
-                  <Elements
-                    stripe={stripePromise}
-                    options={{
-                      clientSecret: checkoutData.clientSecret,
-                      locale: pageLanguage === 'de' ? 'de' : 'en',
-                    }}
+                <CartSummary slug={slug ?? ''} products={products} copy={copy} />
+
+                {quote && hasSlots && (
+                  <section className={card}>
+                    <fieldset className="flex flex-col gap-3" data-testid="when">
+                      <legend className="mb-3 text-[19px] font-bold text-gray-900">{copy.whenTitle}</legend>
+                      <div className="grid gap-2.5 sm:grid-cols-2">
+                        {(
+                          [
+                            { value: 'asap' as const, title: copy.whenAsap(quote.prepMinutes), disabled: !quote.openNow },
+                            { value: 'later' as const, title: copy.whenLater, disabled: false },
+                          ]
+                        ).map((o) => {
+                          const on = when === o.value;
+                          return (
+                            <label
+                              key={o.value}
+                              className={`relative flex min-h-[60px] items-center gap-3 rounded-2xl border-[1.5px] px-4 py-2.5 transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[var(--brand-accent)] ${
+                                o.disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+                              } ${on ? 'border-[var(--brand-accent)]' : 'border-[#e3d9ce] bg-white hover:border-gray-400'}`}
+                              style={on ? { backgroundColor: 'color-mix(in srgb, var(--brand-accent) 8%, white)' } : undefined}
+                            >
+                              <input
+                                type="radio"
+                                name="when"
+                                className="absolute inset-0 m-0 h-full w-full cursor-[inherit] opacity-0"
+                                checked={on}
+                                disabled={o.disabled}
+                                onChange={() => setWhenChoice(o.value)}
+                              />
+                              <span
+                                aria-hidden="true"
+                                className={`h-5 w-5 shrink-0 rounded-full ${on ? 'border-[6px] border-[var(--brand-accent)]' : 'border-[1.5px] border-[#b9ada2]'}`}
+                              />
+                              <span className="text-[15px] font-bold text-gray-900">{o.title}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                      {when === 'later' && (
+                        <div className="grid grid-cols-2 gap-2.5 sm:max-w-md">
+                          <select
+                            aria-label={copy.slotDay}
+                            className={inputClass}
+                            value={currentDay?.key ?? ''}
+                            onChange={(e) => {
+                              setWhenChoice('later');
+                              setDayChoice(e.target.value);
+                              setSlotChoice(null);
+                            }}
+                          >
+                            {days.map((d) => (
+                              <option key={d.key} value={d.key}>{d.label}</option>
+                            ))}
+                          </select>
+                          <select
+                            aria-label={copy.slotTime}
+                            className={inputClass}
+                            value={chosenSlot ?? ''}
+                            onChange={(e) => {
+                              setWhenChoice('later');
+                              setSlotChoice(e.target.value || null);
+                            }}
+                          >
+                            <option value="">{copy.slotPick}</option>
+                            {(currentDay?.times ?? []).map((t) => (
+                              <option key={t.iso} value={t.iso}>{t.label}</option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+                      {when === 'later' && chosenSlot && quote.slotAvailable === false && !quoting && (
+                        <p className={errorBox}>{copy.slotGone}</p>
+                      )}
+                    </fieldset>
+                  </section>
+                )}
+
+                <section className={card}>
+                  <CustomerDetailsForm
+                    formId="checkout-details"
+                    onSubmit={handleInfoSubmit}
+                    legalCopy={legalWords}
+                    copy={copy}
+                    slug={slug ?? ''}
+                    addressRequired={quote?.addressRequired ?? false}
+                    defaultCountry={pageLanguage === 'de' ? 'Deutschland' : 'Germany'}
+                    deliveryPostcode={mode === 'delivery' ? deliveryPostcode : null}
                   >
-                    <PaymentStep
-                      totalCents={checkoutData.totalCents ?? checkoutData.subtotalCents}
-                      country={(shopData as { countryCode?: string } | undefined)?.countryCode ?? null}
-                      currency={checkoutData.currency}
-                      onSuccess={handlePaymentSuccess}
-                      onError={(msg) => setPaymentError(msg)}
-                    />
-                    {paymentError && (
-                      <p className="text-red-600 text-sm mt-3">{paymentError}</p>
+                    {quote && loyalty && (
+                      <label className="flex cursor-pointer items-start gap-3 text-sm leading-relaxed text-[#3a322d]">
+                        <input
+                          type="checkbox"
+                          className="mt-0.5 h-5 w-5 shrink-0 accent-[var(--brand-accent)]"
+                          checked={loyaltyTick}
+                          onChange={(e) => setLoyaltyTick(e.target.checked)}
+                        />
+                        <span>{copy.loyaltyOptIn(money.cents(loyalty.rewardCents), loyalty.everyOrders, shopName)}</span>
+                      </label>
                     )}
-                  </Elements>
-                  <button
-                    className="w-full text-sm text-gray-500 hover:text-gray-700 underline"
-                    onClick={() => setStep('info')}
-                  >
-                    {copy.backToDetails}
-                  </button>
-                </div>
-              )}
+                  </CustomerDetailsForm>
+                </section>
+              </div>
             </div>
+
+            {/* Step 2: payment */}
+            {step === 'payment' && checkoutData && stripePromise && (
+              <section className={card}>
+                <h2 className="mb-4 text-[19px] font-bold text-gray-900">{copy.paymentHeading}</h2>
+                <Elements
+                  stripe={stripePromise}
+                  options={{
+                    clientSecret: checkoutData.clientSecret,
+                    locale: pageLanguage === 'de' ? 'de' : 'en',
+                    appearance: stripeAppearance,
+                  }}
+                >
+                  <PaymentStep
+                    totalCents={checkoutData.totalCents ?? checkoutData.subtotalCents}
+                    country={(shopData as { countryCode?: string } | undefined)?.countryCode ?? null}
+                    currency={checkoutData.currency}
+                    onSuccess={handlePaymentSuccess}
+                    onError={(msg) => setPaymentError(msg)}
+                    error={paymentError}
+                  />
+                </Elements>
+              </section>
+            )}
           </div>
-      </div>
+
+          {/* ── Right column: summary (step 1) / recap (step 2) ── */}
+          <aside className={`flex min-w-0 flex-col gap-4 lg:sticky lg:top-24 ${step === 'payment' ? 'order-first lg:order-none' : ''}`}>
+            <div hidden={step !== 'info'}>
+              <div className="flex flex-col gap-4">
+                <section className={`${card} flex flex-col gap-3 shadow-[0_8px_28px_rgba(31,26,23,0.06)]`}>
+                  <h2 className="text-[19px] font-bold text-gray-900">{copy.summaryTitle}</h2>
+
+                  {quote && (
+                    <dl
+                      className="flex flex-col gap-2 text-[15px] text-[#3a322d]"
+                      data-testid={mode === 'delivery' ? 'delivery-totals' : 'order-totals'}
+                    >
+                      <div className="flex justify-between gap-3">
+                        <dt>{copy.itemsLine}</dt>
+                        <dd>{money.cents(quote.subtotalCents)}</dd>
+                      </div>
+                      {discount && (
+                        <div className="flex justify-between gap-3 text-[#1d5a32]">
+                          <dt>{copy.discountLine(discount.code)}</dt>
+                          <dd>{money.cents(-discount.cents)}</dd>
+                        </div>
+                      )}
+                      {mode === 'delivery' && quote.postcodeServed && (
+                        <div className="flex justify-between gap-3">
+                          <dt>{copy.deliveryFeeLine}</dt>
+                          <dd>{money.cents(quote.deliveryFeeCents ?? 0)}</dd>
+                        </div>
+                      )}
+                      <div className="mt-1 flex items-baseline justify-between gap-3 border-t border-[#f1ebe4] pt-3 text-gray-900">
+                        <dt className="text-[17px] font-bold">
+                          {copy.total} <span className="text-xs font-normal text-[#6b6058]">{copy.inclVat}</span>
+                        </dt>
+                        <dd className="text-2xl font-bold">{money.cents(quote.totalCents ?? quote.subtotalCents)}</dd>
+                      </div>
+                    </dl>
+                  )}
+
+                  {quote && showCodeBox && (
+                    <div className="flex flex-col gap-2" data-testid="discount">
+                      {!codeOpen && !appliedCode ? (
+                        <button
+                          type="button"
+                          className="self-start py-1 text-sm font-bold text-gray-900 underline underline-offset-4"
+                          onClick={() => setCodeOpen(true)}
+                        >
+                          {copy.haveCode}
+                        </button>
+                      ) : (
+                        <div className="flex items-end gap-2">
+                          <label className="flex-1">
+                            <span className="mb-1.5 block text-[13px] font-semibold text-[#4a413b]">{copy.codeLabel}</span>
+                            <input
+                              className={`${inputClass} h-11 uppercase`}
+                              value={codeInput}
+                              onChange={(e) => setCodeInput(e.target.value)}
+                              disabled={appliedCode !== null}
+                              aria-label={copy.codeLabel}
+                            />
+                          </label>
+                          {appliedCode === null ? (
+                            <button
+                              type="button"
+                              className="h-11 rounded-xl border-[1.5px] border-gray-900 bg-white px-4 text-sm font-bold text-gray-900 disabled:opacity-40"
+                              onClick={applyCode}
+                              disabled={codeInput.trim() === ''}
+                            >
+                              {copy.codeApply}
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              className="h-11 rounded-xl border-[1.5px] border-[#e3d9ce] bg-white px-4 text-sm font-bold text-gray-900"
+                              onClick={removeCode}
+                            >
+                              {copy.codeRemove}
+                            </button>
+                          )}
+                        </div>
+                      )}
+                      {codeProblem && !quoting && (
+                        <p className={errorBox}>
+                          {discountProblemText(codeProblem, copy, money.cents(quote.discountMinSubtotalCents ?? 0))}
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  {quote && mode === 'delivery' && quote.postcodeServed === false && (
+                    <p className={errorBox}>{copy.deliveryNotServedNow}</p>
+                  )}
+                  {quote && quote.belowMinimum && (
+                    <p className={errorBox}>{copy.belowMinimum(money.cents(quote.minOrderAmountCents))}</p>
+                  )}
+                  {submitError && <p role="alert" className={errorBox}>{submitError}</p>}
+
+                  {/* Phones: pinned to the bottom of the screen; from lg: in place */}
+                  <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[#efe7de] bg-white px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-6px_18px_rgba(31,26,23,0.06)] lg:static lg:z-auto lg:mt-1 lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none">
+                    <button
+                      type="submit"
+                      form="checkout-details"
+                      className="flex h-14 w-full items-center justify-between gap-3 rounded-full bg-[var(--brand-accent)] px-6 text-base font-bold text-[var(--brand-on-accent)] transition-transform active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
+                      disabled={cartItems.length === 0 || isInitiating || !canSubmit}
+                    >
+                      <span className="truncate">
+                        {isInitiating || method === null ? copy.loading : copy.continueToPayment}
+                      </span>
+                      {totalCents !== null && <span className="shrink-0">{money.cents(totalCents)}</span>}
+                    </button>
+                  </div>
+
+                  <div className="flex items-start gap-2.5 rounded-xl bg-[#f6f1eb] px-3 py-2.5 text-[13px] leading-relaxed text-[#4a413b]">
+                    <Lock className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                    <span>{copy.payOnlineInfo}</span>
+                  </div>
+                </section>
+
+                {legalData && (
+                  <div className="flex flex-col gap-2 px-1.5 text-xs leading-relaxed text-[#6b6058]">
+                    <p className="rounded-xl bg-amber-50 px-3 py-2.5 text-[13px] text-amber-900">
+                      {legalData.seller.phone
+                        ? legalWords.allergyLine(legalData.seller.legalName, legalData.seller.phone)
+                        : legalWords.allergyLineNoPhone}
+                    </p>
+                    <p data-testid="seller-statement">
+                      {legalWords.sellerStatement(legalData.seller.legalName, legalData.platform.name)}
+                    </p>
+                    <p>
+                      {legalWords.acceptPrefix(legalData.seller.legalName)}
+                      <Link to={`/shops/${slug}/legal/terms`} className="underline">
+                        {legalWords.footerTerms}
+                      </Link>
+                      {legalWords.acceptMiddle(legalData.seller.legalName)}
+                      <Link to={`/shops/${slug}/legal/withdrawal`} className="underline">
+                        {legalWords.footerWithdrawal}
+                      </Link>
+                      {legalWords.acceptAnd}
+                      <Link to={`/shops/${slug}/legal/privacy`} className="underline">
+                        {legalWords.footerPrivacy}
+                      </Link>
+                      {legalWords.acceptEnd}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {step === 'payment' && checkoutData && (
+              <section className={`${card} !p-0`}>
+                {/* Phones: one tappable line that opens the recap; from lg: always open */}
+                <button
+                  type="button"
+                  aria-expanded={recapOpen}
+                  onClick={() => setRecapOpen((v) => !v)}
+                  className="flex min-h-14 w-full items-center justify-between gap-3 px-5 text-left lg:hidden"
+                >
+                  <span className="flex items-center gap-2 text-[15px] font-bold text-gray-900">
+                    <ChevronRight className={`h-4 w-4 transition-transform ${recapOpen ? 'rotate-90' : ''}`} aria-hidden="true" />
+                    {copy.showOrder(copy.cartItems(itemCount))}
+                  </span>
+                  <span className="text-base font-bold text-gray-900">
+                    {money.cents(checkoutData.totalCents ?? checkoutData.subtotalCents)}
+                  </span>
+                </button>
+                <div className={`${recapOpen ? 'flex' : 'hidden'} flex-col gap-3.5 border-t border-[#f1ebe4] px-5 pb-5 pt-4 lg:flex lg:border-0 lg:p-6`}>
+                  <div className="hidden items-baseline justify-between lg:flex">
+                    <h2 className="text-[19px] font-bold text-gray-900">{copy.checkoutTitle}</h2>
+                    <button
+                      type="button"
+                      onClick={() => setStep('info')}
+                      className="text-sm font-semibold text-gray-900 underline underline-offset-4"
+                    >
+                      {copy.recapChange}
+                    </button>
+                  </div>
+                  <ul className="flex flex-col gap-3">
+                    {cartItems.map((item) => {
+                      const detail = itemDetail(item, products);
+                      return (
+                        <li key={item.key} className="flex items-center gap-3">
+                          {item.imageUrl ? (
+                            <img src={item.imageUrl} alt="" className="hidden h-12 w-12 shrink-0 rounded-[10px] object-cover lg:block" />
+                          ) : null}
+                          <div className="min-w-0 flex-1">
+                            <div className="text-[15px] font-bold text-gray-900">
+                              {item.quantity}× {item.name}
+                            </div>
+                            {detail && <div className="text-[13px] text-[#5c524b]">{detail}</div>}
+                          </div>
+                          <span className="text-[15px] font-semibold text-gray-900">
+                            {money.major(item.quantity * item.price)}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                  <div className="flex items-baseline justify-between border-t border-[#f1ebe4] pt-3">
+                    <span className="text-[17px] font-bold text-gray-900">
+                      {copy.total} <span className="text-xs font-normal text-[#6b6058]">{copy.inclVat}</span>
+                    </span>
+                    <span className="text-2xl font-bold text-gray-900">
+                      {money.cents(checkoutData.totalCents ?? checkoutData.subtotalCents)}
+                    </span>
+                  </div>
+                </div>
+              </section>
+            )}
+            {step === 'payment' && (
+              <p className="flex items-start gap-2 px-1.5 text-xs leading-relaxed text-[#6b6058]">
+                <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                {copy.secureNote}
+              </p>
+            )}
+          </aside>
+        </div>
+      </main>
 
       <Footer slug={slug} />
     </div>

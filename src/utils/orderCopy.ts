@@ -87,6 +87,41 @@ export interface OrderCopy {
   cartItems: (n: number) => string;
   addDish: (name: string) => string;
   dishCount: (n: number) => string;
+  checkoutTitle: string;
+  backToMenu: string;
+  stepsLabel: string;
+  stepDetails: string;
+  stepPayment: string;
+  basketTitle: string;
+  basketEmpty: string;
+  basketEach: (price: string) => string;
+  basketEdit: string;
+  basketRemove: string;
+  basketRemoveItem: (name: string) => string;
+  basketMore: (name: string) => string;
+  basketLess: (name: string) => string;
+  basketAddMore: string;
+  basketRemoveTitle: string;
+  basketRemoveMessage: (name: string) => string;
+  basketKeep: string;
+  detailsTitle: string;
+  nameLabel: string;
+  namePlaceholder: string;
+  emailLabel: string;
+  emailHint: string;
+  emailPlaceholder: string;
+  phoneLabel: string;
+  phoneHint: string;
+  phonePlaceholder: string;
+  billingToggle: string;
+  summaryTitle: string;
+  inclVat: string;
+  paymentHeading: string;
+  reserveTitle: string;
+  reserveNote: string;
+  secureNote: string;
+  showOrder: (items: string) => string;
+  recapChange: string;
   tableBanner: (label: string) => string;
   leaveTable: string;
   tableInvalid: string;
@@ -261,6 +296,42 @@ const en: OrderCopy = {
   cartItems: (n) => (n === 1 ? '1 item' : `${n} items`),
   addDish: (name) => `Add ${name}`,
   dishCount: (n) => (n === 1 ? '1 dish' : `${n} dishes`),
+  checkoutTitle: 'Your order',
+  backToMenu: 'Back to the menu',
+  stepsLabel: 'Checkout steps',
+  stepDetails: 'Order & details',
+  stepPayment: 'Payment',
+  basketTitle: 'Basket',
+  basketEmpty: 'Your basket is empty.',
+  basketEach: (p) => `${p} each`,
+  basketEdit: 'Edit',
+  basketRemove: 'Remove',
+  basketRemoveItem: (n) => `Remove ${n}`,
+  basketMore: (n) => `One more ${n}`,
+  basketLess: (n) => `One less ${n}`,
+  basketAddMore: 'Add more dishes',
+  basketRemoveTitle: 'Remove item?',
+  basketRemoveMessage: (n) => `Remove "${n}" from your order?`,
+  basketKeep: 'Keep',
+  detailsTitle: 'Your details',
+  nameLabel: 'Name',
+  namePlaceholder: 'Your full name',
+  emailLabel: 'Email',
+  emailHint: 'for your confirmation and invoice',
+  emailPlaceholder: 'your@email.com',
+  phoneLabel: 'Phone',
+  phoneHint: 'in case the restaurant has a question',
+  phonePlaceholder: '+1 (555) 000-0000',
+  billingToggle: 'Add a billing address (optional)',
+  summaryTitle: 'Summary',
+  inclVat: 'incl. VAT',
+  paymentHeading: 'How would you like to pay?',
+  reserveTitle: 'Reserved first, charged later.',
+  reserveNote:
+    'The amount is only reserved on your card. It is charged once the restaurant accepts – if it declines or you cancel, the reservation is released.',
+  secureNote: 'Payments are handled securely by Stripe. Neither the restaurant nor the ordering platform sees your card details.',
+  showOrder: (items) => `Show order (${items})`,
+  recapChange: 'Change',
   tableBanner: (l) => `Table ${l} · Dine in`,
   leaveTable: 'Not at this table? Order for collection instead',
   tableInvalid: 'This table QR code is not valid. Please ask a member of staff.',
@@ -442,6 +513,42 @@ const de: OrderCopy = {
   cartItems: (n) => `${n} Artikel`,
   addDish: (name) => `${name} hinzufügen`,
   dishCount: (n) => (n === 1 ? '1 Gericht' : `${n} Gerichte`),
+  checkoutTitle: 'Ihre Bestellung',
+  backToMenu: 'Zurück zur Speisekarte',
+  stepsLabel: 'Schritte',
+  stepDetails: 'Bestellung & Angaben',
+  stepPayment: 'Zahlung',
+  basketTitle: 'Warenkorb',
+  basketEmpty: 'Ihr Warenkorb ist leer.',
+  basketEach: (p) => `je ${p}`,
+  basketEdit: 'Ändern',
+  basketRemove: 'Entfernen',
+  basketRemoveItem: (n) => `${n} entfernen`,
+  basketMore: (n) => `${n}: eins mehr`,
+  basketLess: (n) => `${n}: eins weniger`,
+  basketAddMore: 'Weitere Gerichte hinzufügen',
+  basketRemoveTitle: 'Artikel entfernen?',
+  basketRemoveMessage: (n) => `„${n}“ aus Ihrer Bestellung entfernen?`,
+  basketKeep: 'Behalten',
+  detailsTitle: 'Ihre Angaben',
+  nameLabel: 'Name',
+  namePlaceholder: 'Vor- und Nachname',
+  emailLabel: 'E-Mail',
+  emailHint: 'für Bestätigung und Rechnung',
+  emailPlaceholder: 'name@beispiel.de',
+  phoneLabel: 'Telefon',
+  phoneHint: 'für Rückfragen des Restaurants',
+  phonePlaceholder: '0170 1234567',
+  billingToggle: 'Rechnungsadresse hinzufügen (optional)',
+  summaryTitle: 'Übersicht',
+  inclVat: 'inkl. MwSt.',
+  paymentHeading: 'Wie möchten Sie bezahlen?',
+  reserveTitle: 'Erst reserviert, dann abgebucht.',
+  reserveNote:
+    'Der Betrag wird nur auf Ihrer Karte reserviert. Abgebucht wird erst, wenn das Restaurant annimmt – lehnt es ab oder stornieren Sie, wird die Reservierung aufgehoben.',
+  secureNote: 'Zahlungen werden sicher über Stripe abgewickelt. Ihre Kartendaten sieht weder das Restaurant noch die Bestellplattform.',
+  showOrder: (items) => `Bestellung anzeigen (${items})`,
+  recapChange: 'Ändern',
   tableBanner: (l) => `Tisch ${l} · Vor Ort`,
   leaveTable: 'Nicht an diesem Tisch? Stattdessen abholen',
   tableInvalid: 'Dieser Tisch-QR-Code ist ungültig. Bitte wenden Sie sich an das Personal.',

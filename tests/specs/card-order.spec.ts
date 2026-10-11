@@ -206,7 +206,8 @@ test.describe('Card order', () => {
     await page.goto('/shops/test-shop/checkout');
     await fillDetails(page);
 
-    // The address is optional, but half an address is not accepted
+    // The address is optional (folded away), but half an address is not accepted
+    await page.getByRole('button', { name: 'Add a billing address (optional)' }).click();
     await page.getByLabel('Street and number').fill('Musterstraße 1');
     await page.getByRole('button', { name: 'Continue to payment' }).click();
     await expect(page.getByText('Please fill in the whole address or leave it empty.')).toBeVisible();
@@ -240,6 +241,7 @@ test.describe('Card order', () => {
     await page.route('**/api/orders', (route) => route.fulfill(fulfil(CARD_RESULT)));
     await page.goto('/shops/test-shop/checkout');
     await fillDetails(page);
+    await page.getByRole('button', { name: 'Add a billing address (optional)' }).click();
     await fillAddress(page, {
       'Street and number': 'Musterstraße 1',
       Postcode: '10115',
@@ -539,7 +541,10 @@ test.describe('Card order in German', () => {
     await page.goto('/shops/test-shop/checkout');
 
     await expect(page.getByText(/Sie bezahlen jetzt online/)).toBeVisible();
-    await fillDetails(page);
+    // The details form is German too
+    await page.getByPlaceholder('Vor- und Nachname').fill('Test Diner');
+    await page.getByPlaceholder('name@beispiel.de').fill('diner@example.com');
+    await page.getByPlaceholder('0170 1234567').fill('0301234567');
     await page.getByRole('button', { name: 'Weiter zur Zahlung' }).click();
 
     await expect(page.getByTestId('fake-card')).toBeVisible();
