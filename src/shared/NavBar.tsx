@@ -10,6 +10,9 @@ import ShopLogo from './ShopLogo';
 import { orderCopy } from '../utils/orderCopy';
 import { currentChoice, pageLanguageOf } from '../utils/pageLanguage';
 
+// The cart label in every page language, for a button width that doesn't change with the language
+const CART_LABELS = [...new Set(['de', 'en'].map((lang) => orderCopy(lang).cartLabel))];
+
 interface NavBarProps {
   shopName: string;
   shopId: string;
@@ -134,7 +137,15 @@ const NavBar: React.FC<NavBarProps> = ({
               aria-label={copy.cartLabel}
             >
               {Icon(ShoppingBag, { className: 'w-[18px] h-[18px]' })}
-              <span className="hidden sm:inline" aria-hidden="true">{copy.cartLabel}</span>
+              {/* Every language's label sits in the same grid cell, the others invisible, so the
+                  button is as wide as the longest one and keeps its width when the language changes */}
+              <span className="hidden sm:inline-grid" aria-hidden="true" data-testid="cart-label">
+                {CART_LABELS.map((label) => (
+                  <span key={label} className={`col-start-1 row-start-1 text-center ${label === copy.cartLabel ? '' : 'invisible'}`}>
+                    {label}
+                  </span>
+                ))}
+              </span>
               <span className="flex h-[22px] min-w-[22px] items-center justify-center rounded-full bg-[var(--brand-accent,#ff8c32)] px-1.5 text-xs text-[var(--brand-on-accent,#fff)]">
                 {cartCount}
               </span>

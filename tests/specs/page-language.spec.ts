@@ -180,6 +180,19 @@ test.describe('Page language', () => {
     await expect(page.getByText(/only in German|nur auf Deutsch/i)).toHaveCount(0);
   });
 
+  test('the cart button keeps the same width in German and English', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await mockShop(page, ['de'], GERMAN_ONLY);
+    await page.goto('/shops/test-shop');
+
+    const german = await page.getByRole('button', { name: 'Warenkorb', exact: true }).boundingBox();
+    await page.getByRole('button', { name: 'EN', exact: true }).click();
+    const english = await page.getByRole('button', { name: 'Cart', exact: true }).boundingBox();
+
+    expect(english?.width).toBeCloseTo(german?.width ?? 0, 0);
+    await expect(page.getByTestId('cart-label')).toContainText('Cart');
+  });
+
   test('picking EN gives English page text and keeps the German dish names', async ({ page }) => {
     await mockShop(page, ['de'], GERMAN_ONLY);
     await page.goto('/shops/test-shop');
