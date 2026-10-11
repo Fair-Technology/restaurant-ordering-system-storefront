@@ -90,6 +90,25 @@ async function mockCatalog(page: Page) {
 test.use({ locale: 'en-US' });
 
 test.describe('Menu language', () => {
+  test('shows a spinner while the dishes are still loading, then the dishes', async ({ page }) => {
+    await mockShop(page);
+    let release: () => void = () => {};
+    const held = new Promise<void>((r) => (release = r));
+    await page.route('**/api/shops/shop-t/catalog**', async (route) => {
+      await held;
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(EN_CATALOG) });
+    });
+    await page.goto('/shops/test-shop');
+
+    await expect(page.getByTestId('shop-intro')).toBeVisible();
+    await expect(page.getByTestId('menu-loading')).toBeVisible();
+    await expect(page.getByTestId('menu-loading')).toHaveText('Loading…');
+
+    release();
+    await expect(page.getByRole('heading', { name: 'Margherita Pizza' })).toBeVisible();
+    await expect(page.getByTestId('menu-loading')).toHaveCount(0);
+  });
+
   test('switches the menu language', async ({ page }) => {
     await mockShop(page);
     await mockCatalog(page);

@@ -102,7 +102,7 @@ const ShopView = () => {
   const storedMenuLanguage = useAppSelector((state) => state.shop.menuLanguage);
   const lang = currentChoice(storedMenuLanguage, navigator.language);
 
-  const { data: catalogData } = useGetCatalogQuery(
+  const { data: catalogData, isLoading: isCatalogLoading } = useGetCatalogQuery(
     { shopId: resolvedShopId, lang },
     { skip: !resolvedShopId },
   );
@@ -341,16 +341,30 @@ const ShopView = () => {
           )}
         </>
       )}
-      <CategoryFilterBar categories={categories} />
-      <div className="w-full flex items-center justify-center flex-col mt-4">
-        <MenuList
-          groupedItems={groupedItems}
-          categoryLabels={categoryLabels}
-          categoryCounts={categoryCounts}
-          categoryIcons={categoryIcons}
-          onAddToCart={() => {}}
-        />
-      </div>
+      {isCatalogLoading ? (
+        // The shop arrives before its dishes: show that the menu is still on its way
+        <div
+          role="status"
+          data-testid="menu-loading"
+          className="flex w-full flex-col items-center justify-center gap-3 py-20 text-[15px] text-[#5c524b]"
+        >
+          <span className="h-8 w-8 animate-spin rounded-full border-[3px] border-[#e3d9ce] border-t-gray-900" aria-hidden="true" />
+          {copy.loading}
+        </div>
+      ) : (
+        <>
+          <CategoryFilterBar categories={categories} />
+          <div className="w-full flex items-center justify-center flex-col mt-4">
+            <MenuList
+              groupedItems={groupedItems}
+              categoryLabels={categoryLabels}
+              categoryCounts={categoryCounts}
+              categoryIcons={categoryIcons}
+              onAddToCart={() => {}}
+            />
+          </div>
+        </>
+      )}
       {resolvedShopData && (
         <ShopInfoFooter
           name={resolvedShopData.name ?? ''}
