@@ -20,6 +20,19 @@ export const SLOT_UNAVAILABLE_ERROR = 'This time is no longer available. Please 
 export const DELIVERY_FEE_CHANGED_ERROR =
   'The delivery fee has changed. Please check your order and try again.';
 
+/** Extra fields on the public shop, hand-written because endpoints.ts is generated. */
+export interface ShopNoticeFields {
+  /** Owner or superadmin took the shop offline: no menu is shown and the popup cannot be closed */
+  isOffline?: boolean;
+  /** The owner paused new orders; the menu stays visible */
+  ordersPaused?: boolean;
+  /** The owner's own text for the paused popup (up to 280 characters) */
+  ordersPausedMessage?: string;
+}
+
+/** The backend's stable code on a 409 when the shop is not taking orders right now */
+export const ORDERS_PAUSED_CODE = 'ORDERS_PAUSED';
+
 export type PaymentMethod = 'card';
 export type LineStatus = 'ok' | 'price_changed' | 'unavailable' | 'invalid_options';
 export type StoredOrderState =

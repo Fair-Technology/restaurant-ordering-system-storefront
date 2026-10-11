@@ -20,6 +20,7 @@ import {
   LEGAL_CHANGED_ERROR,
   MODE_NOT_OFFERED_ERROR,
   ORDER_LIMIT_REACHED_ERROR,
+  ORDERS_PAUSED_CODE,
   SLOT_UNAVAILABLE_ERROR,
   TABLE_INVALID_ERROR,
   usePlaceOrderMutation,
@@ -51,6 +52,12 @@ import PaymentStep from './components/PaymentStep';
 /** The diner's order page; the access token in the link is what lets them see it. */
 function orderPath(slug: string | undefined, orderId: string, accessToken: string): string {
   return `/shops/${slug}/orders/${orderId}?t=${accessToken}`;
+}
+
+/** The server's own text when it refused with 409 ORDERS_PAUSED (shop paused), otherwise undefined */
+function pausedMessageOf(error: unknown, fallback: string): string | undefined {
+  const data = (error as { data?: { error?: string; code?: string } } | undefined)?.data;
+  return data?.code === ORDERS_PAUSED_CODE ? data.error || fallback : undefined;
 }
 
 const CheckoutPage: React.FC = () => {
@@ -158,6 +165,7 @@ const CheckoutPage: React.FC = () => {
     data: quote,
     isFetching: quoting,
     isError: quoteFailed,
+    error: quoteError,
     refetch: requote,
   } = useQuoteBasketQuery(quoteArg, { skip: !resolvedShopId || cartItems.length === 0 });
   // One key per attempt: a double click re-sends the same key and yields one order
@@ -251,7 +259,10 @@ const CheckoutPage: React.FC = () => {
       return;
     }
     const msg = (res.error as { data?: { error?: string } } | undefined)?.data?.error;
-    if (msg === DELIVERY_POSTCODE_NOT_SERVED_ERROR) {
+    const pausedText = pausedMessageOf(res.error, copy.orderingPaused);
+    if (pausedText) {
+      setPlaceError(pausedText);
+    } else if (msg === DELIVERY_POSTCODE_NOT_SERVED_ERROR) {
       setIdempotencyKey(crypto.randomUUID());
       clearDelivery();
       setPlaceError(copy.deliveryNotServedNow);
@@ -350,7 +361,7 @@ const CheckoutPage: React.FC = () => {
   const errorBox = 'rounded-2xl bg-[#fdecea] px-4 py-3 text-sm leading-relaxed text-[#8a1f12]';
   const warnBox = 'rounded-2xl bg-amber-50 px-4 py-3 text-sm leading-relaxed text-amber-900';
   const totalCents = quote ? quote.totalCents ?? quote.subtotalCents : null;
-  const submitError = placeError ?? (quoteFailed ? copy.orderFailed : undefined);
+  const submitError = placeError ?? (quoteFailed ? pausedMessageOf(quoteError, copy.orderingPaused) ?? copy.orderFailed : undefined);
   const backClass =
     'inline-flex min-h-11 items-center gap-1.5 self-start text-sm font-semibold text-[#5c524b] hover:text-gray-900';
 

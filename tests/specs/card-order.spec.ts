@@ -692,7 +692,7 @@ test.describe('Ordering paused', () => {
     await mockBackend(page, { orderLimitReached: true });
     await page.goto('/shops/test-shop');
     await expect(
-      page.getByText('Online ordering is paused at the moment.', { exact: false }),
+      page.getByRole('alertdialog', { name: 'Online ordering is paused' }),
     ).toBeVisible();
   });
 
@@ -729,7 +729,7 @@ test.describe('Ordering paused in German', () => {
     await mockBackend(page, { language: 'de', orderLimitReached: true });
     await page.goto('/shops/test-shop');
     await expect(
-      page.getByText('Online-Bestellungen sind im Moment pausiert.', { exact: false }),
+      page.getByRole('alertdialog', { name: 'Online-Bestellungen pausiert' }),
     ).toBeVisible();
   });
 });
@@ -1591,5 +1591,102 @@ test.describe('Combo picker', () => {
     await expect(page.getByText('Your combo is complete.')).toBeVisible();
     await add.click();
     await expect(page.getByRole('button', { name: 'Cart' })).toContainText('1');
+  });
+});
+
+test.describe('Closed or paused popup', () => {
+  test.use({ locale: 'en-US', timezoneId: 'Europe/Berlin' });
+  const week = (open: string, close: string) =>
+    Object.fromEntries(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'].map((d) => [d, [{ open, close }]]));
+
+  test('paused: menu stays, popup with the phone number, OK closes it, back on every reload', async ({ page }) => {
+    await mockBackend(page, { orderLimitReached: true, shop: { phone: '069 1234' } });
+    await page.goto('/shops/test-shop');
+    const popup = page.getByRole('alertdialog', { name: 'Online ordering is paused' });
+    await expect(popup).toBeVisible();
+    await expect(page.getByText('Carbonara').first()).toBeVisible();
+    await expect(popup.getByRole('link', { name: '069 1234' })).toHaveAttribute('href', 'tel:0691234');
+    await popup.getByRole('button', { name: 'OK' }).click();
+    await expect(popup).toHaveCount(0);
+    await page.reload();
+    await expect(page.getByRole('alertdialog', { name: 'Online ordering is paused' })).toBeVisible();
+    await expect(page.getByText('Carbonara').first()).toBeVisible();
+  });
+
+  test('paused by the owner: the popup shows the owner message', async ({ page }) => {
+    await mockBackend(page, { shop: { ordersPaused: true, ordersPausedMessage: 'Back on Monday!' } });
+    await page.goto('/shops/test-shop');
+    const popup = page.getByRole('alertdialog', { name: 'Online ordering is paused' });
+    await expect(popup.getByText('Back on Monday!')).toBeVisible();
+    await expect(page.getByText('Carbonara').first()).toBeVisible();
+  });
+
+  test('paused by the owner without a message: the standard text', async ({ page }) => {
+    await mockBackend(page, { shop: { ordersPaused: true } });
+    await page.goto('/shops/test-shop');
+    const popup = page.getByRole('alertdialog', { name: 'Online ordering is paused' });
+    await expect(popup.getByText("We can't take orders right now. Please try again later.")).toBeVisible();
+  });
+
+  test('offline: no menu, popup cannot be closed', async ({ page }) => {
+    await mockBackend(page, { shop: { isOffline: true, isPaused: true } });
+    await page.route('**/api/shops/shop-t/catalog**', (route) => route.fulfill(fulfil({ error: 'offline' }, 403)));
+    await page.goto('/shops/test-shop');
+    const popup = page.getByRole('alertdialog', { name: 'This restaurant is offline' });
+    await expect(popup).toBeVisible();
+    await expect(popup.getByText("It isn't taking orders online at the moment.")).toBeVisible();
+    await expect(popup.getByRole('button')).toHaveCount(0);
+    await expect(page.getByText('Carbonara')).toHaveCount(0);
+    await expect(page.getByTestId('menu-loading')).toHaveCount(0);
+    await page.keyboard.press('Escape');
+    await page.mouse.click(5, 5);
+    await expect(popup).toBeVisible();
+  });
+
+  test('checkout: 409 ORDERS_PAUSED shows the server message', async ({ page }) => {
+    await mockBackend(page);
+    await page.route('**/api/orders/quote', (route) =>
+      route.fulfill(fulfil({ error: 'Back at 6 pm', code: 'ORDERS_PAUSED' }, 409)),
+    );
+    await seedCart(page);
+    await page.goto('/shops/test-shop/checkout');
+    await expect(page.getByText('Back at 6 pm')).toBeVisible();
+  });
+
+  test('closed: says when the shop opens again', async ({ page }) => {
+    await page.clock.setFixedTime(new Date('2026-10-12T08:00:00+02:00')); // Monday 08:00
+    await mockBackend(page, { shop: { openingHours: week('11:30', '21:00') } });
+    await page.goto('/shops/test-shop');
+    const popup = page.getByRole('alertdialog', { name: 'Closed right now' });
+    await expect(popup.getByText('We open again today at 11:30.')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(popup).toHaveCount(0);
+  });
+
+  test('closed after hours: opens again tomorrow', async ({ page }) => {
+    await page.clock.setFixedTime(new Date('2026-10-12T22:30:00+02:00')); // Monday 22:30
+    await mockBackend(page, { shop: { openingHours: { ...week('11:30', '21:00'), tue: [] } } });
+    await page.goto('/shops/test-shop');
+    await expect(page.getByText('We open again on Wednesday at 11:30.')).toBeVisible();
+  });
+
+  test('open: no popup', async ({ page }) => {
+    await page.clock.setFixedTime(new Date('2026-10-12T12:00:00+02:00'));
+    await mockBackend(page, { shop: { openingHours: week('11:30', '21:00') } });
+    await page.goto('/shops/test-shop');
+    await expect(page.getByText('Carbonara').first()).toBeVisible();
+    await expect(page.getByRole('alertdialog')).toHaveCount(0);
+  });
+
+  test.describe('German', () => {
+    test.use({ locale: 'de-DE' });
+    test('German wording', async ({ page }) => {
+      await page.clock.setFixedTime(new Date('2026-10-12T08:00:00+02:00'));
+      await mockBackend(page, { language: 'de', shop: { openingHours: week('11:30', '21:00') } });
+      await page.goto('/shops/test-shop');
+      const popup = page.getByRole('alertdialog', { name: 'Gerade geschlossen' });
+      await expect(popup.getByText('Wir öffnen heute wieder um 11:30 Uhr.')).toBeVisible();
+      await expect(popup.getByRole('button', { name: 'OK' })).toBeFocused();
+    });
   });
 });
