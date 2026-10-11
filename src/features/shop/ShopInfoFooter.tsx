@@ -16,6 +16,8 @@ interface ShopInfoFooterProps {
  * Address, opening hours and phone at the bottom of the shop page. No embedded map:
  * a map would load from Google on every visit and need cookie consent, so the route
  * button only opens Google Maps when the diner taps it.
+ *
+ * `id="shop-info"` is the target of the Info link in ShopIntro.
  */
 const ShopInfoFooter: React.FC<ShopInfoFooterProps> = ({ name, address, openingHours, deliveryHours, phone, copy }) => {
   const route = address ? routeUrl(address) : null;
@@ -24,23 +26,27 @@ const ShopInfoFooter: React.FC<ShopInfoFooterProps> = ({ name, address, openingH
   const delivery = deliveryHours ? hoursLines(deliveryHours, words) : [];
   if (!route && hours.length === 0 && !phone) return null;
 
-  const heading = 'text-xs font-semibold uppercase tracking-wider text-gray-500 mb-2';
+  const heading = 'mb-2 text-xs font-semibold uppercase tracking-wider text-[#6b6058]';
   return (
-    <section className="w-full bg-white border-t border-gray-200 mt-12" data-testid="shop-info">
-      <div className="max-w-7xl mx-auto px-6 py-8 grid gap-8 sm:grid-cols-3 text-sm text-gray-700">
+    <section
+      id="shop-info"
+      className="mt-14 w-full scroll-mt-24 border-t border-[#efe7de] bg-[#faf6f1]"
+      data-testid="shop-info"
+    >
+      <div className="mx-auto grid max-w-7xl gap-8 px-4 py-9 text-[15px] leading-relaxed text-[#3a322d] sm:grid-cols-3 sm:px-6">
         {route && (
           <div>
             <h2 className={heading}>{copy.infoAddress}</h2>
-            <p className="font-medium text-gray-900">{name}</p>
+            <p className="font-semibold text-gray-900">{name}</p>
             <p>{address?.street}</p>
             <p>{[address?.postcode, address?.city].filter(Boolean).join(' ')}</p>
             <a
               href={route}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-gray-300 px-3 py-1.5 font-medium text-gray-800 hover:bg-gray-50"
+              className="mt-4 inline-flex h-11 items-center gap-2 rounded-full border-[1.5px] border-gray-900 px-5 text-sm font-bold text-gray-900 transition-colors hover:bg-white"
             >
-              <MapPin className="w-4 h-4" aria-hidden="true" />
+              <MapPin className="h-4 w-4" aria-hidden="true" />
               {copy.infoRoute}
             </a>
           </div>
@@ -53,7 +59,7 @@ const ShopInfoFooter: React.FC<ShopInfoFooterProps> = ({ name, address, openingH
             ))}
             {delivery.length > 0 && (
               <>
-                <p className="mt-3 font-medium text-gray-900">{copy.infoDeliveryHours}</p>
+                <p className="mt-3 font-semibold text-gray-900">{copy.infoDeliveryHours}</p>
                 {delivery.map((line) => (
                   <p key={line}>{line}</p>
                 ))}
@@ -64,8 +70,8 @@ const ShopInfoFooter: React.FC<ShopInfoFooterProps> = ({ name, address, openingH
         {phone && (
           <div>
             <h2 className={heading}>{copy.infoPhone}</h2>
-            <a href={telHref(phone)} className="inline-flex items-center gap-1.5 hover:text-gray-900">
-              <Phone className="w-4 h-4" aria-hidden="true" />
+            <a href={telHref(phone)} className="inline-flex items-center gap-2 font-semibold text-gray-900 underline underline-offset-2">
+              <Phone className="h-4 w-4" aria-hidden="true" />
               {phone}
             </a>
           </div>

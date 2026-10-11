@@ -50,3 +50,45 @@ export function routeUrl(address: { street?: string; postcode?: string; city?: s
 export function telHref(phone: string): string {
   return `tel:${phone.replace(/[^\d+]/g, '')}`;
 }
+
+const toMinutes = (hhmm: string): number => {
+  const [h, m] = hhmm.split(':').map(Number);
+  return (h || 0) * 60 + (m || 0);
+};
+
+/**
+ * Whether the shop is open at `now` (in `timeZone`, or the browser's zone) and until when.
+ * Handles windows that run past midnight (close before open, counted from the day they start)
+ * and round-the-clock days (open === close).
+ */
+export function openState(
+  hours: WeeklyHours,
+  now: Date = new Date(),
+  timeZone?: string,
+): { open: boolean; until?: string } {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone,
+    weekday: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(now);
+  const day = (parts.find((p) => p.type === 'weekday')?.value ?? '').toLowerCase().slice(0, 3) as WeekDay;
+  const idx = WEEK_DAYS.indexOf(day);
+  if (idx < 0) return { open: false };
+  const minutes = toMinutes(`${parts.find((p) => p.type === 'hour')?.value}:${parts.find((p) => p.type === 'minute')?.value}`);
+
+  // A window from yesterday that runs past midnight
+  for (const s of hours[WEEK_DAYS[(idx + 6) % 7]] ?? []) {
+    const o = toMinutes(s.open);
+    const c = toMinutes(s.close);
+    if (c < o && minutes < c) return { open: true, until: s.close };
+  }
+  for (const s of hours[day] ?? []) {
+    const o = toMinutes(s.open);
+    const c = toMinutes(s.close);
+    if (o === c) return { open: true }; // round the clock
+    if (c < o ? minutes >= o : minutes >= o && minutes < c) return { open: true, until: s.close };
+  }
+  return { open: false };
+}

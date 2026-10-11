@@ -62,6 +62,31 @@ export interface OrderCopy {
   cancelConfirmYes: string;
   cancelConfirmNo: string;
   addonChooseAtLeast: (n: number) => string;
+  productAddToOrder: string;
+  productUpdateOrder: string;
+  productClose: string;
+  productCustomise: string;
+  productRequired: string;
+  productChooseOne: string;
+  productChooseUpTo: (n: number) => string;
+  productOptional: string;
+  productSelected: (n: number) => string;
+  productIncluded: string;
+  productQuantity: string;
+  productDecrease: string;
+  productIncrease: string;
+  productPerItem: (price: string) => string;
+  productStillToChoose: (groups: string) => string;
+  introOpen: string;
+  introOpenUntil: (time: string) => string;
+  introClosedNow: string;
+  introPickupIn: (minutes: number) => string;
+  introInfo: string;
+  cartLabel: string;
+  viewCart: string;
+  cartItems: (n: number) => string;
+  addDish: (name: string) => string;
+  dishCount: (n: number) => string;
   tableBanner: (label: string) => string;
   leaveTable: string;
   tableInvalid: string;
@@ -211,6 +236,31 @@ const en: OrderCopy = {
   cancelConfirmYes: 'Yes, cancel order',
   cancelConfirmNo: 'Keep order',
   addonChooseAtLeast: (n) => `Choose at least ${n}`,
+  productAddToOrder: 'Add to order',
+  productUpdateOrder: 'Update order',
+  productClose: 'Close',
+  productCustomise: 'Customise your dish',
+  productRequired: 'Required',
+  productChooseOne: 'Choose 1',
+  productChooseUpTo: (n) => `up to ${n}`,
+  productOptional: 'Optional',
+  productSelected: (n) => `${n} selected`,
+  productIncluded: 'included',
+  productQuantity: 'Quantity',
+  productDecrease: 'Decrease quantity',
+  productIncrease: 'Increase quantity',
+  productPerItem: (p) => `${p} each`,
+  productStillToChoose: (g) => `Still to choose: ${g}`,
+  introOpen: 'Open now',
+  introOpenUntil: (t) => `Open until ${t}`,
+  introClosedNow: 'Closed right now',
+  introPickupIn: (m) => `Pickup in about ${m} min`,
+  introInfo: 'Info',
+  cartLabel: 'Cart',
+  viewCart: 'View cart',
+  cartItems: (n) => (n === 1 ? '1 item' : `${n} items`),
+  addDish: (name) => `Add ${name}`,
+  dishCount: (n) => (n === 1 ? '1 dish' : `${n} dishes`),
   tableBanner: (l) => `Table ${l} · Dine in`,
   leaveTable: 'Not at this table? Order for collection instead',
   tableInvalid: 'This table QR code is not valid. Please ask a member of staff.',
@@ -367,6 +417,31 @@ const de: OrderCopy = {
   cancelConfirmYes: 'Ja, stornieren',
   cancelConfirmNo: 'Bestellung behalten',
   addonChooseAtLeast: (n) => `Mindestens ${n} wählen`,
+  productAddToOrder: 'In den Warenkorb',
+  productUpdateOrder: 'Bestellung aktualisieren',
+  productClose: 'Schließen',
+  productCustomise: 'Gericht anpassen',
+  productRequired: 'Pflicht',
+  productChooseOne: '1 wählen',
+  productChooseUpTo: (n) => `bis zu ${n}`,
+  productOptional: 'Optional',
+  productSelected: (n) => `${n} gewählt`,
+  productIncluded: 'inklusive',
+  productQuantity: 'Menge',
+  productDecrease: 'Menge verringern',
+  productIncrease: 'Menge erhöhen',
+  productPerItem: (p) => `${p} pro Portion`,
+  productStillToChoose: (g) => `Noch auswählen: ${g}`,
+  introOpen: 'Jetzt geöffnet',
+  introOpenUntil: (t) => `Geöffnet bis ${t}`,
+  introClosedNow: 'Gerade geschlossen',
+  introPickupIn: (m) => `Abholung in ca. ${m} Min.`,
+  introInfo: 'Infos',
+  cartLabel: 'Warenkorb',
+  viewCart: 'Warenkorb ansehen',
+  cartItems: (n) => `${n} Artikel`,
+  addDish: (name) => `${name} hinzufügen`,
+  dishCount: (n) => (n === 1 ? '1 Gericht' : `${n} Gerichte`),
   tableBanner: (l) => `Tisch ${l} · Vor Ort`,
   leaveTable: 'Nicht an diesem Tisch? Stattdessen abholen',
   tableInvalid: 'Dieser Tisch-QR-Code ist ungültig. Bitte wenden Sie sich an das Personal.',

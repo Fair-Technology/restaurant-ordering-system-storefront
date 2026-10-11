@@ -48,6 +48,8 @@ export default {
       },
       fontFamily: {
         sans: ['system-ui', 'Avenir', 'Helvetica', 'Arial', 'sans-serif'],
+        // Headings: shop name, category titles, dish names in the popup (self-hosted, no Google request)
+        display: ['"Fraunces Variable"', 'Georgia', 'serif'],
       },
       spacing: {
         15: '3.75rem',

@@ -76,7 +76,7 @@ test('the dish popup and the basket charge the offer price plus the size surchar
   await page.goto('/shops/test-shop');
   await page.getByRole('button', { name: 'View details for Carbonara' }).click();
   // The first size (Large, +3.00) is preselected: 8.00 offer + 3.00 = 11.00, with 10.50 + 3.00 struck through
-  await expect(page.getByText('Total €11.00')).toBeVisible();
+  await expect(page.getByRole('button', { name: /Add to order\s*€11\.00/ })).toBeVisible();
   await expect(page.getByText('€13.50')).toHaveCSS('text-decoration-line', 'line-through');
 });
 
@@ -84,5 +84,5 @@ test('the dish card has no "View details" button and opens from its name', async
   await page.goto('/shops/test-shop');
   await expect(page.getByRole('button', { name: 'View Details', exact: true })).toHaveCount(0);
   await page.getByRole('heading', { name: 'Carbonara' }).click();
-  await expect(page.getByText('Total €11.00')).toBeVisible();
+  await expect(page.getByRole('button', { name: /Add to order\s*€11\.00/ })).toBeVisible();
 });

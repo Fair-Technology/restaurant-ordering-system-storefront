@@ -59,13 +59,13 @@ test('a dressing must be chosen', async ({ page }) => {
   const add = page.getByRole('button', { name: 'Add To Order' });
   await expect(add).toBeDisabled();
 
-  // TickCheckbox only reacts to a click on its tick box, not on the label text
-  const tick = (name: string) => page.locator('label', { hasText: name }).locator('span').first();
-  await tick('Oil').click();
+  // A required single-choice group is a radio group; the whole row is clickable
+  await page.getByText('Oil', { exact: true }).click();
   await expect(add).toBeEnabled();
+  await expect(page.getByRole('radio', { name: 'Oil' })).toBeChecked();
 
-  await tick('Yoghurt').click();
+  await page.getByText('Yoghurt', { exact: true }).click();
   await expect(add).toBeEnabled();
-  await expect(page.locator('label', { hasText: 'Oil' }).locator('svg')).toHaveCount(0);
-  await expect(page.locator('label', { hasText: 'Yoghurt' }).locator('svg')).toHaveCount(1);
+  await expect(page.getByRole('radio', { name: 'Oil' })).not.toBeChecked();
+  await expect(page.getByRole('radio', { name: 'Yoghurt' })).toBeChecked();
 });

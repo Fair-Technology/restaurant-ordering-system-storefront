@@ -2,6 +2,9 @@ import React from 'react';
 import { ICON_MAP } from '../../utils/iconMap';
 import ProductCard from './ProductCard';
 import { Product } from '../../types/Product';
+import { useAppSelector } from '../../store/hooks';
+import { orderCopy } from '../../utils/orderCopy';
+import { currentChoice, pageLanguageOf } from '../../utils/pageLanguage';
 
 type CategoryLabelMap = Record<string, string>;
 
@@ -19,10 +22,8 @@ interface MenuListProps {
  * Each category section has an `id` matching its slug (from slugifyCategoryName)
  * so that CategoryFilterBar can scroll to it and detect which section is in view.
  *
- * The `menu-rail-mobile` CSS class provides a horizontal scroll rail on mobile
- * and switches to a responsive grid at sm/md/lg breakpoints (see main.css).
- * `menu-rail-single` is applied when a category has only one product to prevent
- * the single card from stretching to full width on mobile.
+ * Phones get a single-column list (ProductCard draws itself as a row: text left,
+ * square photo right); from sm up the cards form a 2/3/4-column grid.
  */
 const MenuList: React.FC<MenuListProps> = ({
   groupedItems,
@@ -31,30 +32,30 @@ const MenuList: React.FC<MenuListProps> = ({
   categoryIcons,
   onAddToCart,
 }) => {
-  const hasAnyMultiItemCategory = Object.values(groupedItems).some(
-    (items) => items.length > 1,
-  );
+  const storedLanguage = useAppSelector((state) => state.shop.menuLanguage);
+  const copy = orderCopy(pageLanguageOf(currentChoice(storedLanguage, navigator.language)));
 
   return (
-    <div className="max-w-7xl mx-auto space-y-12 sm:space-y-16 px-4 sm:px-6">
+    <div className="mx-auto w-full max-w-7xl space-y-10 px-4 sm:space-y-14 sm:px-6">
       {Object.entries(groupedItems).map(([categoryId, items]) => {
         const iconName = categoryIcons[categoryId];
         const IconComponent = iconName ? ICON_MAP[iconName] : null;
+        const count = categoryCounts[categoryId] ?? items.length;
         return (
           <section key={categoryId} id={categoryId} className="scroll-mt-36">
-            <h2 className="mb-4 flex items-center gap-2 text-lg font-bold text-gray-900">
+            <h2 className="mb-2 flex items-baseline gap-2.5 sm:mb-5">
               {IconComponent && (
-                <IconComponent className="h-4 w-4 text-gray-400" />
+                <IconComponent className="h-5 w-5 self-center text-[#b9ada2]" aria-hidden="true" />
               )}
-              <span>{categoryLabels[categoryId] ?? categoryId}</span>
-              <span className="ml-1 text-sm font-normal text-gray-400">
-                ({categoryCounts[categoryId] ?? items.length})
+              <span className="font-display text-[26px] font-semibold text-gray-900 sm:text-3xl">
+                {categoryLabels[categoryId] ?? categoryId}
+              </span>
+              <span className="text-sm font-normal text-[#6b6058] sm:text-[15px]">
+                {copy.dishCount(count)}
               </span>
             </h2>
 
-            <div
-              className={`menu-rail-mobile ${!hasAnyMultiItemCategory && items.length === 1 ? 'menu-rail-single' : ''}`}
-            >
+            <div className="grid grid-cols-1 sm:grid-cols-2 sm:gap-5 md:grid-cols-3 lg:grid-cols-4">
               {items.map((item) => (
                 <div key={`${categoryId}-${item.id}`} className="h-full">
                   <ProductCard

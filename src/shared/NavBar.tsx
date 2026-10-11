@@ -7,12 +7,16 @@ import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { loadCart, selectCartCount } from '../store/slices/cartSlice';
 import CartDropdown from './CartDropdown';
 import ShopLogo from './ShopLogo';
+import { orderCopy } from '../utils/orderCopy';
+import { currentChoice, pageLanguageOf } from '../utils/pageLanguage';
 
 interface NavBarProps {
   shopName: string;
   shopId: string;
   logoUrl: string | null;
   onCheckout?: () => void;
+  /** Shown from sm up, left of the cart (phones show it in the shop intro instead) */
+  languageSwitcher?: React.ReactNode;
 }
 
 const NavBar: React.FC<NavBarProps> = ({
@@ -20,7 +24,10 @@ const NavBar: React.FC<NavBarProps> = ({
   shopId,
   logoUrl,
   onCheckout,
+  languageSwitcher,
 }) => {
+  const storedLanguage = useAppSelector((state) => state.shop.menuLanguage);
+  const copy = orderCopy(pageLanguageOf(currentChoice(storedLanguage, navigator.language)));
   // `isCartOpen` tracks the visibility of the cart dropdown
   const [isCartOpen, setIsCartOpen] = useState(false);
   const navigate = useNavigate();
@@ -92,7 +99,7 @@ const NavBar: React.FC<NavBarProps> = ({
 
   return (
     <>
-      <header className="bg-white/80 backdrop-blur-md border-b border-gray-100 shadow-sm">
+      <header className="bg-white border-b border-[#f1ebe4]">
         <div className="max-w-7xl mx-auto px-6 flex justify-between items-center h-16">
           <button
             className="flex min-w-0 items-center gap-2 hover:opacity-80 transition-opacity"
@@ -114,23 +121,20 @@ const NavBar: React.FC<NavBarProps> = ({
             )}
           </button>
 
-          <div className="flex items-center gap-4 relative">
-            <div className="relative group">
-              <button
-                ref={buttonRef}
-                className="relative text-gray-700"
-                onClick={() => setIsCartOpen((v) => !v)}
-                aria-label="Cart"
-              >
-                {Icon(ShoppingBag, { className: 'w-5 h-5' })}
-                <span className="absolute -top-2 -right-2 text-white text-xs rounded-full px-1 bg-gray-900">
-                  {cartCount}
-                </span>
-              </button>
-              <span className="pointer-events-none absolute top-full left-1/2 mt-1 -translate-x-1/2 whitespace-nowrap rounded bg-gray-800 px-2 py-1 text-xs text-white opacity-0 transition-opacity group-hover:opacity-100 z-10">
-                Cart
+          <div className="flex items-center gap-3 relative">
+            {languageSwitcher && <div className="hidden sm:block">{languageSwitcher}</div>}
+            <button
+              ref={buttonRef}
+              className="relative flex h-11 items-center gap-2 rounded-full bg-gray-900 px-3 text-sm font-bold text-white transition-colors hover:bg-black sm:px-4"
+              onClick={() => setIsCartOpen((v) => !v)}
+              aria-label={copy.cartLabel}
+            >
+              {Icon(ShoppingBag, { className: 'w-[18px] h-[18px]' })}
+              <span className="hidden sm:inline" aria-hidden="true">{copy.cartLabel}</span>
+              <span className="flex h-[22px] min-w-[22px] items-center justify-center rounded-full bg-[var(--brand-accent,#ff8c32)] px-1.5 text-xs text-[var(--brand-on-accent,#fff)]">
+                {cartCount}
               </span>
-            </div>
+            </button>
 
             {/* Render dropdown via portal anchored below the cart button */}
             {isCartOpen &&

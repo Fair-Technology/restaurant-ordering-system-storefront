@@ -18,6 +18,8 @@ import { setActiveShop, setMenuLanguage, setResolvedMenuLanguage, type Fulfilmen
 import FulfilmentModeBar from './FulfilmentModeBar';
 import DeliveryPostcodeBox from './DeliveryPostcodeBox';
 import ShopInfoFooter from './ShopInfoFooter';
+import ShopIntro from './ShopIntro';
+import MobileCartBar from './MobileCartBar';
 import type { WeeklyHours } from '../../utils/openingHours';
 import { orderCopy } from '../../utils/orderCopy';
 import type { ShopFulfilment } from '../../api/orderEndpoints';
@@ -254,17 +256,38 @@ const ShopView = () => {
     );
   }
 
+  // One switcher element, placed in the nav bar from sm up and in the shop intro on phones
+  const languageSwitcher = (
+    <LanguageSwitcher
+      languages={offeredLanguages}
+      current={pickerCurrent(lang, offeredLanguages)}
+      onChange={(l) => dispatch(setMenuLanguage(l))}
+    />
+  );
+
   return (
-    <div className="bg-gray-50/60 min-h-screen" style={brandStyle}>
+    <div className="bg-white min-h-screen" style={brandStyle}>
       <div className="sticky top-0 z-50">
         <NavBar
           shopName={shopName}
           shopId={slug ?? ''}
           logoUrl={resolvedBranding.logoUrl}
           onCheckout={() => navigate(`/shops/${slug}/checkout`)}
+          languageSwitcher={languageSwitcher}
         />
       </div>
       {resolvedBranding.showHero && <HeroSection heroImageUrl={resolvedBranding.heroImageUrl} />}
+      <ShopIntro
+        name={shopName}
+        logoUrl={resolvedBranding.logoUrl}
+        address={(resolvedShopData as { address?: { street?: string; postcode?: string; city?: string } } | undefined)?.address}
+        openingHours={(resolvedShopData as { openingHours?: WeeklyHours } | undefined)?.openingHours}
+        timeZone={(resolvedShopData as { timeZone?: string } | undefined)?.timeZone}
+        pickupMinutes={visibleModes.includes('collection') ? fulfilment?.prepMinutes?.collection : null}
+        overlapsHero={resolvedBranding.showHero}
+        languageSwitcher={languageSwitcher}
+        copy={copy}
+      />
       {orderLimitReached && (
         <p role="status" className="max-w-7xl mx-auto px-6 pt-3 text-sm font-medium text-red-700">
           {copy.orderingPaused}
@@ -318,13 +341,6 @@ const ShopView = () => {
           )}
         </>
       )}
-      <div className="max-w-7xl mx-auto px-6 pt-3 flex justify-end">
-        <LanguageSwitcher
-          languages={offeredLanguages}
-          current={pickerCurrent(lang, offeredLanguages)}
-          onChange={(l) => dispatch(setMenuLanguage(l))}
-        />
-      </div>
       <CategoryFilterBar categories={categories} />
       <div className="w-full flex items-center justify-center flex-col mt-4">
         <MenuList
@@ -346,6 +362,7 @@ const ShopView = () => {
         />
       )}
       <Footer slug={slug} flush={!!resolvedShopData} />
+      <MobileCartBar onCheckout={() => navigate(`/shops/${slug}/checkout`)} copy={copy} />
     </div>
   );
 };
