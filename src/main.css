@@ -77,3 +77,31 @@
     }
   }
 }
+
+/* LogoLoader ("Uhrzeiger"): the colour logo is revealed by a sweeping clock hand */
+@property --logo-sweep {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+@keyframes logo-loader-sweep {
+  0% { --logo-sweep: 0deg; }
+  85%, 100% { --logo-sweep: 360deg; }
+}
+@keyframes logo-loader-hand {
+  0% { transform: rotate(0deg); }
+  85%, 100% { transform: rotate(360deg); }
+}
+.logo-loader-top {
+  -webkit-mask-image: conic-gradient(#000 var(--logo-sweep), transparent 0);
+  mask-image: conic-gradient(#000 var(--logo-sweep), transparent 0);
+  animation: logo-loader-sweep 2.2s linear infinite;
+}
+.logo-loader-hand {
+  transform-origin: 50% 100%;
+  animation: logo-loader-hand 2.2s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .logo-loader-top { animation: none; -webkit-mask-image: none; mask-image: none; }
+  .logo-loader-hand { animation: none; opacity: 0; }
+}

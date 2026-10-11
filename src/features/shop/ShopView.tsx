@@ -20,6 +20,7 @@ import DeliveryPostcodeBox from './DeliveryPostcodeBox';
 import ShopInfoFooter from './ShopInfoFooter';
 import ShopIntro from './ShopIntro';
 import MobileCartBar from './MobileCartBar';
+import LogoLoader from '../../shared/LogoLoader';
 import type { WeeklyHours } from '../../utils/openingHours';
 import { orderCopy } from '../../utils/orderCopy';
 import type { ShopFulfilment } from '../../api/orderEndpoints';
@@ -348,7 +349,7 @@ const ShopView = () => {
           data-testid="menu-loading"
           className="flex w-full flex-col items-center justify-center gap-3 py-20 text-[15px] text-[#5c524b]"
         >
-          <span className="h-8 w-8 animate-spin rounded-full border-[3px] border-[#e3d9ce] border-t-gray-900" aria-hidden="true" />
+          <LogoLoader logoUrl={resolvedBranding.logoUrl} name={shopName} size={96} decorative />
           {copy.loading}
         </div>
       ) : (

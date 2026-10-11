@@ -558,6 +558,8 @@ const CheckoutPage: React.FC = () => {
                     onSuccess={handlePaymentSuccess}
                     onError={(msg) => setPaymentError(msg)}
                     error={paymentError}
+                    logoUrl={resolvedBranding.logoUrl}
+                    shopName={shopName}
                   />
                 </Elements>
               </section>

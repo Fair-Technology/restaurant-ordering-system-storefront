@@ -5,6 +5,7 @@ import { useAppSelector } from '../../../store/hooks';
 import { formatCents } from '../../../utils/money';
 import { currentChoice, pageLanguageOf } from '../../../utils/pageLanguage';
 import { orderCopy } from '../../../utils/orderCopy';
+import LogoLoader from '../../../shared/LogoLoader';
 
 interface PaymentStepProps {
   totalCents: number;
@@ -14,6 +15,9 @@ interface PaymentStepProps {
   onError: (message: string) => void;
   /** Shown above the pay button when the last attempt failed */
   error: string | null;
+  /** The restaurant's logo and name, for the loading animation while the card form loads */
+  logoUrl?: string | null;
+  shopName?: string;
 }
 
 /**
@@ -28,6 +32,8 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
   onSuccess,
   onError,
   error,
+  logoUrl = null,
+  shopName = '',
 }) => {
   const storedLanguage = useAppSelector((state) => state.shop.menuLanguage);
   const language = pageLanguageOf(currentChoice(storedLanguage, navigator.language));
@@ -62,15 +68,11 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
 
   return (
     <div className="flex flex-col gap-5">
-      {/* Skeleton shown until the Stripe iframe is ready */}
+      {/* The restaurant's logo loader until the Stripe card form is ready */}
       {!elementReady && (
-        <div className="space-y-3" aria-hidden="true">
-          <div className="skeleton h-12 rounded-xl" />
-          <div className="grid grid-cols-2 gap-3">
-            <div className="skeleton h-12 rounded-xl" />
-            <div className="skeleton h-12 rounded-xl" />
-          </div>
-          <p className="text-center text-xs text-[#9a8f86]">{copy.loading}</p>
+        <div role="status" className="flex flex-col items-center gap-3 py-8 text-sm text-[#5c524b]">
+          <LogoLoader logoUrl={logoUrl} name={shopName} size={72} decorative />
+          {copy.loading}
         </div>
       )}
 
