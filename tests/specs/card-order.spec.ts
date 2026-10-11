@@ -1480,3 +1480,116 @@ test.describe('Shop info footer', () => {
     await expect(page.getByTestId('shop-info')).toHaveCount(0);
   });
 });
+
+test.describe('Cart in the top bar', () => {
+  test.use({ locale: 'en-US' });
+
+  test('lists the dishes, steps the count and turns − into a bin at one', async ({ page }) => {
+    await mockBackend(page);
+    await seedCart(page);
+    await page.goto('/shops/test-shop');
+    await page.getByRole('button', { name: 'Cart' }).click();
+
+    const cart = page.getByRole('dialog', { name: 'Your order' });
+    await expect(cart.getByText('Carbonara')).toBeVisible();
+    await expect(cart.getByText('Collection · ready in about 20 min')).toBeVisible();
+    await cart.getByRole('button', { name: 'One more Carbonara' }).click();
+    await expect(cart.getByText('2 items')).toBeVisible();
+    await expect(cart.getByText('€10.50 each')).toBeVisible();
+    await cart.getByRole('button', { name: 'One less Carbonara' }).click();
+    await cart.getByRole('button', { name: 'Remove Carbonara' }).click();
+    await expect(cart.getByText('Your cart is empty')).toBeVisible();
+  });
+
+  test('emptying the cart asks once', async ({ page }) => {
+    await mockBackend(page);
+    await seedCart(page);
+    await page.goto('/shops/test-shop');
+    await page.getByRole('button', { name: 'Cart' }).click();
+    const cart = page.getByRole('dialog', { name: 'Your order' });
+
+    await cart.getByRole('button', { name: 'Empty cart' }).click();
+    await cart.getByRole('button', { name: 'Keep' }).click();
+    await expect(cart.getByText('Carbonara')).toBeVisible();
+    await cart.getByRole('button', { name: 'Empty cart' }).click();
+    await cart.getByRole('button', { name: 'Yes, empty it' }).click();
+    await expect(cart.getByText('Your cart is empty')).toBeVisible();
+  });
+
+  test('checkout goes to the checkout page', async ({ page }) => {
+    await mockBackend(page);
+    await seedCart(page);
+    await page.goto('/shops/test-shop');
+    await page.getByRole('button', { name: 'Cart' }).click();
+    await page.getByRole('dialog', { name: 'Your order' }).getByRole('button', { name: 'Checkout' }).click();
+    await expect(page).toHaveURL(/\/shops\/test-shop\/checkout$/);
+  });
+
+  test('on delivery it shows how far the order is from the minimum', async ({ page }) => {
+    await mockBackend(page, { modes: DELIVERY_MODES, delivery: ZONES, quote: deliveryQuote });
+    await bindDelivery(page);
+    await page.addInitScript(() =>
+      localStorage.setItem(
+        'mewmew_cart_v1:test-shop',
+        JSON.stringify([{ key: 'p1::::', id: 'p1', name: 'Carbonara', price: 7.5, quantity: 1 }]),
+      ),
+    );
+    await page.goto('/shops/test-shop');
+    await page.getByRole('button', { name: 'Cart' }).click();
+    const cart = page.getByRole('dialog', { name: 'Your order' });
+
+    await expect(cart.getByText('Delivery to 10115 · about 45 min')).toBeVisible();
+    await expect(cart.getByText('€2.50 to go until the minimum order for delivery (€10.00)')).toBeVisible();
+    await cart.getByRole('button', { name: 'One more Carbonara' }).click();
+    await expect(cart.getByText('The delivery fee of €2.50 is added at checkout.')).toBeVisible();
+  });
+
+  test('on a phone the cart is a bottom sheet that fits the screen', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await mockBackend(page);
+    await seedCart(page);
+    await page.goto('/shops/test-shop');
+    await page.getByRole('button', { name: 'Cart', exact: true }).click();
+
+    const box = await page.getByRole('dialog', { name: 'Your order' }).boundingBox();
+    expect(box!.x).toBe(0);
+    expect(box!.width).toBe(390);
+    expect(Math.round(box!.y + box!.height)).toBe(844);
+  });
+});
+
+test.describe('Cart in German', () => {
+  test.use({ locale: 'de-DE' });
+
+  test('German wording', async ({ page }) => {
+    await mockBackend(page, { language: 'de' });
+    await seedCart(page);
+    await page.goto('/shops/test-shop');
+    await page.getByRole('button', { name: 'Warenkorb' }).click();
+    const cart = page.getByRole('dialog', { name: 'Ihre Bestellung' });
+    await expect(cart.getByText('Abholung · fertig in ca. 20 Min.')).toBeVisible();
+    await expect(cart.getByRole('button', { name: 'Zur Kasse' })).toBeVisible();
+    await expect(cart.getByText('Zwischensumme')).toBeVisible();
+  });
+});
+
+test.describe('Combo picker', () => {
+  test.use({ locale: 'en-US' });
+
+  test('pressing add while a group is open points at it, then adds once complete', async ({ page }) => {
+    await mockBackend(page, { products: MENU });
+    await page.goto('/shops/test-shop');
+    await page.getByRole('button', { name: 'View details for Pasta Menu' }).click();
+
+    const add = page.getByRole('button', { name: /Add to order/ });
+    await expect(add).toContainText('1 still open');
+    await expect(page.getByText('1 of 2 chosen').first()).toBeAttached();
+    await add.click({ force: true }); // aria-disabled: muted but still pressable
+    await expect(page.getByRole('dialog')).toBeVisible(); // nothing added, still open
+
+    await page.getByRole('radio', { name: 'Fanta' }).check();
+    await expect(page.getByText('Your combo is complete.')).toBeVisible();
+    await add.click();
+    await expect(page.getByRole('button', { name: 'Cart' })).toContainText('1');
+  });
+});

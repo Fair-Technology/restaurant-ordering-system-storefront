@@ -40,7 +40,7 @@ import { useTableSession } from '../../hooks/useTableSession';
 import { normaliseTableNumber } from '../../utils/tableSession';
 import { useDeliverySession } from '../../hooks/useDeliverySession';
 import { useMoney } from '../../hooks/useMoney';
-import { chosenMode } from '../../utils/delivery';
+import { chosenMode, zoneFor } from '../../utils/delivery';
 
 type CategoryOption = { id: string; label: string; count: number; icon?: string };
 
@@ -132,6 +132,17 @@ const ShopView = () => {
   const mode = chosenMode({ table, deliveryPostcode, modes: fulfilment?.modes ?? ['collection'] });
   const barSelected: FulfilmentMode = mode === 'delivery' || askingPostcode ? 'delivery' : 'collection';
   const money = useMoney();
+  // How this order will be handed over, for the line at the top of the cart
+  const deliveryZone =
+    mode === 'delivery' && deliveryPostcode ? zoneFor(fulfilment?.delivery?.zones ?? [], deliveryPostcode) : null;
+  const cartContext = {
+    mode,
+    postcode: deliveryPostcode,
+    table,
+    minOrder: deliveryZone ? deliveryZone.minOrderCents / 100 : null,
+    fee: deliveryZone ? deliveryZone.feeCents / 100 : null,
+    minutes: fulfilment?.prepMinutes?.[mode] ?? null,
+  };
   const [tableInvalid, setTableInvalid] = useState(false);
   useEffect(() => {
     if (!slug || scanned === null || !fulfilment || !dineInOn) return; // dine-in off: ?t= is ignored
@@ -275,6 +286,7 @@ const ShopView = () => {
           logoUrl={resolvedBranding.logoUrl}
           onCheckout={() => navigate(`/shops/${slug}/checkout`)}
           languageSwitcher={languageSwitcher}
+          cartContext={cartContext}
         />
       </div>
       {resolvedBranding.showHero && <HeroSection heroImageUrl={resolvedBranding.heroImageUrl} />}

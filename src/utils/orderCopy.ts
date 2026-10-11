@@ -214,6 +214,29 @@ export interface OrderCopy {
   infoAllDay: string;
   infoDayShort: Record<'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun', string>;
   comboTotal: (amount: string) => string;
+  comboBuild: string;
+  comboProgress: (done: number, total: number) => string;
+  comboYours: string;
+  comboNotChosen: string;
+  comboChosen: string;
+  comboIncluded: string;
+  comboFor: (dish: string) => string;
+  comboOpen: (n: number) => string;
+  comboComplete: string;
+  cartTitle: string;
+  cartEmptyTitle: string;
+  cartEmptyText: string;
+  cartToMenu: string;
+  cartSubtotal: string;
+  cartCheckout: string;
+  cartClear: string;
+  cartClearAsk: string;
+  cartClearYes: string;
+  cartCollectionLine: (minutes: number | null) => string;
+  cartDeliveryLine: (postcode: string, minutes: number | null) => string;
+  cartTableLine: (table: string) => string;
+  cartMinLeft: (left: string, min: string) => string;
+  cartFeeNote: (fee: string) => string;
 }
 
 const en: OrderCopy = {
@@ -440,6 +463,29 @@ const en: OrderCopy = {
   comboCancel: 'Cancel',
   comboIncomplete: 'Choose one dish in every group.',
   comboTotal: (a) => `Total ${a}`,
+  comboBuild: 'Build your combo',
+  comboProgress: (d, t) => `${d} of ${t} chosen`,
+  comboYours: 'Your combo',
+  comboNotChosen: 'Not chosen yet',
+  comboChosen: 'Chosen',
+  comboIncluded: 'Included',
+  comboFor: (d) => `For ${d}`,
+  comboOpen: (n) => `${n} still open`,
+  comboComplete: 'Your combo is complete.',
+  cartTitle: 'Your order',
+  cartEmptyTitle: 'Your cart is empty',
+  cartEmptyText: 'Pick a dish from the menu and it will show up here.',
+  cartToMenu: 'Back to the menu',
+  cartSubtotal: 'Subtotal',
+  cartCheckout: 'Checkout',
+  cartClear: 'Empty cart',
+  cartClearAsk: 'Remove everything?',
+  cartClearYes: 'Yes, empty it',
+  cartCollectionLine: (m) => (m ? `Collection · ready in about ${m} min` : 'Collection'),
+  cartDeliveryLine: (pc, m) => `Delivery to ${pc}` + (m ? ` · about ${m} min` : ''),
+  cartTableLine: (t) => `Table ${t}`,
+  cartMinLeft: (left, min) => `${left} to go until the minimum order for delivery (${min})`,
+  cartFeeNote: (fee) => `The delivery fee of ${fee} is added at checkout.`,
   infoAddress: 'Address',
   infoRoute: 'Get directions',
   infoHours: 'Opening hours',
@@ -681,6 +727,29 @@ const de: OrderCopy = {
   comboCancel: 'Abbrechen',
   comboIncomplete: 'Bitte wählen Sie in jeder Gruppe ein Gericht.',
   comboTotal: (a) => `Gesamt ${a}`,
+  comboBuild: 'Menü zusammenstellen',
+  comboProgress: (d, t) => `${d} von ${t} gewählt`,
+  comboYours: 'Ihr Menü',
+  comboNotChosen: 'Noch nicht gewählt',
+  comboChosen: 'Gewählt',
+  comboIncluded: 'Inklusive',
+  comboFor: (d) => `Für ${d}`,
+  comboOpen: (n) => `Noch ${n} offen`,
+  comboComplete: 'Ihr Menü ist vollständig.',
+  cartTitle: 'Ihre Bestellung',
+  cartEmptyTitle: 'Ihr Warenkorb ist leer',
+  cartEmptyText: 'Wählen Sie ein Gericht aus der Speisekarte – es erscheint dann hier.',
+  cartToMenu: 'Zur Speisekarte',
+  cartSubtotal: 'Zwischensumme',
+  cartCheckout: 'Zur Kasse',
+  cartClear: 'Warenkorb leeren',
+  cartClearAsk: 'Alles entfernen?',
+  cartClearYes: 'Ja, leeren',
+  cartCollectionLine: (m) => (m ? `Abholung · fertig in ca. ${m} Min.` : 'Abholung'),
+  cartDeliveryLine: (pc, m) => `Lieferung nach ${pc}` + (m ? ` · ca. ${m} Min.` : ''),
+  cartTableLine: (t) => `Tisch ${t}`,
+  cartMinLeft: (left, min) => `Noch ${left} bis zum Mindestbestellwert für Lieferung (${min})`,
+  cartFeeNote: (fee) => `Die Liefergebühr von ${fee} kommt an der Kasse dazu.`,
   infoAddress: 'Adresse',
   infoRoute: 'Route planen',
   infoHours: 'Öffnungszeiten',

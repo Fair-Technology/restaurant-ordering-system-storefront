@@ -5,7 +5,7 @@ import { ShoppingBag } from 'lucide-react';
 import { Icon } from './Icon';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { loadCart, selectCartCount } from '../store/slices/cartSlice';
-import CartDropdown from './CartDropdown';
+import CartDropdown, { type CartContext } from './CartDropdown';
 import ShopLogo from './ShopLogo';
 import { orderCopy } from '../utils/orderCopy';
 import { currentChoice, pageLanguageOf } from '../utils/pageLanguage';
@@ -22,6 +22,8 @@ interface NavBarProps {
   languageSwitcher?: React.ReactNode;
   /** Pages after ordering (the order status page) have no use for the cart */
   hideCart?: boolean;
+  /** How the order will be handed over, for the line at the top of the cart */
+  cartContext?: CartContext;
 }
 
 const NavBar: React.FC<NavBarProps> = ({
@@ -31,6 +33,7 @@ const NavBar: React.FC<NavBarProps> = ({
   onCheckout,
   languageSwitcher,
   hideCart = false,
+  cartContext,
 }) => {
   const storedLanguage = useAppSelector((state) => state.shop.menuLanguage);
   const copy = orderCopy(pageLanguageOf(currentChoice(storedLanguage, navigator.language)));
@@ -65,14 +68,14 @@ const NavBar: React.FC<NavBarProps> = ({
       setDropdownPos(null);
       return;
     }
-    const DROPDOWN_WIDTH = 384; // matches Tailwind w-96
+    const DROPDOWN_WIDTH = 400;
     function compute() {
       const rect = buttonRef.current!.getBoundingClientRect();
       const left = Math.min(
         Math.max(rect.right - DROPDOWN_WIDTH, 8),
         window.innerWidth - DROPDOWN_WIDTH - 8,
       );
-      const top = rect.bottom + window.scrollY + 8;
+      const top = rect.bottom + window.scrollY + 12;
       setDropdownPos({ left, top, width: DROPDOWN_WIDTH });
     }
     compute();
@@ -134,6 +137,7 @@ const NavBar: React.FC<NavBarProps> = ({
               ref={buttonRef}
               className="relative flex h-11 items-center gap-2 rounded-full bg-gray-900 px-3 text-sm font-bold text-white transition-colors hover:bg-black sm:px-4"
               onClick={() => setIsCartOpen((v) => !v)}
+              aria-expanded={isCartOpen}
               aria-label={copy.cartLabel}
             >
               {Icon(ShoppingBag, { className: 'w-[18px] h-[18px]' })}
@@ -167,6 +171,7 @@ const NavBar: React.FC<NavBarProps> = ({
                   }}
                   onClose={() => setIsCartOpen(false)}
                   onCheckout={onCheckout}
+                  context={cartContext}
                 />,
                 document.body,
               )}
