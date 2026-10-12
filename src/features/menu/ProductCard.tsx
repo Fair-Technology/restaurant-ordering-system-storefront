@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Plus, UtensilsCrossed } from 'lucide-react';
 import ProductModal from './ProductModal';
 import ComboModal from './ComboModal';
+import { PREVIEW_OPEN_EVENT, isPreviewMode, postToAdmin, usePreviewState } from '../../utils/preview';
 import { orderCopy } from '../../utils/orderCopy';
 import { Product } from '../../types/Product';
 import { useMoney } from '../../hooks/useMoney';
@@ -80,12 +81,28 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }) => {
     // Notify all other ProductCard instances to close their modals
     window.dispatchEvent(new CustomEvent('product-modal-open', { detail: modalId }));
     setIsModalOpen(true);
+    // In the admin's live preview, clicking a dish also opens it in the admin's editor
+    postToAdmin({ type: 'select', productId: product.id });
   };
+
+  // Admin's live preview: open or close this dish's popup on request
+  const { focusId } = usePreviewState();
+  useEffect(() => {
+    if (!isPreviewMode()) return;
+    const onPreviewOpen = (event: Event) => {
+      const id = (event as CustomEvent<string | null>).detail;
+      setIsModalOpen(id === product.id);
+    };
+    window.addEventListener(PREVIEW_OPEN_EVENT, onPreviewOpen);
+    return () => window.removeEventListener(PREVIEW_OPEN_EVENT, onPreviewOpen);
+  }, [product.id]);
 
   return (
     <>
       <div
         onClick={openModal}
+        data-preview-dish={product.id}
+        data-preview-focus={focusId === product.id ? 'true' : undefined}
         className="group/card flex h-full cursor-pointer flex-row-reverse items-start gap-3.5 border-b border-[#f1ebe4] py-4 sm:flex-col sm:items-stretch sm:gap-0 sm:overflow-hidden sm:rounded-[18px] sm:border sm:border-[#efe7de] sm:bg-white sm:py-0 sm:transition-all sm:duration-200 sm:hover:-translate-y-0.5 sm:hover:shadow-[0_10px_28px_rgba(31,26,23,0.10)]"
       >
         {/* Photo box: fixed shape; picture or placeholder fills it */}
