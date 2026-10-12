@@ -116,26 +116,28 @@ test.describe('Shop logo shows whole', () => {
     expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
   });
 
-  test('a wide logo keeps its height and widens on the home list', async ({ page }) => {
+  test('a wide logo is shown whole inside the round badge on the home list', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 800 });
     await mockLogo(page, 400, 100);
     await mockHome(page);
     await page.goto('/');
-    const logo = page.locator('[data-testid="shop-card"] img');
+    const logo = page.locator('[data-testid="shop-card"] img[alt="Test Shop"]');
     await expect(logo).toHaveCSS('object-fit', 'contain');
-    await expect.poll(async () => (await logo.boundingBox())?.width).toBeGreaterThan(64);
+    await expect.poll(async () => (await logo.boundingBox())?.width).toBeGreaterThan(40);
     const box = await logo.boundingBox();
-    expect(box?.height).toBe(64);
-    expect(box!.width).toBeLessThanOrEqual(256);
+    expect(box!.width).toBeLessThanOrEqual(64);
+    expect(box!.height).toBeLessThan(box!.width);
   });
 
-  test('a square logo is unchanged on the home list', async ({ page }) => {
+  test('a square logo fills the round badge on the home list', async ({ page }) => {
     await mockLogo(page, 200, 200);
     await mockHome(page);
     await page.goto('/');
-    const box = await page.locator('[data-testid="shop-card"] img').boundingBox();
-    expect(box?.width).toBe(64);
-    expect(box?.height).toBe(64);
+    const logo = page.locator('[data-testid="shop-card"] img[alt="Test Shop"]');
+    await expect.poll(async () => (await logo.boundingBox())?.width).toBeGreaterThan(40);
+    const box = await logo.boundingBox();
+    expect(box!.width).toBeLessThanOrEqual(64);
+    expect(Math.round(box!.width)).toBe(Math.round(box!.height));
   });
 
   test('an uploaded logo is bare and replaces the shop name in the nav bar', async ({ page }) => {
@@ -166,7 +168,7 @@ test.describe('Shop logo shows whole', () => {
     await mockLogo(page, 400, 100);
     await mockHome(page);
     await page.goto('/');
-    const logo = page.locator('[data-testid="shop-card"] img');
+    const logo = page.locator('[data-testid="shop-card"] img[alt="Test Shop"]');
     await expect(logo).toHaveCSS('box-shadow', 'none');
     await expect(logo).toHaveCSS('border-radius', '0px');
     await expect(logo).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');

@@ -550,6 +550,7 @@ const CustomerOrderPage: React.FC = () => {
         message={copy.cancelConfirm}
         confirmLabel={copy.cancelConfirmYes}
         cancelLabel={copy.cancelConfirmNo}
+        icon="cancel"
         onConfirm={handleCancel}
         onCancel={() => setConfirmingCancel(false)}
       />
