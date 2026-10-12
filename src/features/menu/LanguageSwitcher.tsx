@@ -5,6 +5,8 @@ interface LanguageSwitcherProps {
   languages: string[];
   current: string;
   onChange: (lang: string) => void;
+  /** True while the menu in the newly picked language is on its way: a spinner shows in the picked pill */
+  busy?: boolean;
 }
 
 /**
@@ -14,13 +16,14 @@ interface LanguageSwitcherProps {
  *
  * Shown as one segmented control: the chosen language is a white pill on a warm grey track.
  */
-const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({ languages, current, onChange }) => {
+const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({ languages, current, onChange, busy = false }) => {
   if (languages.length < 2) return null;
 
   return (
     <div
       role="group"
       aria-label={menuLabels(current).languageGroup}
+      aria-busy={busy}
       className="flex items-center rounded-full bg-[#f4efe9] p-[3px]"
     >
       {languages.map((lang) => {
@@ -31,12 +34,19 @@ const LanguageSwitcher: React.FC<LanguageSwitcherProps> = ({ languages, current,
             type="button"
             aria-pressed={on}
             onClick={() => onChange(lang)}
-            className={`h-[38px] min-w-[44px] rounded-full px-2.5 text-[13px] transition-colors ${
+            className={`inline-flex h-[38px] min-w-[44px] items-center justify-center gap-1.5 rounded-full px-2.5 text-[13px] transition-colors ${
               on
                 ? 'bg-white font-bold text-gray-900 shadow-[0_1px_3px_rgba(31,26,23,0.12)]'
                 : 'font-semibold text-[#6b6058] hover:text-gray-900'
             }`}
           >
+            {on && busy && (
+              <span
+                data-testid="language-loading"
+                aria-hidden="true"
+                className="h-3 w-3 animate-spin rounded-full border-2 border-gray-300 border-t-gray-900"
+              />
+            )}
             {lang.toUpperCase()}
           </button>
         );
