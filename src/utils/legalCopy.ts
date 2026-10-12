@@ -11,6 +11,11 @@ export interface LegalCopy {
   notPublished: string;
   draftNotice: string;
   backToMenu: string;
+  legalEyebrow: string;
+  updatedOn: (date: string) => string;
+  onThisPage: string;
+  notPublishedTitle: string;
+  notPublishedCall: string;
   loading: string;
   loadError: string;
   sellerStatement: (legalName: string, platform: string) => string;
@@ -40,6 +45,11 @@ const en: LegalCopy = {
   notPublished: 'This restaurant has not published this page yet.',
   draftNotice: 'Draft wording — not yet legally reviewed.',
   backToMenu: 'Back to the menu',
+  legalEyebrow: 'Legal',
+  updatedOn: (d) => `Last updated: ${d}`,
+  onThisPage: 'On this page',
+  notPublishedTitle: 'Not published yet',
+  notPublishedCall: 'Questions? Call the restaurant:',
   loading: 'Loading…',
   loadError: 'This page could not be loaded.',
   sellerStatement: (l, p) =>
@@ -63,7 +73,7 @@ const de: LegalCopy = {
   orderingBy: (n) => `Online-Bestellung über ${n}`,
   heading: {
     impressum: 'Impressum',
-    terms: 'AGB',
+    terms: 'Allgemeine Geschäftsbedingungen',
     withdrawal: 'Widerrufsbelehrung',
     privacy: 'Datenschutzerklärung',
   },
@@ -71,6 +81,11 @@ const de: LegalCopy = {
   notPublished: 'Dieses Restaurant hat diese Seite noch nicht veröffentlicht.',
   draftNotice: 'Entwurfsfassung – noch nicht rechtlich geprüft.',
   backToMenu: 'Zurück zur Speisekarte',
+  legalEyebrow: 'Rechtliches',
+  updatedOn: (d) => `Stand: ${d}`,
+  onThisPage: 'Auf dieser Seite',
+  notPublishedTitle: 'Noch nicht veröffentlicht',
+  notPublishedCall: 'Bei Fragen erreichen Sie das Restaurant unter',
   loading: 'Wird geladen…',
   loadError: 'Diese Seite konnte nicht geladen werden.',
   sellerStatement: (l, p) =>

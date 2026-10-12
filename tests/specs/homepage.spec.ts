@@ -86,3 +86,17 @@ test.describe('Home Page - Shop without a logo', () => {
     await expect(logo).toHaveText('MA');
   });
 });
+
+test.describe('Home Page - Search', () => {
+  test('typing filters the restaurants by name', async ({ page }) => {
+    await mockShopsApi(page);
+    await page.goto('/');
+    await page.getByRole('searchbox').fill(firstMockShop.name!.slice(0, 5));
+    await expect(page.getByTestId('shop-card')).toHaveCount(
+      mockShops.shops.filter((s) => s.name?.toLowerCase().includes(firstMockShop.name!.slice(0, 5).toLowerCase())).length,
+    );
+    await page.getByRole('searchbox').fill('zzzz');
+    await expect(page.getByTestId('shop-card')).toHaveCount(0);
+    await expect(page.getByText('No restaurant matches “zzzz”.')).toBeVisible();
+  });
+});

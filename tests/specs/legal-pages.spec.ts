@@ -125,3 +125,68 @@ test.describe('Legal pages', () => {
     await expect(page.getByText('Microsoft Ireland Operations Ltd. — Microsoft Azure')).toBeVisible();
   });
 });
+
+test.describe('Legal pages – layout', () => {
+  test('numbered lines in the terms become headings, with the last-updated date', async ({ page }) => {
+    await mockShop(page);
+    await mockLegal(page, {
+      terms: {
+        text: '§ 1 Scope\nThese terms apply to all orders.\n\n§ 2 Contract\nThe contract is made with the restaurant.',
+        revision: 2,
+        updatedAt: '2026-10-01T00:00:00Z',
+      },
+    });
+    await page.goto('/shops/test-shop/legal/terms');
+    await expect(page.getByRole('heading', { level: 1, name: 'Terms and conditions' })).toBeVisible();
+    await expect(page.getByRole('heading', { level: 2, name: '§ 1 Scope' })).toBeVisible();
+    await expect(page.getByText('These terms apply to all orders.')).toBeVisible();
+    await expect(page.getByText('Last updated: 1 October 2026')).toBeVisible();
+  });
+
+  test('the side menu marks the open document and links the others', async ({ page }) => {
+    await mockShop(page);
+    await mockLegal(page);
+    await page.goto('/shops/test-shop/legal/impressum');
+    const side = page.locator('aside');
+    await expect(side.getByRole('link', { name: 'Legal notice' })).toHaveAttribute('aria-current', 'page');
+    await side.getByRole('link', { name: 'Privacy' }).click();
+    await expect(page).toHaveURL(/\/legal\/privacy$/);
+    await expect(page.getByText('Draft wording — not yet legally reviewed.')).toBeVisible();
+  });
+
+  test('on a phone the documents are pills under the title', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 800 });
+    await mockShop(page);
+    await mockLegal(page);
+    await page.goto('/shops/test-shop/legal/impressum');
+    await expect(page.locator('aside')).toBeHidden();
+    await page.locator('section nav').getByRole('link', { name: 'Withdrawal policy' }).click();
+    await expect(page.getByText('No right of withdrawal for freshly prepared food.')).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(390);
+  });
+
+  test('an unpublished page offers the restaurant phone number', async ({ page }) => {
+    await mockShop(page);
+    await mockLegal(page);
+    await page.goto('/shops/test-shop/legal/terms');
+    await expect(page.getByRole('link', { name: '030 1234567' })).toHaveAttribute('href', 'tel:0301234567');
+  });
+});
+
+test.describe('Not found', () => {
+  test('an unknown page shows the 404 page with a way home', async ({ page }) => {
+    await page.goto('/nothing-here');
+    await expect(page.getByRole('heading', { name: 'This page doesn’t exist' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Go to the home page' })).toHaveAttribute('href', '/');
+  });
+
+  test('an unknown restaurant link says so and shows the address', async ({ page }) => {
+    await page.route('**/api/shops/slug/no-such-shop', (route) =>
+      route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ error: 'Shop not found' }) }),
+    );
+    await page.goto('/shops/no-such-shop');
+    await expect(page.getByRole('heading', { name: 'We can’t find this restaurant' })).toBeVisible();
+    await expect(page.getByText('/shops/no-such-shop')).toBeVisible();
+    await expect(page.getByRole('link', { name: 'See all restaurants' })).toBeVisible();
+  });
+});

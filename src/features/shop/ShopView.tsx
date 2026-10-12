@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ShopPageSkeleton } from '../../shared/Skeletons';
+import NotFound from '../../pages/NotFound';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import HeroSection from '../../shared/HeroSection';
 import CategoryFilterBar from '../menu/CategoryFilterBar';
@@ -308,11 +309,7 @@ const ShopView = () => {
     'status' in slugError &&
     slugError.status === 404
   ) {
-    return (
-      <div className="h-screen w-full flex items-center justify-center">
-        <h1 className="text-2xl font-semibold">Shop does not exist</h1>
-      </div>
-    );
+    return <NotFound kind="shop" />;
   }
 
   // One switcher element, placed in the nav bar from sm up and in the shop intro on phones

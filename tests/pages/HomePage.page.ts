@@ -15,7 +15,7 @@ export class HomePage {
     this.page = page;
 
     this.heading = page.getByRole('heading', {
-      name: /welcome to online ordering system/i,
+      name: /order straight from the restaurant|direkt beim restaurant bestellen/i,
     });
     this.shopGrid = page.locator('[data-testid="shop-grid"]');
     this.shopCards = page.locator('[data-testid="shop-card"]');
