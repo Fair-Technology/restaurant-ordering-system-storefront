@@ -109,3 +109,31 @@
   .logo-loader-top { animation: none; -webkit-mask-image: none; mask-image: none; }
   .logo-loader-hand { animation: none; opacity: 0; }
 }
+
+/* Admin live preview (the storefront inside the admin): show what can be clicked to edit */
+html.fair-preview [data-preview-dish] {
+  position: relative;
+  border-radius: 18px;
+  transition: outline-color 0.12s ease;
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+html.fair-preview [data-preview-dish]:hover {
+  outline-color: #93b4f5;
+}
+html.fair-preview [data-preview-focus='true'] {
+  outline-color: #2563eb;
+}
+html.fair-preview [data-preview-focus='true']::after {
+  content: 'Bearbeiten';
+  position: absolute;
+  right: 10px;
+  top: -10px;
+  z-index: 5;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #2563eb;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+}

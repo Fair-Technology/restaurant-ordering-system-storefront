@@ -43,6 +43,7 @@ import { normaliseTableNumber } from '../../utils/tableSession';
 import { useDeliverySession } from '../../hooks/useDeliverySession';
 import { useMoney } from '../../hooks/useMoney';
 import { chosenMode, zoneFor } from '../../utils/delivery';
+import { isPreviewMode, startPreviewBridge, usePreviewState, withPreviewEdits } from '../../utils/preview';
 
 type CategoryOption = { id: string; label: string; count: number; icon?: string };
 
@@ -112,7 +113,22 @@ const ShopView = () => {
     currentData: currentCatalog,
     isLoading: isCatalogLoading,
     isFetching: isCatalogFetching,
+    refetch: refetchCatalog,
   } = useGetCatalogQuery({ shopId: resolvedShopId, lang }, { skip: !resolvedShopId || shopIsOffline });
+
+  // Inside the admin's live preview: listen for the dish being edited, saves and language switches
+  const preview = isPreviewMode();
+  const previewState = usePreviewState();
+  useEffect(
+    () =>
+      startPreviewBridge({
+        onRefresh: () => {
+          if (resolvedShopId) void refetchCatalog();
+        },
+        onLanguage: (l) => dispatch(setMenuLanguage(l)),
+      }),
+    [dispatch, refetchCatalog, resolvedShopId],
+  );
   // After a language switch the old menu stays on screen until the new one arrives: show that it is coming
   const switchingLanguage = isCatalogFetching && !!catalogData && !currentCatalog;
 
@@ -275,16 +291,26 @@ const ShopView = () => {
     visibleCategories.forEach((cat) => {
       const id = slugifyCategoryName(cat.name!);
       grouped[id] = (cat.products ?? [])
-        .filter((p) => p.isAvailable !== false)
-        .map((p) => ({
-          ...mapApiProductToProduct(p, cat, resolvedLanguage),
-          ...((p as CatalogProductWithOffer).combo
-            ? { combo: resolveCombo(p as CatalogProductWithOffer, dishes)! }
-            : {}),
-        }));
+        // In the admin's preview, the dish being edited follows its unsaved availability too
+        .filter((p) => {
+          const edited = previewState.dish;
+          return edited && edited.id === p.id ? edited.isAvailable : p.isAvailable !== false;
+        })
+        .map((p) =>
+          withPreviewEdits(
+            {
+              ...mapApiProductToProduct(p, cat, resolvedLanguage),
+              ...((p as CatalogProductWithOffer).combo
+                ? { combo: resolveCombo(p as CatalogProductWithOffer, dishes)! }
+                : {}),
+            },
+            previewState.dish,
+            resolvedLanguage,
+          ),
+        );
     });
     return grouped;
-  }, [visibleCategories, resolvedLanguage, dishes]);
+  }, [visibleCategories, resolvedLanguage, dishes, previewState.dish]);
 
   const categoryLabels = useMemo(() => {
     return categories.reduce<Record<string, string>>((acc, category) => {
@@ -333,7 +359,7 @@ const ShopView = () => {
           shopName={shopName}
           shopId={slug ?? ''}
           logoUrl={resolvedBranding.logoUrl}
-          onCheckout={() => navigate(`/shops/${slug}/checkout`)}
+          onCheckout={() => !preview && navigate(`/shops/${slug}/checkout`)}
           languageSwitcher={languageSwitcher}
           cartContext={cartContext}
         />
@@ -350,7 +376,7 @@ const ShopView = () => {
         languageSwitcher={languageSwitcher}
         copy={copy}
       />
-      {noticeKind && !noticeSeen && (
+      {noticeKind && !noticeSeen && !preview && (
         <ShopNoticeModal
           kind={noticeKind}
           title={
@@ -472,7 +498,7 @@ const ShopView = () => {
         />
       )}
       <Footer slug={slug} flush={!!resolvedShopData} />
-      {!isOffline && <MobileCartBar onCheckout={() => navigate(`/shops/${slug}/checkout`)} copy={copy} />}
+      {!isOffline && <MobileCartBar onCheckout={() => !preview && navigate(`/shops/${slug}/checkout`)} copy={copy} />}
     </div>
   );
 };
