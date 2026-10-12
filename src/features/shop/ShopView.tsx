@@ -107,10 +107,14 @@ const ShopView = () => {
 
   // Offline shops refuse the catalog (403), so don't ask for it
   const shopIsOffline = (resolvedShopData as ShopNoticeFields | undefined)?.isOffline === true;
-  const { data: catalogData, isLoading: isCatalogLoading } = useGetCatalogQuery(
-    { shopId: resolvedShopId, lang },
-    { skip: !resolvedShopId || shopIsOffline },
-  );
+  const {
+    data: catalogData,
+    currentData: currentCatalog,
+    isLoading: isCatalogLoading,
+    isFetching: isCatalogFetching,
+  } = useGetCatalogQuery({ shopId: resolvedShopId, lang }, { skip: !resolvedShopId || shopIsOffline });
+  // After a language switch the old menu stays on screen until the new one arrives: show that it is coming
+  const switchingLanguage = isCatalogFetching && !!catalogData && !currentCatalog;
 
   // Two separate things: the language the menu came back in, and the language of the page's own text
   const resolvedLanguage = catalogData?.language ?? lang;
@@ -318,6 +322,7 @@ const ShopView = () => {
       languages={offeredLanguages}
       current={pickerCurrent(lang, offeredLanguages)}
       onChange={(l) => dispatch(setMenuLanguage(l))}
+      busy={switchingLanguage}
     />
   );
 
@@ -434,7 +439,16 @@ const ShopView = () => {
           {copy.loading}
         </div>
       ) : (
-        <>
+        <div
+          data-testid="menu"
+          aria-busy={switchingLanguage}
+          className={`transition-opacity duration-200 ${switchingLanguage ? 'pointer-events-none opacity-50' : ''}`}
+        >
+          {switchingLanguage && (
+            <span role="status" className="sr-only">
+              {copy.loading}
+            </span>
+          )}
           <CategoryFilterBar categories={categories} />
           <div className="w-full flex items-center justify-center flex-col mt-4">
             <MenuList
@@ -445,7 +459,7 @@ const ShopView = () => {
               onAddToCart={() => {}}
             />
           </div>
-        </>
+        </div>
       )}
       {resolvedShopData && (
         <ShopInfoFooter

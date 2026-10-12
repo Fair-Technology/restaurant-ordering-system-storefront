@@ -193,6 +193,31 @@ test.describe('Page language', () => {
     await expect(page.getByTestId('cart-label')).toContainText('Cart');
   });
 
+  test('while the menu in the new language loads, the switch spins and the old menu fades', async ({ page }) => {
+    await mockShop(page, ['de', 'en'], { de: 'Nudeln mit Speck', en: 'Pasta with bacon' });
+    let release = () => {};
+    const held = new Promise<void>((r) => (release = r));
+    // Hold the English menu back until the test has looked at the waiting state
+    await page.route('**/api/shops/shop-t/catalog?*lang=en*', async (route) => {
+      await held;
+      await route.fallback();
+    });
+    await page.goto('/shops/test-shop');
+    await expect(page.getByRole('heading', { name: 'Nudeln mit Speck' })).toBeVisible();
+    await expect(page.getByTestId('language-loading')).toHaveCount(0);
+
+    await page.getByRole('button', { name: 'EN', exact: true }).click();
+
+    await expect(page.getByTestId('language-loading').first()).toBeVisible();
+    await expect(page.getByTestId('menu')).toHaveAttribute('aria-busy', 'true');
+    await expect(page.getByRole('heading', { name: 'Nudeln mit Speck' })).toBeVisible();
+
+    release();
+    await expect(page.getByRole('heading', { name: 'Pasta with bacon' })).toBeVisible();
+    await expect(page.getByTestId('language-loading')).toHaveCount(0);
+    await expect(page.getByTestId('menu')).toHaveAttribute('aria-busy', 'false');
+  });
+
   test('picking EN gives English page text and keeps the German dish names', async ({ page }) => {
     await mockShop(page, ['de'], GERMAN_ONLY);
     await page.goto('/shops/test-shop');
