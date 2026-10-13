@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { toComboChoiceDtos } from '../../utils/combo';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Check, ChevronLeft, ChevronRight, Lock } from 'lucide-react';
+import { Check, ChevronLeft, Lock } from 'lucide-react';
 import { Elements } from '@stripe/react-stripe-js';
 import { CheckoutPageSkeleton } from '../../shared/Skeletons';
 import NavBar from '../../shared/NavBar';
@@ -41,6 +41,7 @@ import { readTableSession } from '../../utils/tableSession';
 import { useDeliverySession } from '../../hooks/useDeliverySession';
 import { chosenMode } from '../../utils/delivery';
 import { stripeForAccount } from '../../utils/stripe';
+import { paymentBreakdown, type SentCharges } from './paymentBreakdown';
 import QuoteNotice from './components/QuoteNotice';
 import { useGetShopLegalQuery } from '../../api/legalEndpoints';
 import { legalCopy } from '../../utils/legalCopy';
@@ -124,6 +125,8 @@ const CheckoutPage: React.FC = () => {
   type Step = 'info' | 'payment';
   const [step, setStep] = useState<Step>('info');
   const [checkoutData, setCheckoutData] = useState<CardCheckoutResult | null>(null);
+  // The fee and discount the card order was placed with, set together with checkoutData
+  const [sentCharges, setSentCharges] = useState<SentCharges | null>(null);
   const [paymentError, setPaymentError] = useState<string | null>(null);
 
   const [placeOrder, { isLoading: isInitiating }] = usePlaceOrderMutation();
@@ -227,6 +230,8 @@ const CheckoutPage: React.FC = () => {
     }
     setTableNotice(null);
     setPlaceError(undefined);
+    const sentFee = mode === 'delivery' && data.deliveryAddress ? quote?.deliveryFeeCents ?? 0 : null;
+    const sentDiscount = discount ? { code: discount.code, cents: discount.cents } : null;
     const res = await placeOrder({
       ...quoteArg,
       ...(table ? { table } : {}),
@@ -236,11 +241,9 @@ const CheckoutPage: React.FC = () => {
       customerNotes: data.notes || undefined,
       paymentMethod: method,
       customerAddress: data.customerAddress,
-      ...(mode === 'delivery' && data.deliveryAddress
-        ? { deliveryAddress: data.deliveryAddress, expectedDeliveryFeeCents: quote?.deliveryFeeCents ?? 0 }
-        : {}),
+      ...(sentFee !== null && data.deliveryAddress ? { deliveryAddress: data.deliveryAddress, expectedDeliveryFeeCents: sentFee } : {}),
       ...(when === 'later' && chosenSlot ? { scheduledFor: chosenSlot } : {}),
-      ...(discount ? { discountCode: discount.code, expectedDiscountCents: discount.cents } : {}),
+      ...(sentDiscount ? { discountCode: sentDiscount.code, expectedDiscountCents: sentDiscount.cents } : {}),
       ...(loyalty && loyaltyTick ? { loyaltyOptIn: true } : {}),
       idempotencyKey,
       legalRevisions:
@@ -253,6 +256,7 @@ const CheckoutPage: React.FC = () => {
         dispatch(clearCart());
         navigate(orderPath(slug, res.data.orderId, res.data.accessToken), { replace: true });
       } else {
+        setSentCharges({ deliveryFeeCents: sentFee, discount: sentDiscount });
         setCheckoutData(res.data);
         setStep('payment');
       }
@@ -318,6 +322,11 @@ const CheckoutPage: React.FC = () => {
     navigate(orderPath(slug, checkoutData.orderId, checkoutData.accessToken), { replace: true });
   }
 
+  const breakdown = useMemo(
+    () => (checkoutData && sentCharges ? paymentBreakdown(checkoutData, sentCharges) : null),
+    [checkoutData, sentCharges],
+  );
+
   const stripePromise = useMemo(
     () => (checkoutData ? stripeForAccount(checkoutData.stripeConnectAccountId) : null),
     [checkoutData],
@@ -347,7 +356,6 @@ const CheckoutPage: React.FC = () => {
     }),
     [resolvedBranding.accentColor],
   );
-  const [recapOpen, setRecapOpen] = useState(false);
   // Each step starts at the top of the page (on a phone the button sits far below the title)
   useEffect(() => {
     window.scrollTo({ top: 0 });
@@ -356,7 +364,6 @@ const CheckoutPage: React.FC = () => {
   if (isShopLoading) return <CheckoutPageSkeleton />;
 
   const legalWords = legalCopy(pageLanguage);
-  const itemCount = cartItems.reduce((n, i) => n + i.quantity, 0);
   const card = 'rounded-[20px] border border-[#efe7de] bg-white p-5 sm:p-6';
   const errorBox = 'rounded-2xl bg-[#fdecea] px-4 py-3 text-sm leading-relaxed text-[#8a1f12]';
   const warnBox = 'rounded-2xl bg-amber-50 px-4 py-3 text-sm leading-relaxed text-amber-900';
@@ -551,7 +558,7 @@ const CheckoutPage: React.FC = () => {
             </div>
 
             {/* Step 2: payment */}
-            {step === 'payment' && checkoutData && stripePromise && (
+            {step === 'payment' && checkoutData && stripePromise && breakdown && (
               <section className={card}>
                 <h2 className="mb-4 text-[19px] font-bold text-gray-900">{copy.paymentHeading}</h2>
                 <Elements
@@ -563,7 +570,7 @@ const CheckoutPage: React.FC = () => {
                   }}
                 >
                   <PaymentStep
-                    totalCents={checkoutData.totalCents ?? checkoutData.subtotalCents}
+                    breakdown={breakdown}
                     country={(shopData as { countryCode?: string } | undefined)?.countryCode ?? null}
                     currency={checkoutData.currency}
                     onSuccess={handlePaymentSuccess}
@@ -724,24 +731,9 @@ const CheckoutPage: React.FC = () => {
             </div>
 
             {step === 'payment' && checkoutData && (
-              <section className={`${card} !p-0`}>
-                {/* Phones: one tappable line that opens the recap; from lg: always open */}
-                <button
-                  type="button"
-                  aria-expanded={recapOpen}
-                  onClick={() => setRecapOpen((v) => !v)}
-                  className="flex min-h-14 w-full items-center justify-between gap-3 px-5 text-left lg:hidden"
-                >
-                  <span className="flex items-center gap-2 text-[15px] font-bold text-gray-900">
-                    <ChevronRight className={`h-4 w-4 transition-transform ${recapOpen ? 'rotate-90' : ''}`} aria-hidden="true" />
-                    {copy.showOrder(copy.cartItems(itemCount))}
-                  </span>
-                  <span className="text-base font-bold text-gray-900">
-                    {money.cents(checkoutData.totalCents ?? checkoutData.subtotalCents)}
-                  </span>
-                </button>
-                <div className={`${recapOpen ? 'flex' : 'hidden'} flex-col gap-3.5 border-t border-[#f1ebe4] px-5 pb-5 pt-4 lg:flex lg:border-0 lg:p-6`}>
-                  <div className="hidden items-baseline justify-between lg:flex">
+              <section className={card} data-testid="payment-recap">
+                <div className="flex flex-col gap-3.5">
+                  <div className="flex items-baseline justify-between">
                     <h2 className="text-[19px] font-bold text-gray-900">{copy.checkoutTitle}</h2>
                     <button
                       type="button"
@@ -772,14 +764,6 @@ const CheckoutPage: React.FC = () => {
                       );
                     })}
                   </ul>
-                  <div className="flex items-baseline justify-between border-t border-[#f1ebe4] pt-3">
-                    <span className="text-[17px] font-bold text-gray-900">
-                      {copy.total} <span className="text-xs font-normal text-[#6b6058]">{copy.inclVat}</span>
-                    </span>
-                    <span className="text-2xl font-bold text-gray-900">
-                      {money.cents(checkoutData.totalCents ?? checkoutData.subtotalCents)}
-                    </span>
-                  </div>
                 </div>
               </section>
             )}

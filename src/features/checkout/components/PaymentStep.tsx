@@ -6,9 +6,10 @@ import { formatCents } from '../../../utils/money';
 import { currentChoice, pageLanguageOf } from '../../../utils/pageLanguage';
 import { orderCopy } from '../../../utils/orderCopy';
 import LogoLoader from '../../../shared/LogoLoader';
+import type { PaymentBreakdown } from '../paymentBreakdown';
 
 interface PaymentStepProps {
-  totalCents: number;
+  breakdown: PaymentBreakdown;
   country: string | null;
   currency: string;
   onSuccess: (paymentIntentId: string) => void;
@@ -22,11 +23,11 @@ interface PaymentStepProps {
 
 /**
  * PaymentStep — Stripe's Payment Element (card, plus Apple Pay / Google Pay where the device
- * offers them), the "reserved first, charged later" note, and the "Order with obligation to pay"
- * button with the total on it. On phones the button is pinned to the bottom of the screen.
+ * offers them), the "reserved first, charged later" note, the price breakdown (items, discount,
+ * delivery fee, total) and the "Order with obligation to pay" button with the total on it. On phones the button is pinned to the bottom of the screen.
  */
 const PaymentStep: React.FC<PaymentStepProps> = ({
-  totalCents,
+  breakdown,
   country,
   currency,
   onSuccess,
@@ -37,7 +38,8 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
 }) => {
   const storedLanguage = useAppSelector((state) => state.shop.menuLanguage);
   const language = pageLanguageOf(currentChoice(storedLanguage, navigator.language));
-  const total = formatCents(totalCents, currency, language);
+  const fmt = (c: number) => formatCents(c, currency, language);
+  const total = fmt(breakdown.totalCents);
   const copy = orderCopy(language);
   const stripe = useStripe();
   const elements = useElements();
@@ -97,6 +99,22 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
           {error}
         </p>
       )}
+
+      <dl className="flex flex-col gap-2 text-[15px] text-[#3a322d]" data-testid="payment-totals">
+        {breakdown.adds && (
+          <div className="flex justify-between gap-3"><dt>{copy.itemsLine}</dt><dd data-testid="payment-totals-items">{fmt(breakdown.itemsCents)}</dd></div>
+        )}
+        {breakdown.adds && breakdown.discount && (
+          <div className="flex justify-between gap-3 text-[#1d5a32]"><dt>{copy.discountLine(breakdown.discount.code)}</dt><dd data-testid="payment-totals-discount">{fmt(-breakdown.discount.cents)}</dd></div>
+        )}
+        {breakdown.adds && breakdown.deliveryFeeCents !== null && (
+          <div className="flex justify-between gap-3"><dt>{copy.deliveryFeeLine}</dt><dd data-testid="payment-totals-delivery">{fmt(breakdown.deliveryFeeCents)}</dd></div>
+        )}
+        <div className="mt-1 flex items-baseline justify-between gap-3 border-t border-[#f1ebe4] pt-3 text-gray-900">
+          <dt className="text-[17px] font-bold">{copy.total} <span className="text-xs font-normal text-[#6b6058]">{copy.inclVat}</span></dt>
+          <dd className="text-2xl font-bold" data-testid="payment-totals-total">{total}</dd>
+        </div>
+      </dl>
 
       {/* Phones: pinned to the bottom of the screen; from lg: in place */}
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[#efe7de] bg-white px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-6px_18px_rgba(31,26,23,0.06)] lg:static lg:z-auto lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none">
