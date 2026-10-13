@@ -51,6 +51,8 @@ export interface Variant {
   imageURL: string;
   priceDelta: number;
   isAvailable: boolean;
+  allergens: CatalogLabel[];
+  additives: CatalogAdditive[];
 }
 
 export interface AddonGroup {
@@ -67,4 +69,6 @@ export interface AddonOption {
   imageURL: string;
   priceDelta: number;
   isAvailable: boolean;
+  allergens: CatalogLabel[];
+  additives: CatalogAdditive[];
 }

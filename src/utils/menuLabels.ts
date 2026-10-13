@@ -4,6 +4,7 @@ export interface MenuLabels {
   noAllergens: string;
   noAdditives: string;
   languageGroup: string;
+  variesWithOptions: string;
 }
 
 const EN: MenuLabels = {
@@ -12,6 +13,7 @@ const EN: MenuLabels = {
   noAllergens: 'Contains none of the 14 declarable allergens',
   noAdditives: 'No declarable additives',
   languageGroup: 'Menu language',
+  variesWithOptions: 'Updates with the options you choose',
 };
 
 const DE: MenuLabels = {
@@ -20,6 +22,7 @@ const DE: MenuLabels = {
   noAllergens: 'Enthält keines der 14 kennzeichnungspflichtigen Allergene',
   noAdditives: 'Keine kennzeichnungspflichtigen Zusatzstoffe',
   languageGroup: 'Menüsprache',
+  variesWithOptions: 'Ändert sich mit den gewählten Optionen',
 };
 
 /**

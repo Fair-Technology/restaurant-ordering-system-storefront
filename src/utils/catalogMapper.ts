@@ -106,6 +106,8 @@ export const mapApiProductToProduct = (
       imageURL: '',
       priceDelta: centsToDollars(opt.priceDelta ?? 0),
       isAvailable: opt.isAvailable ?? true,
+      allergens: opt.allergens ?? [],
+      additives: opt.additives ?? [],
     })),
   })),
   addons: ((product.addons ?? []) as any[]).map((group) => ({
@@ -119,6 +121,8 @@ export const mapApiProductToProduct = (
       imageURL: '',
       priceDelta: centsToDollars(opt.priceDelta ?? 0),
       isAvailable: opt.isAvailable ?? true,
+      allergens: opt.allergens ?? [],
+      additives: opt.additives ?? [],
     })),
   })),
 });

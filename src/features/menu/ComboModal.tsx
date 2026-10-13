@@ -17,6 +17,7 @@ import {
   type ComboPick,
   type ComboPicks,
 } from '../../utils/combo';
+import { chosenOptions, combinedDeclaration, optionsDeclareAnything } from '../../utils/declaration';
 import { DISH_IMAGE } from '../../constants/image-shapes';
 import type { ComboChoiceGroup, Product } from '../../types/Product';
 
@@ -107,15 +108,20 @@ const ComboModal: React.FC<ComboModalProps> = ({ product, isOpen, onClose, shopI
     };
   }, [isOpen, onClose]);
 
-  // Allergens and additives of every dish on offer in the combo
+  // Allergens and additives of every dish on offer in the combo, plus the sizes and extras picked inside it
   const { allergens, additives } = useMemo(() => {
-    const options = (product.combo ?? []).flatMap((g) => g.options);
-    const byId = <T extends { id: string }>(list: T[]) => [...new Map(list.map((x) => [x.id, x])).values()];
-    return {
-      allergens: byId([...product.allergens, ...options.flatMap((o) => o.allergens)]),
-      additives: byId([...product.additives, ...options.flatMap((o) => o.additives)]),
-    };
-  }, [product]);
+    const dishes = (product.combo ?? []).flatMap((g) => g.options);
+    const chosen = (product.combo ?? []).flatMap((g) => {
+      const pick = picks[g.id];
+      const o = pick && optionOf(product, g.id, pick.productId);
+      return o ? chosenOptions(o, pick.variantId, pick.addonIds) : [];
+    });
+    return combinedDeclaration(product, [...dishes, ...chosen]);
+  }, [product, picks]);
+  const declarationVaries = useMemo(
+    () => (product.combo ?? []).some((g) => g.options.some(optionsDeclareAnything)),
+    [product],
+  );
 
   const groups = product.combo ?? [];
   const ready = comboReady(product, picks);
@@ -201,12 +207,21 @@ const ComboModal: React.FC<ComboModalProps> = ({ product, isOpen, onClose, shopI
     <section className="flex flex-col gap-1.5 text-xs leading-relaxed text-gray-600">
       <p>
         <span className="font-semibold text-gray-700">{labels.allergens}:</span>{' '}
-        {allergens.length ? allergens.map((a) => a.label).join(', ') : labels.noAllergens}
+        <span data-testid="combo-allergens">
+          {allergens.length ? allergens.map((a) => a.label).join(', ') : labels.noAllergens}
+        </span>
       </p>
       <p>
         <span className="font-semibold text-gray-700">{labels.additives}:</span>{' '}
-        {additives.length ? additives.map((a) => `${a.code} ${a.label}`).join(', ') : labels.noAdditives}
+        <span data-testid="combo-additives">
+          {additives.length ? additives.map((a) => `${a.code} ${a.label}`).join(', ') : labels.noAdditives}
+        </span>
       </p>
+      {declarationVaries && (
+        <p data-testid="combo-declaration-varies" className="text-gray-500">
+          {labels.variesWithOptions}
+        </p>
+      )}
     </section>
   );
 
