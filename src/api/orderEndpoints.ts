@@ -56,7 +56,8 @@ export type RejectReason =
   | 'closing_soon'
   | 'other'
   | 'no_response'
-  | 'payment_failed';
+  | 'payment_failed'
+  | 'shop_unavailable';
 
 export interface CustomerAddress {
   street: string;
