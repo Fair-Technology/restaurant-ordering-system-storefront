@@ -50,6 +50,8 @@ export interface OrderCopy {
   addressIncomplete: string;
   addressNeeded: string;
   confirmingPayment: string;
+  confirmingSlow: string;
+  confirmFailed: string;
   reservePromise: string;
   refundInProgress: (amount: string) => string;
   refunded: (amount: string) => string;
@@ -309,6 +311,8 @@ const en: OrderCopy = {
   addressIncomplete: 'Please fill in the whole address or leave it empty.',
   addressNeeded: 'For orders over €250 we need your billing address for the invoice.',
   confirmingPayment: 'Your payment is being confirmed…',
+  confirmingSlow: 'This is taking longer than usual. Please keep this page open — we are still checking your payment with the card provider. If your order cannot be confirmed, the reserved amount is released and you are not charged.',
+  confirmFailed: 'We could not confirm your order. You have not been charged — if an amount was reserved on your card, it is released automatically. Please contact the restaurant or order again.',
   reservePromise:
     'The amount is reserved on your card. You are only charged when the restaurant accepts — if it declines or you cancel, the reservation is released.',
   refundInProgress: (a) => `We are refunding the full amount of ${a}.`,
@@ -582,6 +586,8 @@ const de: OrderCopy = {
   addressIncomplete: 'Bitte füllen Sie die Adresse vollständig aus oder lassen Sie sie leer.',
   addressNeeded: 'Für Bestellungen über 250 € benötigen wir Ihre Rechnungsadresse.',
   confirmingPayment: 'Ihre Zahlung wird bestätigt…',
+  confirmingSlow: 'Das dauert länger als üblich. Bitte lassen Sie diese Seite geöffnet – wir prüfen Ihre Zahlung noch beim Kartenanbieter. Kann Ihre Bestellung nicht bestätigt werden, wird der reservierte Betrag freigegeben und nichts abgebucht.',
+  confirmFailed: 'Wir konnten Ihre Bestellung nicht bestätigen. Es wurde nichts abgebucht – ein auf Ihrer Karte reservierter Betrag wird automatisch freigegeben. Bitte wenden Sie sich an das Restaurant oder bestellen Sie erneut.',
   reservePromise:
     'Der Betrag ist auf Ihrer Karte reserviert. Abgebucht wird erst, wenn das Restaurant annimmt – lehnt es ab oder stornieren Sie, wird die Reservierung aufgehoben.',
   refundInProgress: (a) => `Wir erstatten Ihnen den vollen Betrag von ${a}.`,

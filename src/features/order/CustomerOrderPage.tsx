@@ -28,6 +28,7 @@ const CONFIRMING_POLL_MS = 3000;
 // Right after payment the order can briefly look missing while Stripe's confirmation is
 // being stored, so "not found" is only believed once it persists this long.
 const NOT_FOUND_GRACE_MS = 20000;
+const CONFIRMING_SLOW_MS = 120_000;
 
 type StepState = 'done' | 'current' | 'todo';
 interface Step {
@@ -97,6 +98,14 @@ const CustomerOrderPage: React.FC = () => {
   const isConfirming =
     !data && (error as { data?: { error?: string } } | undefined)?.data?.error === PAYMENT_CONFIRMING_ERROR;
   const isRetrying = !data && isError && !isConfirming && !graceOver;
+  const [wasConfirming, setWasConfirming] = useState(false);
+  const [confirmingSlow, setConfirmingSlow] = useState(false);
+  useEffect(() => { if (isConfirming) setWasConfirming(true); }, [isConfirming]);
+  useEffect(() => {
+    if (!wasConfirming) return;
+    const timer = setTimeout(() => setConfirmingSlow(true), CONFIRMING_SLOW_MS);
+    return () => clearTimeout(timer);
+  }, [wasConfirming]);
   // Poll while the order is still moving so acceptance and ready-time show up on
   // their own. Same arguments as above, so both hooks share one cache entry.
   useGetCustomerOrderQuery(
@@ -250,7 +259,7 @@ const CustomerOrderPage: React.FC = () => {
         )}
         {isError && !isConfirming && !isRetrying && !order && (
           <p role="alert" className="rounded-2xl bg-[#fdecea] px-5 py-4 text-[15px] text-[#8a1f12]">
-            {copy.orderNotFound}
+            {wasConfirming ? copy.confirmFailed : copy.orderNotFound}
           </p>
         )}
 
@@ -285,6 +294,7 @@ const CustomerOrderPage: React.FC = () => {
                     {title}
                   </h1>
                   {subtitle && <p className="max-w-2xl text-[15px] leading-relaxed text-[#4a413b] sm:text-base">{subtitle}</p>}
+                  {!order && isConfirming && confirmingSlow && <p className="max-w-2xl text-[15px] leading-relaxed text-[#4a413b] sm:text-base">{copy.confirmingSlow}</p>}
                   {order?.scheduledFor && (
                     <p className="text-[15px] font-semibold text-gray-900">
                       {copy.scheduledLine(slotLabel(order.scheduledFor, order.timezone, order.language))}
