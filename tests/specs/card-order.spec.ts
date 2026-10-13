@@ -422,7 +422,9 @@ test.describe('Card order', () => {
 
     await expect(page.getByText('Your payment is being confirmed…')).toBeVisible();
     await expect(page.getByText(/taking longer than usual/)).toHaveCount(0);
-    await page.clock.runFor(121_000);
+    await page.clock.runFor(60_000);
+    await expect(page.getByText(/taking longer than usual/)).toHaveCount(0);
+    await page.clock.runFor(61_000);
     await expect(page.getByText(/taking longer than usual/)).toBeVisible();
   });
 
