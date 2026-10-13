@@ -412,6 +412,42 @@ test.describe('Card order', () => {
     await expect(page.getByText('We could not find this order')).toBeVisible();
   });
 
+  test('a slow confirmation asks the diner to keep the page open', async ({ page }) => {
+    await page.clock.install();
+    await mockBackend(page);
+    await page.route('**/api/customer-orders/o1/view', (route) =>
+      route.fulfill(fulfil({ error: 'Your payment is being confirmed' }, 404)),
+    );
+    await page.goto(ORDER_URL);
+
+    await expect(page.getByText('Your payment is being confirmed…')).toBeVisible();
+    await expect(page.getByText(/taking longer than usual/)).toHaveCount(0);
+    await page.clock.runFor(121_000);
+    await expect(page.getByText(/taking longer than usual/)).toBeVisible();
+  });
+
+  test('a confirmation that never comes says nothing was charged', async ({ page }) => {
+    await page.clock.install();
+    await mockBackend(page);
+    let calls = 0;
+    await page.route('**/api/customer-orders/o1/view', (route) => {
+      calls += 1;
+      return route.fulfill(
+        calls <= 2
+          ? fulfil({ error: 'Your payment is being confirmed' }, 404)
+          : fulfil({ error: 'Order not found' }, 404),
+      );
+    });
+    await page.goto(ORDER_URL);
+
+    await expect(page.getByText('Your payment is being confirmed…')).toBeVisible();
+    for (let i = 0; i < 8; i++) await page.clock.runFor(3_000);
+    await expect(
+      page.getByText('We could not confirm your order. You have not been charged', { exact: false }),
+    ).toBeVisible();
+    await expect(page.getByText('We could not find this order')).toHaveCount(0);
+  });
+
   test('a declined order says nothing was charged', async ({ page }) => {
     await mockBackend(page, {
       order: {
