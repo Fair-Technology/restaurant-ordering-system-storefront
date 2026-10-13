@@ -9,6 +9,7 @@ import { orderCopy } from '../../utils/orderCopy';
 import { currentChoice, pageLanguageOf } from '../../utils/pageLanguage';
 import { toggleAddonSelection, unmetAddonGroups } from '../../utils/addonSelection';
 import { DISH_IMAGE } from '../../constants/image-shapes';
+import { chosenOptions, combinedDeclaration, optionsDeclareAnything } from '../../utils/declaration';
 import type { CatalogAdditive, CatalogLabel } from '../../types/Product';
 
 type VariantOption = {
@@ -16,6 +17,8 @@ type VariantOption = {
   label: string;
   priceDelta?: number;
   imageURL?: string;
+  allergens?: CatalogLabel[];
+  additives?: CatalogAdditive[];
 };
 type VariantGroup = { id: string; label: string; variants: VariantOption[] };
 type AddonOption = {
@@ -23,6 +26,8 @@ type AddonOption = {
   label: string;
   priceDelta?: number;
   imageURL?: string;
+  allergens?: CatalogLabel[];
+  additives?: CatalogAdditive[];
 };
 type AddonGroup = {
   id: string;
@@ -184,6 +189,11 @@ const ProductModal: React.FC<ProductModalProps> = ({
   const addonsIncomplete = unmetGroups.length > 0;
 
   // One-line recap of the current choices, shown above the add button
+  const declaration = useMemo(
+    () => combinedDeclaration(product, chosenOptions(product, selectedVariantId, selectedAddonIds)),
+    [product, selectedVariantId, selectedAddonIds],
+  );
+  const declarationVaries = useMemo(() => optionsDeclareAnything(product), [product]);
   const summary = useMemo(() => {
     const parts: string[] = [];
     const variant = selectedVariantId ? variantLookup.get(selectedVariantId) : undefined;
@@ -230,8 +240,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
   if (!isOpen) return null;
   const canUseDom = typeof document !== 'undefined';
 
-  const allergens = product.allergens ?? [];
-  const additives = product.additives ?? [];
+  const { allergens, additives } = declaration;
   const hasOptions = (product.variantTypes?.length ?? 0) > 0 || (product.addons?.length ?? 0) > 0;
 
   const closeButton = (className: string) => (
@@ -329,16 +338,23 @@ const ProductModal: React.FC<ProductModalProps> = ({
               <section className="flex flex-col gap-2 text-xs text-gray-600 md:mt-1 md:border-t md:border-[#ebe2d8] md:pt-4">
                 <p>
                   <span className="font-semibold text-gray-700">{labels.allergens}:</span>{' '}
-                  <span>
+                  <span data-testid="dish-allergens">
                     {allergens.length ? allergens.map((a) => a.label).join(', ') : labels.noAllergens}
                   </span>
                 </p>
                 <p>
                   <span className="font-semibold text-gray-700">{labels.additives}:</span>{' '}
-                  {additives.length
-                    ? additives.map((a) => `${a.code} ${a.label}`).join(', ')
-                    : labels.noAdditives}
+                  <span data-testid="dish-additives">
+                    {additives.length
+                      ? additives.map((a) => `${a.code} ${a.label}`).join(', ')
+                      : labels.noAdditives}
+                  </span>
                 </p>
+                {declarationVaries && (
+                  <p data-testid="dish-declaration-varies" className="text-gray-500">
+                    {labels.variesWithOptions}
+                  </p>
+                )}
               </section>
             </div>
           </aside>
