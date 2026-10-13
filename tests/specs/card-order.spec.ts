@@ -216,6 +216,10 @@ test.describe('Card order', () => {
     await page.getByRole('button', { name: 'Continue to payment' }).click();
 
     await expect(page.getByTestId('fake-card')).toBeVisible();
+    await expect(page.getByTestId('payment-totals-items')).toHaveText('€10.50');
+    await expect(page.getByTestId('payment-totals-total')).toHaveText('€10.50');
+    await expect(page.getByTestId('payment-totals-delivery')).toHaveCount(0);
+    await expect(page.getByTestId('payment-totals-discount')).toHaveCount(0);
     await page.getByRole('button', { name: 'Order with obligation to pay' }).click();
 
     await expect(page).toHaveURL(/\/shops\/test-shop\/orders\/o1\?t=tok$/);
@@ -551,6 +555,11 @@ test.describe('Card order in German', () => {
 
     await expect(page.getByTestId('fake-card')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Zahlungspflichtig bestellen' })).toBeEnabled();
+    const breakdown = page.getByTestId('payment-totals');
+    await expect(breakdown).toContainText('Artikel');
+    await expect(breakdown).toContainText('Summe');
+    await expect(breakdown).toContainText('inkl. MwSt.');
+    await expect(page.getByTestId('payment-totals-total')).toHaveText(/10,50\s€/);
   });
 });
 
@@ -835,6 +844,13 @@ test.describe('Delivery order', () => {
 
     await expect(page.getByTestId('fake-card')).toBeVisible();
     await expect(page.getByTestId('payment-total')).toHaveText('€13.00');
+    await expect(page.getByTestId('payment-totals-items')).toHaveText('€10.50');
+    await expect(page.getByTestId('payment-totals-delivery')).toHaveText('€2.50');
+    await expect(page.getByTestId('payment-totals-total')).toHaveText('€13.00');
+    await expect(page.getByTestId('payment-totals-discount')).toHaveCount(0);
+    await expect(
+      page.getByTestId('payment-totals').locator('xpath=following-sibling::*[1]').getByRole('button', { name: /Order with obligation to pay/ }),
+    ).toBeVisible();
     expect(quotes[quotes.length - 1]).toMatchObject({ fulfilmentMode: 'delivery', postcode: '10115' });
     expect(placed).toMatchObject({
       fulfilmentMode: 'delivery',
@@ -893,6 +909,41 @@ test.describe('Delivery order', () => {
     await expect(page.getByText('Delivery to: Teststraße 1, 10115 Berlin')).toBeVisible();
     await expect(page.getByText('Delivery fee')).toBeVisible();
     await expect(page.getByText('€13.00')).toBeVisible();
+  });
+
+  async function continueToDeliveryPayment(page: Page, result: Json) {
+    await bindDelivery(page);
+    await seedCart(page);
+    await mockBackend(page, { modes: DELIVERY_MODES, delivery: ZONES, quote: deliveryQuote });
+    await page.route('**/api/orders', (r) => r.fulfill(fulfil(result)));
+    await page.goto('/shops/test-shop/checkout');
+    await fillDetails(page);
+    await fillDeliveryAddress(page);
+    await page.getByRole('button', { name: 'Continue to payment' }).click();
+    await expect(page.getByTestId('fake-card')).toBeVisible();
+  }
+
+  test('figures that do not add up show only the server total above the button', async ({ page }) => {
+    await continueToDeliveryPayment(page, { ...CARD_RESULT, totalCents: 1400 });
+    await expect(page.getByTestId('payment-totals-total')).toHaveText('€14.00');
+    await expect(page.getByTestId('payment-totals-items')).toHaveCount(0);
+    await expect(page.getByTestId('payment-totals-delivery')).toHaveCount(0);
+    await expect(page.getByTestId('payment-total')).toHaveText('€14.00');
+  });
+
+  test('on a phone the payment step lists every dish and the costs without unfolding', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await continueToDeliveryPayment(page, { ...CARD_RESULT, totalCents: 1300 });
+    await expect(page.getByTestId('payment-recap').getByText('1× Carbonara')).toBeVisible();
+    await expect(page.getByRole('button', { name: /Show order/ })).toHaveCount(0);
+    await expect(page.getByTestId('payment-recap').locator('[aria-expanded]')).toHaveCount(0);
+    await page.getByTestId('payment-totals').scrollIntoViewIfNeeded();
+    await expect(page.getByTestId('payment-totals-delivery')).toBeVisible();
+    await expect(page.getByTestId('payment-totals-delivery')).toHaveText('€2.50');
+    await expect(page.getByTestId('payment-totals-total')).toHaveText('€13.00');
+    await expect(
+      page.getByTestId('payment-totals').locator('xpath=following-sibling::*[1]').getByRole('button', { name: /Order with obligation to pay/ }),
+    ).toBeVisible();
   });
 });
 
@@ -1100,7 +1151,7 @@ test.describe('Discount codes', () => {
     let placed: Json | null = null;
     await page.route('**/api/orders', async (route) => {
       placed = route.request().postDataJSON() as Json;
-      await route.fulfill(fulfil(CARD_RESULT));
+      await route.fulfill(fulfil({ ...CARD_RESULT, totalCents: 945 }));
     });
     await page.goto('/shops/test-shop/checkout');
 
@@ -1116,6 +1167,12 @@ test.describe('Discount codes', () => {
     await fillDetails(page);
     await page.getByRole('button', { name: 'Continue to payment' }).click();
     await expect(page.getByTestId('fake-card')).toBeVisible();
+    await expect(page.getByTestId('payment-totals-items')).toHaveText('€10.50');
+    await expect(page.getByTestId('payment-totals')).toContainText('Discount (WELCOME10)');
+    await expect(page.getByTestId('payment-totals-discount')).toHaveText('-€1.05');
+    await expect(page.getByTestId('payment-totals-total')).toHaveText('€9.45');
+    await expect(page.getByTestId('payment-total')).toHaveText('€9.45');
+    await expect(page.getByTestId('payment-totals-delivery')).toHaveCount(0);
     expect(placed).toMatchObject({ discountCode: 'WELCOME10', expectedDiscountCents: 105 });
   });
 
@@ -1688,5 +1745,46 @@ test.describe('Closed or paused popup', () => {
       await expect(popup.getByText('Wir öffnen heute wieder um 11:30 Uhr.')).toBeVisible();
       await expect(popup.getByRole('button', { name: 'OK' })).toBeFocused();
     });
+  });
+});
+
+test.describe('Stripe loading', () => {
+  test.use({ locale: 'en-US' });
+
+  test('the menu, legal pages and step 1 never load Stripe; the payment step does', async ({ page }) => {
+    await mockBackend(page);
+    await seedCart(page);
+    const stripeRequests: string[] = [];
+    page.on('request', (r) => {
+      if (r.url().startsWith('https://js.stripe.com')) stripeRequests.push(r.url());
+    });
+    const scriptTags = () => page.evaluate(() => document.querySelectorAll('script[src^="https://js.stripe.com"]').length);
+
+    await page.goto('/shops/test-shop');
+    await expect(page.getByText('Carbonara').first()).toBeVisible();
+    await page.waitForLoadState('networkidle');
+    expect(await scriptTags()).toBe(0);
+
+    await page.goto('/shops/test-shop/legal/terms');
+    await page.waitForLoadState('networkidle');
+    expect(await scriptTags()).toBe(0);
+
+    await page.goto('/legal/sub-processors');
+    await page.waitForLoadState('networkidle');
+    expect(await scriptTags()).toBe(0);
+
+    await page.goto('/shops/test-shop/checkout');
+    await expect(page.getByRole('button', { name: 'Continue to payment' })).toBeVisible();
+    await page.waitForLoadState('networkidle');
+    expect(await scriptTags()).toBe(0);
+    expect(stripeRequests).toEqual([]);
+
+    await fillDetails(page);
+    await page.getByRole('button', { name: 'Continue to payment' }).click();
+    await expect(page.getByTestId('fake-card')).toBeVisible();
+    expect(await scriptTags()).toBe(1);
+    expect(stripeRequests.length).toBeGreaterThan(0);
+    expect(stripeRequests[0]).not.toContain('advancedFraudSignals=false');
+    expect((await fakeStripeCalls(page)).init?.options.stripeAccount).toBe('acct_test');
   });
 });

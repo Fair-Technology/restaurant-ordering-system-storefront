@@ -120,7 +120,6 @@ export interface OrderCopy {
   reserveTitle: string;
   reserveNote: string;
   secureNote: string;
-  showOrder: (items: string) => string;
   recapChange: string;
   orderSent: string;
   progressLabel: string;
@@ -386,7 +385,6 @@ const en: OrderCopy = {
   reserveNote:
     'The amount is only reserved on your card. It is charged once the restaurant accepts – if it declines or you cancel, the reservation is released.',
   secureNote: 'Payments are handled securely by Stripe. Neither the restaurant nor the ordering platform sees your card details.',
-  showOrder: (items) => `Show order (${items})`,
   recapChange: 'Change',
   orderSent: 'Order sent!',
   progressLabel: 'Order progress',
@@ -660,7 +658,6 @@ const de: OrderCopy = {
   reserveNote:
     'Der Betrag wird nur auf Ihrer Karte reserviert. Abgebucht wird erst, wenn das Restaurant annimmt – lehnt es ab oder stornieren Sie, wird die Reservierung aufgehoben.',
   secureNote: 'Zahlungen werden sicher über Stripe abgewickelt. Ihre Kartendaten sieht weder das Restaurant noch die Bestellplattform.',
-  showOrder: (items) => `Bestellung anzeigen (${items})`,
   recapChange: 'Ändern',
   orderSent: 'Bestellung gesendet!',
   progressLabel: 'Fortschritt der Bestellung',
