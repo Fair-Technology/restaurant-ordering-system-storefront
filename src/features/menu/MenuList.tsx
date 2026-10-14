@@ -13,6 +13,8 @@ interface MenuListProps {
   categoryLabels: CategoryLabelMap;
   categoryCounts: Record<string, number>;
   categoryIcons: Record<string, string>;
+  /** Optional line under a section heading, by category slug (e.g. when an "Other times" category is on offer). */
+  categoryNotes?: Record<string, string>;
   onAddToCart: (item: Product) => void;
 }
 
@@ -30,6 +32,7 @@ const MenuList: React.FC<MenuListProps> = ({
   categoryLabels,
   categoryCounts,
   categoryIcons,
+  categoryNotes,
   onAddToCart,
 }) => {
   const storedLanguage = useAppSelector((state) => state.shop.menuLanguage);
@@ -54,6 +57,11 @@ const MenuList: React.FC<MenuListProps> = ({
                 {copy.dishCount(count)}
               </span>
             </h2>
+            {categoryNotes?.[categoryId] && (
+              <p data-testid="category-note" className="-mt-1 mb-3 text-sm text-[#6b6058] sm:-mt-3 sm:mb-5">
+                {categoryNotes[categoryId]}
+              </p>
+            )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 sm:gap-5 md:grid-cols-3 lg:grid-cols-4">
               {items.map((item) => (

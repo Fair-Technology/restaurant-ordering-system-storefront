@@ -162,6 +162,13 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }) => {
               </span>
             )}
           </p>
+          {product.availableLater && (
+            <p className="order-3 sm:order-none sm:col-span-2">
+              <span className="inline-block rounded-full bg-[#f6f1eb] px-2 py-0.5 text-xs font-semibold text-[#4a413b]" data-testid="not-now">
+                {product.availableLater}
+              </span>
+            </p>
+          )}
           {product.description && (
             <p className="order-2 line-clamp-2 text-[13px] leading-relaxed text-[#5c524b] sm:order-none sm:col-span-2 sm:text-sm">
               {product.description}

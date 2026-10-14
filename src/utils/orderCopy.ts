@@ -160,6 +160,11 @@ export interface OrderCopy {
   slotPick: string;
   closedOrderLater: string;
   slotGone: string;
+  otherTimes: string;
+  availableWhen: (when: string) => string;
+  servedLaterOnly: string;
+  dishesNeverServed: (names: string) => string;
+  dishesServedApart: (names: string) => string;
   scheduledLine: (when: string) => string;
   statusScheduled: (shop: string) => string;
   statusScheduledHint: string;
@@ -427,6 +432,11 @@ const en: OrderCopy = {
   slotPick: 'Choose a time',
   closedOrderLater: 'The restaurant is closed right now. You can order for later.',
   slotGone: 'This time is no longer available. Please choose another.',
+  otherTimes: 'Other times',
+  availableWhen: (when) => `Available ${when}`,
+  servedLaterOnly: 'Some dishes in your basket are only served later. Please choose a time.',
+  dishesNeverServed: (names) => `${names}: not on offer at any time you can order for. Please remove it to continue.`,
+  dishesServedApart: (names) => `No single time fits ${names} together. Please remove one to continue.`,
   scheduledLine: (w) => `For: ${w}`,
   statusScheduled: (s) => `Booked — ${s} confirms it shortly before.`,
   statusScheduledHint:
@@ -702,6 +712,11 @@ const de: OrderCopy = {
   slotPick: 'Uhrzeit wählen',
   closedOrderLater: 'Das Restaurant hat gerade geschlossen. Sie können für später bestellen.',
   slotGone: 'Diese Uhrzeit ist nicht mehr frei. Bitte wählen Sie eine andere.',
+  otherTimes: 'Andere Zeiten',
+  availableWhen: (when) => `Erhältlich ${when}`,
+  servedLaterOnly: 'Einige Gerichte in Ihrem Warenkorb gibt es erst später. Bitte wählen Sie eine Uhrzeit.',
+  dishesNeverServed: (names) => `${names}: zu keiner bestellbaren Zeit erhältlich. Bitte entfernen, um fortzufahren.`,
+  dishesServedApart: (names) => `Für ${names} gibt es keine gemeinsame Zeit. Bitte entfernen Sie eines davon, um fortzufahren.`,
   scheduledLine: (w) => `Für: ${w}`,
   statusScheduled: (s) => `Vorbestellt – ${s} bestätigt kurz vorher.`,
   statusScheduledHint:

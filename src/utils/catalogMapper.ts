@@ -37,7 +37,20 @@ export interface CatalogComboDto {
 }
 
 // The generated client also predates `combo` (null for a dish; absent from an older backend).
+export interface CategoryWindowDto {
+  daysOfWeek: number[];
+  startTime: string;
+  endTime: string;
+}
+
+// Categories outside their weekly times are also sent, marked; the generated client predates these fields.
+export type CatalogCategoryWithTimes = CatalogCategoryDto & {
+  availableNow?: boolean;
+  schedule?: CategoryWindowDto | null;
+};
+
 export type CatalogProductWithOffer = CatalogProductDto & {
+  availableNow?: boolean;
   offerPrice?: number | null;
   offerLabel?: string | null;
   combo?: CatalogComboDto | null;
