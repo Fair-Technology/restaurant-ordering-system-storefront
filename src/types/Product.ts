@@ -22,6 +22,8 @@ export interface Product {
   spice: CatalogLabel | null;
   /** Menu language this product's text is localized to (e.g. 'de', 'en') */
   language: string;
+  /** Set when the dish is not on offer right now: when it is, in words (e.g. "Available Mon–Fri 11:30–14:30"). */
+  availableLater?: string;
   /** Set only for a combo: its choices, each with the dishes the diner may pick. */
   combo?: ComboChoiceGroup[];
 }

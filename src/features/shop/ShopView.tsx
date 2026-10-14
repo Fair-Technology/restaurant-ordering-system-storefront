@@ -34,8 +34,10 @@ import {
   slugifyCategoryName,
   mapApiProductToProduct,
   resolveCombo,
+  type CatalogCategoryWithTimes,
   type CatalogProductWithOffer,
 } from '../../utils/catalogMapper';
+import { categoryWindowText, capitalise } from '../../utils/categoryTimes';
 import { useBrandingStyle } from '../../hooks/useBrandingStyle';
 import { currentChoice, pageLanguageOf, pickerCurrent, pickerLanguages } from '../../utils/pageLanguage';
 import { useTableSession } from '../../hooks/useTableSession';
@@ -260,35 +262,54 @@ const ShopView = () => {
     [catalogData, mode, dishes]
   );
 
-  // Build the list of category filter options from visible categories
-  const categories = useMemo<CategoryOption[]>(
-    () =>
-      visibleCategories.map((cat) => ({
-        id: slugifyCategoryName(cat.name!),
-        label: cat.name!,
-        count: cat.products?.length ?? 0,
-        icon: cat.icon ?? undefined,
-      })),
-    [visibleCategories]
+  const copy = orderCopy(pageLanguage);
+
+  // Categories outside their times right now wait behind the "Other times" pill; one can be opened at a time
+  const [pickedLaterId, setPickedLaterId] = useState<string | null>(null);
+  const laterCategories = useMemo(
+    () => visibleCategories.filter((c) => (c as CatalogCategoryWithTimes).availableNow === false),
+    [visibleCategories],
   );
+  const nowCategories = useMemo(
+    () => visibleCategories.filter((c) => (c as CatalogCategoryWithTimes).availableNow !== false),
+    [visibleCategories],
+  );
+  const pickedLater = laterCategories.find((c) => slugifyCategoryName(c.name!) === pickedLaterId) ?? null;
+  const shownCategories = useMemo(
+    () => (pickedLater ? [...nowCategories, pickedLater] : nowCategories),
+    [nowCategories, pickedLater],
+  );
+  const windowOf = (c: { name?: string | null }): string => {
+    const s = (c as CatalogCategoryWithTimes).schedule;
+    return s ? categoryWindowText(s, pageLanguage) : '';
+  };
+
+  const toOption = (cat: (typeof visibleCategories)[number]): CategoryOption => ({
+    id: slugifyCategoryName(cat.name!),
+    label: cat.name!,
+    count: cat.products?.length ?? 0,
+    icon: cat.icon ?? undefined,
+  });
+  // Build the list of category filter options (pills) from the categories on offer now
+  const categories = useMemo<CategoryOption[]>(() => nowCategories.map(toOption), [nowCategories]);
+  // Same, plus the "Other times" category the diner opened: these get a menu section
+  const shownOptions = useMemo<CategoryOption[]>(() => shownCategories.map(toOption), [shownCategories]);
 
   // Map category slugs to their icon name (for MenuList section headers)
   const categoryIcons = useMemo<Record<string, string>>(
     () =>
       Object.fromEntries(
-        visibleCategories
+        shownCategories
           .filter((cat) => cat.icon)
           .map((cat) => [slugifyCategoryName(cat.name!), cat.icon!])
       ),
-    [visibleCategories]
+    [shownCategories]
   );
-
-  const copy = orderCopy(pageLanguage);
 
   // Group available products by category slug, mapping API DTOs to Product type
   const groupedItems = useMemo<Record<string, Product[]>>(() => {
     const grouped: Record<string, Product[]> = {};
-    visibleCategories.forEach((cat) => {
+    shownCategories.forEach((cat) => {
       const id = slugifyCategoryName(cat.name!);
       grouped[id] = (cat.products ?? [])
         // In the admin's preview, the dish being edited follows its unsaved availability too
@@ -303,6 +324,9 @@ const ShopView = () => {
               ...((p as CatalogProductWithOffer).combo
                 ? { combo: resolveCombo(p as CatalogProductWithOffer, dishes)! }
                 : {}),
+              ...((p as CatalogProductWithOffer).availableNow === false
+                ? { availableLater: copy.availableWhen(windowOf(cat)) }
+                : {}),
             },
             previewState.dish,
             resolvedLanguage,
@@ -310,21 +334,38 @@ const ShopView = () => {
         );
     });
     return grouped;
-  }, [visibleCategories, resolvedLanguage, dishes, previewState.dish]);
+  }, [shownCategories, resolvedLanguage, dishes, previewState.dish, copy, pageLanguage]);
 
   const categoryLabels = useMemo(() => {
-    return categories.reduce<Record<string, string>>((acc, category) => {
+    return shownOptions.reduce<Record<string, string>>((acc, category) => {
       acc[category.id] = category.label;
       return acc;
     }, {});
-  }, [categories]);
+  }, [shownOptions]);
 
   const categoryCounts = useMemo(() => {
-    return categories.reduce<Record<string, number>>((acc, category) => {
+    return shownOptions.reduce<Record<string, number>>((acc, category) => {
       acc[category.id] = category.count;
       return acc;
     }, {});
-  }, [categories]);
+  }, [shownOptions]);
+
+  const otherTimes = useMemo(
+    () =>
+      laterCategories.map((c) => ({
+        id: slugifyCategoryName(c.name!),
+        label: c.name!,
+        when: capitalise(windowOf(c)),
+      })),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [laterCategories, pageLanguage],
+  );
+  const categoryNotes = pickedLater
+    ? { [slugifyCategoryName(pickedLater.name!)]: copy.availableWhen(windowOf(pickedLater)) }
+    : {};
+  useEffect(() => {
+    if (pickedLaterId) document.getElementById(pickedLaterId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [pickedLaterId]);
 
   const isLoading = shouldFetchBySlug ? isSlugLoading : isIdLoading;
 
@@ -475,13 +516,19 @@ const ShopView = () => {
               {copy.loading}
             </span>
           )}
-          <CategoryFilterBar categories={categories} />
+          <CategoryFilterBar
+            categories={categories}
+            otherTimes={otherTimes}
+            otherTimesLabel={copy.otherTimes}
+            onPickOtherTime={setPickedLaterId}
+          />
           <div className="w-full flex items-center justify-center flex-col mt-4">
             <MenuList
               groupedItems={groupedItems}
               categoryLabels={categoryLabels}
               categoryCounts={categoryCounts}
               categoryIcons={categoryIcons}
+              categoryNotes={categoryNotes}
               onAddToCart={() => {}}
             />
           </div>

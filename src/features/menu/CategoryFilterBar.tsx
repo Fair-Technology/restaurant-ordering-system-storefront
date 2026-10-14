@@ -1,10 +1,21 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { ChevronDown, Clock } from 'lucide-react';
 import { ICON_MAP } from '../../utils/iconMap';
 
 type CategoryOption = { id: string; label: string; count?: number; icon?: string };
 
+export interface OtherTimeOption {
+  id: string;
+  label: string;
+  when: string;
+}
+
 interface CategoryFilterBarProps {
   categories: CategoryOption[];
+  /** Categories outside their times right now; shown in a dropdown behind one pill. */
+  otherTimes?: OtherTimeOption[];
+  otherTimesLabel?: string;
+  onPickOtherTime?: (id: string) => void;
 }
 
 // STICKY_OFFSET accounts for the combined height of the sticky NavBar (64px)
@@ -12,9 +23,28 @@ interface CategoryFilterBarProps {
 // fires slightly before the heading scrolls fully behind the bars.
 const STICKY_OFFSET = 140;
 
-const CategoryFilterBar: React.FC<CategoryFilterBarProps> = ({ categories }) => {
+const CategoryFilterBar: React.FC<CategoryFilterBarProps> = ({ categories, otherTimes, otherTimesLabel, onPickOtherTime }) => {
   const [selected, setSelected] = useState(() => categories[0]?.id ?? '');
   const [hovered, setHovered] = useState('');
+  const [otherOpen, setOtherOpen] = useState(false);
+  const navRef = useRef<HTMLElement>(null);
+
+  // The "Other times" list closes on Escape or a click outside the bar
+  useEffect(() => {
+    if (!otherOpen) return;
+    const onDown = (e: MouseEvent) => {
+      if (navRef.current && !navRef.current.contains(e.target as Node)) setOtherOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOtherOpen(false);
+    };
+    document.addEventListener('mousedown', onDown);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDown);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [otherOpen]);
 
   // Keep selected in sync if categories change (e.g. after data loads)
   useEffect(() => {
@@ -91,10 +121,11 @@ const CategoryFilterBar: React.FC<CategoryFilterBarProps> = ({ categories }) => 
     };
   }, [categories]);
 
-  if (!categories.length) return null;
+  if (!categories.length && !otherTimes?.length) return null;
 
   return (
     <nav
+      ref={navRef}
       aria-label="Categories"
       className="sticky top-[64px] z-40 border-y border-[#f1ebe4] bg-white"
     >
@@ -128,7 +159,43 @@ const CategoryFilterBar: React.FC<CategoryFilterBarProps> = ({ categories }) => 
             </button>
           );
         })}
+        {otherTimes && otherTimes.length > 0 && (
+          <button
+            type="button"
+            aria-expanded={otherOpen}
+            aria-controls="other-times-list"
+            onClick={() => setOtherOpen((o) => !o)}
+            className="inline-flex h-11 shrink-0 items-center gap-2 whitespace-nowrap rounded-full border-[1.5px] border-dashed border-[#cfc4b8] bg-white px-4 text-sm font-bold text-gray-900 sm:text-[15px]"
+          >
+            <Clock className="h-4 w-4" aria-hidden="true" />
+            <span>{otherTimesLabel}</span>
+            <ChevronDown className="h-4 w-4" aria-hidden="true" />
+          </button>
+        )}
       </div>
+      {otherOpen && otherTimes && (
+        <ul
+          id="other-times-list"
+          data-testid="other-times"
+          className="absolute right-4 top-full z-50 mt-1 w-[min(320px,calc(100vw-2rem))] rounded-2xl border border-[#efe7de] bg-white p-1.5 shadow-[0_10px_28px_rgba(31,26,23,0.12)] sm:right-6"
+        >
+          {otherTimes.map((o) => (
+            <li key={o.id}>
+              <button
+                type="button"
+                className="flex w-full flex-col items-start rounded-xl px-3 py-2.5 text-left hover:bg-[#f6f1eb]"
+                onClick={() => {
+                  setOtherOpen(false);
+                  onPickOtherTime?.(o.id);
+                }}
+              >
+                <span className="text-[15px] font-bold text-gray-900">{o.label}</span>
+                <span className="text-[13px] text-[#5c524b]">{o.when}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
     </nav>
   );
 };

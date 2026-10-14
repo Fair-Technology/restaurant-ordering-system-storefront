@@ -192,7 +192,17 @@ const CheckoutPage: React.FC = () => {
   const timeZone = (shopData as { timezone?: string } | undefined)?.timezone ?? 'Europe/Berlin';
   const quoteSlots = useMemo(() => quote?.slots ?? [], [quote?.slots]);
   const hasSlots = mode !== 'dine_in' && quoteSlots.length > 0;
-  const when = effectiveWhen(whenChoice, quote?.openNow ?? true, hasSlots);
+  const servedNow = quote?.servedNow !== false; // absent on an older backend = served now
+  const asapPossible = (quote?.openNow ?? true) && servedNow;
+  const noTimeFits = !!quote && !servedNow && !hasSlots;
+  const lineName = (i: number) => quote?.lines.find((l) => l.index === i)?.name ?? cartItems[i]?.name ?? '';
+  const limited = quote?.timeLimited ?? [];
+  const neverServed = limited.filter((l) => !l.servedNow && !l.servedLater).map((l) => lineName(l.index));
+  const conflictText =
+    neverServed.length > 0
+      ? copy.dishesNeverServed(neverServed.join(', '))
+      : copy.dishesServedApart(limited.map((l) => lineName(l.index)).join(', '));
+  const when = effectiveWhen(whenChoice, asapPossible, hasSlots);
   const chosenSlot = when === 'later' && slotChoice && quoteSlots.includes(slotChoice) ? slotChoice : null;
   const days = useMemo(
     () => slotDays(quoteSlots, timeZone, pageLanguage),
@@ -202,7 +212,7 @@ const CheckoutPage: React.FC = () => {
     days.find((d) => d.key === dayChoice) ?? days.find((d) => d.times.some((t) => t.iso === chosenSlot)) ?? days[0];
   const canSubmit =
     !!quote && allOk &&
-    (when === 'asap' ? quote.openNow : chosenSlot !== null && quote.slotAvailable === true) &&
+    (when === 'asap' ? asapPossible : chosenSlot !== null && quote.slotAvailable === true) &&
     !quote.belowMinimum && method !== null && !quoting &&
     !quote.orderLimitReached && (mode !== 'delivery' || quote.postcodeServed === true) &&
     codeProblem === null && !(appliedCode && quoting);
@@ -246,6 +256,8 @@ const CheckoutPage: React.FC = () => {
       ...(sentDiscount ? { discountCode: sentDiscount.code, expectedDiscountCents: sentDiscount.cents } : {}),
       ...(loyalty && loyaltyTick ? { loyaltyOptIn: true } : {}),
       idempotencyKey,
+      // The earlier card checkout of this visit: lets the server free the time it still holds for this diner
+      ...(checkoutData ? { replacesOrderId: checkoutData.orderId, replacesAccessToken: checkoutData.accessToken } : {}),
       legalRevisions:
         legalData?.terms && legalData?.withdrawal
           ? { terms: legalData.terms.revision, withdrawal: legalData.withdrawal.revision }
@@ -428,7 +440,7 @@ const CheckoutPage: React.FC = () => {
             {/* Step 1. Stays mounted (only hidden) on the payment step, so "back to details" keeps what was typed */}
             <div hidden={step !== 'info'}>
               <div className="flex flex-col gap-5">
-                {(tableNotice || table || (quote && (!allOk || quote.paymentMethods.length === 0 || quote.orderLimitReached || !quote.openNow))) && (
+                {(tableNotice || table || (quote && (!allOk || quote.paymentMethods.length === 0 || quote.orderLimitReached || !quote.openNow || !servedNow))) && (
                   <div className="flex flex-col gap-3">
                     {tableNotice && <p className={warnBox}>{tableNotice}</p>}
                     {table && (
@@ -447,8 +459,14 @@ const CheckoutPage: React.FC = () => {
                     )}
                     {quote && quote.paymentMethods.length === 0 && <p className={errorBox}>{copy.noOnlinePayment}</p>}
                     {quote?.orderLimitReached && <p className={errorBox}>{copy.orderingPaused}</p>}
-                    {quote && !quote.openNow && !hasSlots && <p className={errorBox}>{copy.closedNow}</p>}
+                    {quote && !quote.openNow && !hasSlots && !noTimeFits && <p className={errorBox}>{copy.closedNow}</p>}
                     {quote && !quote.openNow && hasSlots && <p className={warnBox}>{copy.closedOrderLater}</p>}
+                    {quote && quote.openNow && !servedNow && hasSlots && <p className={warnBox}>{copy.servedLaterOnly}</p>}
+                    {noTimeFits && (
+                      <p className={errorBox} data-testid="no-time-fits">
+                        {conflictText}
+                      </p>
+                    )}
                   </div>
                 )}
 
@@ -461,7 +479,7 @@ const CheckoutPage: React.FC = () => {
                       <div className="grid gap-2.5 sm:grid-cols-2">
                         {(
                           [
-                            { value: 'asap' as const, title: copy.whenAsap(quote.prepMinutes), disabled: !quote.openNow },
+                            { value: 'asap' as const, title: copy.whenAsap(quote.prepMinutes), disabled: !asapPossible },
                             { value: 'later' as const, title: copy.whenLater, disabled: false },
                           ]
                         ).map((o) => {

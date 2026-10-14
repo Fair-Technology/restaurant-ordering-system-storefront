@@ -1128,6 +1128,38 @@ test.describe('Order for later', () => {
     await expect(page.getByTestId('when')).toHaveCount(0);
   });
 
+  test('going back from the card step and re-submitting names the earlier checkout', async ({ page }) => {
+    await mockBackend(page, { quote: laterQuote(false) });
+    await seedCart(page);
+    const bodies: Json[] = [];
+    await page.route('**/api/orders', async (route) => {
+      bodies.push(route.request().postDataJSON() as Json);
+      await route.fulfill(
+        bodies.length === 2
+          ? fulfil({ error: 'This time is no longer available. Please choose another.' }, 409)
+          : fulfil(CARD_RESULT),
+      );
+    });
+    await page.goto('/shops/test-shop/checkout');
+
+    await page.getByLabel('Time').selectOption('2026-10-10T16:15:00.000Z');
+    await fillDetails(page);
+    await page.getByRole('button', { name: 'Continue to payment' }).click();
+    await expect(page.getByTestId('fake-card')).toBeVisible();
+    await page.getByRole('button', { name: /Back to/ }).click();
+    await page.getByRole('button', { name: 'Continue to payment' }).click();
+    await expect(page.getByLabel('Time')).toHaveValue('');
+    await page.getByLabel('Time').selectOption('2026-10-10T16:15:00.000Z');
+    await page.getByRole('button', { name: 'Continue to payment' }).click();
+    await expect(page.getByTestId('fake-card')).toBeVisible();
+
+    expect(bodies.length).toBe(3);
+    expect('replacesOrderId' in bodies[0]).toBe(false);
+    expect(bodies[1]).toMatchObject({ replacesOrderId: 'o1', replacesAccessToken: 'tok', idempotencyKey: bodies[0].idempotencyKey });
+    expect(bodies[2]).toMatchObject({ replacesOrderId: 'o1', replacesAccessToken: 'tok' });
+    expect(bodies[2].idempotencyKey).not.toBe(bodies[0].idempotencyKey);
+  });
+
   test('the order page shows the booked time', async ({ page }) => {
     await mockBackend(page, { order: { scheduledFor: '2026-10-10T16:00:00.000Z' } });
     await page.goto(ORDER_URL);
@@ -1824,5 +1856,172 @@ test.describe('Stripe loading', () => {
     expect(stripeRequests.length).toBeGreaterThan(0);
     expect(stripeRequests[0]).not.toContain('advancedFraudSignals=false');
     expect((await fakeStripeCalls(page)).init?.options.stripeAccount).toBe('acct_test');
+  });
+});
+
+test.describe('Dishes served later', () => {
+  test.use({ locale: 'en-US' });
+
+  test('a dish served later turns off as soon as possible', async ({ page }) => {
+    await mockBackend(page, {
+      quote: (b) => ({ ...laterQuote(true)(b), servedNow: false, timeLimited: [{ index: 0, servedNow: false, servedLater: true }] }),
+    });
+    await seedCart(page);
+    await page.goto('/shops/test-shop/checkout');
+
+    await expect(page.getByLabel('As soon as possible (about 20 min)')).toBeDisabled();
+    await expect(page.getByLabel('Later')).toBeChecked();
+    await expect(page.getByText('Some dishes in your basket are only served later. Please choose a time.')).toBeVisible();
+    await fillDetails(page);
+    await expect(page.getByRole('button', { name: 'Continue to payment' })).toBeDisabled();
+    await page.getByLabel('Time').selectOption('2026-10-10T16:00:00.000Z');
+    await expect(page.getByRole('button', { name: 'Continue to payment' })).toBeEnabled();
+  });
+
+  test('a dish not on offer at any time is named', async ({ page }) => {
+    await mockBackend(page, {
+      quote: () => ({ ...okQuote, slots: [], servedNow: false, timeLimited: [{ index: 0, servedNow: false, servedLater: false }] }),
+    });
+    await seedCart(page);
+    await page.goto('/shops/test-shop/checkout');
+
+    await expect(page.getByTestId('no-time-fits')).toHaveText(
+      'Carbonara: not on offer at any time you can order for. Please remove it to continue.',
+    );
+    await expect(page.getByText('This restaurant is not taking orders right now.')).toHaveCount(0);
+    await fillDetails(page);
+    await expect(page.getByRole('button', { name: 'Continue to payment' })).toBeDisabled();
+  });
+
+  test('dishes served at different times are named together', async ({ page }) => {
+    await page.addInitScript(() =>
+      localStorage.setItem(
+        'mewmew_cart_v1:test-shop',
+        JSON.stringify([
+          { key: 'p1::::', id: 'p1', name: 'Carbonara', price: 10.5, quantity: 1 },
+          { key: 'p2::::', id: 'p2', name: 'Cola', price: 3.5, quantity: 1 },
+        ]),
+      ),
+    );
+    await mockBackend(page, {
+      quote: () => ({
+        ...okQuote,
+        lines: [
+          okQuote.lines[0],
+          { ...okQuote.lines[0], index: 1, productId: 'p2', name: 'Cola', unitPriceCents: 350, expectedUnitPriceCents: 350, lineTotalCents: 350 },
+        ],
+        slots: [],
+        servedNow: false,
+        timeLimited: [
+          { index: 0, servedNow: true, servedLater: true },
+          { index: 1, servedNow: false, servedLater: true },
+        ],
+      }),
+    });
+    await page.goto('/shops/test-shop/checkout');
+
+    await expect(page.getByTestId('no-time-fits')).toHaveText(
+      'No single time fits Carbonara, Cola together. Please remove one to continue.',
+    );
+  });
+});
+
+const LATER_MENU = (language: 'en' | 'de') => ({
+  language,
+  languages: [language],
+  categories: [
+    { id: 'c1', name: 'Pasta', sortOrder: 1, availableNow: true, schedule: null, products: [{ ...baseProduct, availableNow: true }] },
+    {
+      id: 'c2', name: 'Lunch', sortOrder: 2, availableNow: false,
+      schedule: { daysOfWeek: [1, 2, 3, 4, 5], startTime: '11:30', endTime: '14:30' },
+      products: [{ ...baseProduct, id: 'p7', name: 'Lunch Lasagne', availableNow: false }],
+    },
+    {
+      id: 'c3', name: 'Friday Grill', sortOrder: 3, availableNow: false,
+      schedule: { daysOfWeek: [5], startTime: '17:00', endTime: '21:00' },
+      products: [{ ...baseProduct, id: 'p8', name: 'Grill Plate', availableNow: false }],
+    },
+    {
+      id: 'c4', name: 'Breakfast', sortOrder: 4, availableNow: false,
+      schedule: { daysOfWeek: [0, 1, 2, 3, 4, 5, 6], startTime: '07:00', endTime: '10:30' },
+      products: [{ ...baseProduct, id: 'p6', name: 'Omelette', availableNow: false }],
+    },
+  ],
+});
+const mockLaterMenu = (page: Page, language: 'en' | 'de' = 'en') =>
+  page.route('**/api/shops/shop-t/catalog**', (route) => route.fulfill(fulfil(LATER_MENU(language))));
+const pills = (page: Page) => page.getByRole('navigation', { name: 'Categories' });
+
+test.describe('Other times', () => {
+  test.use({ locale: 'en-US' });
+
+  test('categories served at other times wait behind one pill', async ({ page }) => {
+    await mockBackend(page);
+    await mockLaterMenu(page);
+    await page.goto('/shops/test-shop');
+
+    await expect(pills(page).getByRole('button', { name: /^Pasta/ })).toBeVisible();
+    await expect(pills(page).getByRole('button', { name: /^Lunch/ })).toHaveCount(0);
+    await expect(page.getByText('Lunch Lasagne')).toHaveCount(0);
+    await pills(page).getByRole('button', { name: 'Other times' }).click();
+    const list = page.getByTestId('other-times');
+    for (const t of ['Lunch', 'Mon–Fri 11:30–14:30', 'Friday Grill', 'Fridays 17:00–21:00', 'Breakfast', 'Daily 07:00–10:30']) {
+      await expect(list).toContainText(t);
+    }
+  });
+
+  test('picking one shows its dishes marked with their times, and they can be added', async ({ page }) => {
+    await mockBackend(page);
+    await mockLaterMenu(page);
+    await page.goto('/shops/test-shop');
+
+    await pills(page).getByRole('button', { name: 'Other times' }).click();
+    await page.getByTestId('other-times').getByRole('button', { name: /Lunch/ }).click();
+    await expect(page.getByTestId('other-times')).toHaveCount(0);
+    await expect(page.getByText('Lunch Lasagne')).toBeVisible();
+    await expect(page.getByTestId('not-now')).toHaveText('Available Mon–Fri 11:30–14:30');
+    await expect(page.getByTestId('category-note')).toHaveText('Available Mon–Fri 11:30–14:30');
+    await page.getByRole('button', { name: 'Add Lunch Lasagne' }).click();
+    await page.getByRole('button', { name: /Add to order/ }).click();
+    await expect
+      .poll(() => page.evaluate(() => localStorage.getItem('mewmew_cart_v1:test-shop') ?? ''))
+      .toContain('"p7"');
+  });
+
+  test('Escape closes the list', async ({ page }) => {
+    await mockBackend(page);
+    await mockLaterMenu(page);
+    await page.goto('/shops/test-shop');
+
+    await pills(page).getByRole('button', { name: 'Other times' }).click();
+    await expect(page.getByTestId('other-times')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.getByTestId('other-times')).toHaveCount(0);
+  });
+
+  test('no extra pill when every category is on now', async ({ page }) => {
+    await mockBackend(page);
+    await page.goto('/shops/test-shop');
+
+    await expect(page.getByText('Carbonara').first()).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Other times' })).toHaveCount(0);
+  });
+});
+
+test.describe('Other times in German', () => {
+  test.use({ locale: 'de-DE' });
+
+  test('German wording', async ({ page }) => {
+    await mockBackend(page, { language: 'de' });
+    await mockLaterMenu(page, 'de');
+    await page.goto('/shops/test-shop');
+
+    await pills(page).getByRole('button', { name: 'Andere Zeiten' }).click();
+    const list = page.getByTestId('other-times');
+    for (const t of ['Mo–Fr 11:30–14:30', 'Freitags 17:00–21:00', 'Täglich 07:00–10:30']) {
+      await expect(list).toContainText(t);
+    }
+    await list.getByRole('button', { name: /Lunch/ }).click();
+    await expect(page.getByTestId('not-now')).toHaveText('Erhältlich Mo–Fr 11:30–14:30');
   });
 });

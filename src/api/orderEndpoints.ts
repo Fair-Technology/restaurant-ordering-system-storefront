@@ -143,6 +143,14 @@ export interface QuoteLineDto {
   lineTotalCents: number | null;
 }
 
+/** A basket line that is not served at every time the diner could pick. */
+export interface TimeLimitedLine {
+  index: number;
+  servedNow: boolean;
+  /** Served at one or more of the bookable times. */
+  servedLater: boolean;
+}
+
 export interface BasketQuoteDto {
   currency: string;
   fulfilmentMode: FulfilmentMode;
@@ -169,6 +177,9 @@ export interface BasketQuoteDto {
   discountProblem?: DiscountProblem | null;
   discountMinSubtotalCents?: number | null;
   loyalty?: { everyOrders: number; rewardCents: number } | null;
+  // Absent on a backend from before timed categories; absent = served now, nothing limited.
+  servedNow?: boolean;
+  timeLimited?: TimeLimitedLine[];
 }
 
 export interface PlaceOrderRequest {
@@ -191,6 +202,9 @@ export interface PlaceOrderRequest {
   discountCode?: string;
   expectedDiscountCents?: number;
   loyaltyOptIn?: boolean;
+  // The diner's earlier card checkout in this visit (both or neither): lets the server free the time it still holds.
+  replacesOrderId?: string;
+  replacesAccessToken?: string;
 }
 
 export interface CardCheckoutResult {
