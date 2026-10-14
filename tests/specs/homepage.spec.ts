@@ -6,7 +6,7 @@ async function mockShopsApi(
   page: import('@playwright/test').Page,
   responseData = mockShops,
 ) {
-  await page.route('**/api/shops', async (route) => {
+  await page.route('**/api/shops/public', async (route) => {
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -46,7 +46,7 @@ test.describe('Home Page - Happy Path', () => {
 
 test.describe('Home Page - Error State', () => {
   test('should show error message when API fails', async ({ page }) => {
-    await page.route('**/api/shops', async (route) => {
+    await page.route('**/api/shops/public', async (route) => {
       await route.fulfill({
         status: 500,
         contentType: 'application/json',
@@ -98,5 +98,55 @@ test.describe('Home Page - Search', () => {
     await page.getByRole('searchbox').fill('zzzz');
     await expect(page.getByTestId('shop-card')).toHaveCount(0);
     await expect(page.getByText('No restaurant matches “zzzz”.')).toBeVisible();
+  });
+});
+
+const DAYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
+const ALL_DAY = Object.fromEntries(DAYS.map((d) => [d, [{ open: '00:00', close: '00:00' }]]));
+
+test.describe('Home Page - Status pill', () => {
+  test('a shop that paused orders says Ordering paused even while open', async ({ page }) => {
+    await mockShopsApi(page, {
+      shops: [{ ...firstMockShop, openingHours: ALL_DAY, ordersPaused: true }],
+    } as typeof mockShops);
+    await page.goto('/');
+    const card = page.getByTestId('shop-card');
+    await expect(card.getByText('Ordering paused')).toBeVisible();
+    await expect(card.getByText('Open now')).toHaveCount(0);
+  });
+
+  test('an open shop taking orders says Open now', async ({ page }) => {
+    await mockShopsApi(page, {
+      shops: [{ ...firstMockShop, openingHours: ALL_DAY, ordersPaused: false }],
+    } as typeof mockShops);
+    await page.goto('/');
+    await expect(page.getByTestId('shop-card').getByText('Open now')).toBeVisible();
+  });
+
+  test('the old isPaused flag no longer drives the pill', async ({ page }) => {
+    await mockShopsApi(page, {
+      shops: [{ ...firstMockShop, openingHours: ALL_DAY, ordersPaused: false, isPaused: true }],
+    } as unknown as typeof mockShops);
+    await page.goto('/');
+    const card = page.getByTestId('shop-card');
+    await expect(card.getByText('Open now')).toBeVisible();
+    await expect(card.getByText('Ordering paused')).toHaveCount(0);
+  });
+});
+
+test.describe('Home Page - Public list', () => {
+  test('the home page reads the public list, not the superadmin-only list', async ({ page }) => {
+    await page.route('**/api/shops', (route) =>
+      route.fulfill({
+        status: 403,
+        contentType: 'application/json',
+        body: JSON.stringify({ error: 'Forbidden' }),
+      }),
+    );
+    await mockShopsApi(page);
+    const homePage = new HomePage(page);
+    await homePage.goto();
+    await expect(homePage.shopCards).toHaveCount(2);
+    await expect(homePage.errorMessage).not.toBeVisible();
   });
 });
