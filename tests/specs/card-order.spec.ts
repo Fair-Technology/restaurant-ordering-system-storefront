@@ -2025,3 +2025,161 @@ test.describe('Other times in German', () => {
     await expect(page.getByTestId('not-now')).toHaveText('Erhältlich Mo–Fr 11:30–14:30');
   });
 });
+
+test.describe('Other times: more cases', () => {
+  test.use({ locale: 'en-US' });
+
+  test('the list holds only the categories that are closed right now', async ({ page }) => {
+    await mockBackend(page);
+    await mockLaterMenu(page);
+    await page.goto('/shops/test-shop');
+    await pills(page).getByRole('button', { name: 'Other times' }).click();
+    const list = page.getByTestId('other-times');
+    await expect(list.getByRole('button')).toHaveCount(3);
+    await expect(list).not.toContainText('Pasta');
+    // nothing opened yet: no closed dish and no note on the menu
+    await expect(page.getByTestId('not-now')).toHaveCount(0);
+    await expect(page.getByTestId('category-note')).toHaveCount(0);
+  });
+
+  test('weekend and multi-day windows are worded in English', async ({ page }) => {
+    const menu = (language: 'en' | 'de') => ({
+      language, languages: [language],
+      categories: [
+        { id: 'c1', name: 'Pasta', sortOrder: 1, availableNow: true, schedule: null, products: [baseProduct] },
+        { id: 'c2', name: 'Brunch', sortOrder: 2, availableNow: false, schedule: { daysOfWeek: [0, 6], startTime: '10:00', endTime: '14:00' }, products: [{ ...baseProduct, id: 'p7', name: 'Brunch Bowl', availableNow: false }] },
+        { id: 'c3', name: 'Specials', sortOrder: 3, availableNow: false, schedule: { daysOfWeek: [5, 1, 3], startTime: '17:00', endTime: '21:00' }, products: [{ ...baseProduct, id: 'p8', name: 'Special Plate', availableNow: false }] },
+      ],
+    });
+    await mockBackend(page);
+    await page.route('**/api/shops/shop-t/catalog**', (route) => route.fulfill(fulfil(menu('en'))));
+    await page.goto('/shops/test-shop');
+    await pills(page).getByRole('button', { name: 'Other times' }).click();
+    await expect(page.getByTestId('other-times')).toContainText('Weekends 10:00–14:00');
+    await expect(page.getByTestId('other-times')).toContainText('Mon, Wed, Fri 17:00–21:00');
+  });
+
+  test('a dish in both a closed and an open category shows no badge', async ({ page }) => {
+    await mockBackend(page);
+    await page.route('**/api/shops/shop-t/catalog**', (route) =>
+      route.fulfill(fulfil({
+        language: 'en', languages: ['en'],
+        categories: [
+          { id: 'c1', name: 'Pasta', sortOrder: 1, availableNow: true, schedule: null, products: [{ ...baseProduct, availableNow: true }] },
+          { id: 'c2', name: 'Lunch', sortOrder: 2, availableNow: false, schedule: { daysOfWeek: [1, 2, 3, 4, 5], startTime: '11:30', endTime: '14:30' },
+            products: [{ ...baseProduct, availableNow: true }, { ...baseProduct, id: 'p7', name: 'Lunch Lasagne', availableNow: false }] },
+        ],
+      })),
+    );
+    await page.goto('/shops/test-shop');
+    await pills(page).getByRole('button', { name: 'Other times' }).click();
+    await page.getByTestId('other-times').getByRole('button', { name: /Lunch/ }).click();
+    await expect(page.getByText('Lunch Lasagne')).toBeVisible();
+    // only the dish that is not on now carries a badge; Carbonara (served now) has none
+    await expect(page.getByTestId('not-now')).toHaveCount(1);
+    await expect(page.getByTestId('not-now')).toHaveText('Available Mon–Fri 11:30–14:30');
+  });
+
+  test('a click outside closes the list, and a second pick replaces the first section', async ({ page }) => {
+    await mockBackend(page);
+    await mockLaterMenu(page);
+    await page.goto('/shops/test-shop');
+    await pills(page).getByRole('button', { name: 'Other times' }).click();
+    await page.mouse.click(5, 400);
+    await expect(page.getByTestId('other-times')).toHaveCount(0);
+
+    await pills(page).getByRole('button', { name: 'Other times' }).click();
+    await page.getByTestId('other-times').getByRole('button', { name: /Lunch/ }).click();
+    await pills(page).getByRole('button', { name: 'Other times' }).click();
+    await page.getByTestId('other-times').getByRole('button', { name: /Breakfast/ }).click();
+    await expect(page.getByText('Omelette')).toBeVisible();
+    await expect(page.getByText('Lunch Lasagne')).toHaveCount(0);
+  });
+
+  test('before opening time only the Other times pill is shown', async ({ page }) => {
+    await mockBackend(page);
+    await page.route('**/api/shops/shop-t/catalog**', (route) =>
+      route.fulfill(fulfil({
+        language: 'en', languages: ['en'],
+        categories: [
+          { id: 'c2', name: 'Lunch', sortOrder: 1, availableNow: false, schedule: { daysOfWeek: [1, 2, 3, 4, 5], startTime: '11:30', endTime: '14:30' },
+            products: [{ ...baseProduct, id: 'p7', name: 'Lunch Lasagne', availableNow: false }] },
+        ],
+      })),
+    );
+    await page.goto('/shops/test-shop');
+    await expect(pills(page).getByRole('button', { name: 'Other times' })).toBeVisible();
+    await expect(pills(page).getByRole('button')).toHaveCount(1);
+  });
+});
+
+test.describe('Dishes served later: more cases', () => {
+  test.use({ locale: 'en-US' });
+
+  test('an older backend without servedNow behaves as before', async ({ page }) => {
+    // okQuote has no servedNow / timeLimited, as an older backend would answer
+    await mockBackend(page, { quote: laterQuote(true) });
+    await seedCart(page);
+    await page.goto('/shops/test-shop/checkout');
+    await expect(page.getByLabel('As soon as possible (about 20 min)')).toBeEnabled();
+    await expect(page.getByLabel('As soon as possible (about 20 min)')).toBeChecked();
+    await expect(page.getByText('Some dishes in your basket are only served later. Please choose a time.')).toHaveCount(0);
+    await expect(page.getByTestId('no-time-fits')).toHaveCount(0);
+    await fillDetails(page);
+    await expect(page.getByRole('button', { name: 'Continue to payment' })).toBeEnabled();
+  });
+
+  test('an older backend that is closed still says closed', async ({ page }) => {
+    await mockBackend(page, { quote: () => ({ ...okQuote, openNow: false, slots: [] }) });
+    await seedCart(page);
+    await page.goto('/shops/test-shop/checkout');
+    await expect(page.getByText('This restaurant is not taking orders right now.')).toBeVisible();
+    await expect(page.getByTestId('no-time-fits')).toHaveCount(0);
+  });
+
+  test('a table order with a dish served later cannot be placed and names the dish', async ({ page }) => {
+    await bindTable(page);
+    await mockBackend(page, {
+      modes: ['collection', 'dine_in'],
+      quote: () => ({ ...okQuote, fulfilmentMode: 'dine_in', slots: [], servedNow: false, timeLimited: [{ index: 0, servedNow: false, servedLater: true }] }),
+    });
+    await seedCart(page);
+    await page.goto('/shops/test-shop/checkout');
+    await expect(page.getByTestId('no-time-fits')).toContainText('Carbonara');
+    await fillDetails(page);
+    await expect(page.getByRole('button', { name: 'Continue to payment' })).toBeDisabled();
+  });
+
+  test('a dish served later while the restaurant is closed still offers later times', async ({ page }) => {
+    await mockBackend(page, {
+      quote: (b) => ({ ...laterQuote(false)(b), servedNow: false, timeLimited: [{ index: 0, servedNow: false, servedLater: true }] }),
+    });
+    await seedCart(page);
+    await page.goto('/shops/test-shop/checkout');
+    await expect(page.getByLabel('As soon as possible (about 20 min)')).toBeDisabled();
+    await expect(page.getByTestId('no-time-fits')).toHaveCount(0);
+    await expect(page.getByText('The restaurant is closed right now. You can order for later.')).toBeVisible();
+  });
+});
+
+test.describe('Other times in German: more cases', () => {
+  test.use({ locale: 'de-DE' });
+
+  test('weekend wording in German', async ({ page }) => {
+    await mockBackend(page, { language: 'de' });
+    await page.route('**/api/shops/shop-t/catalog**', (route) =>
+      route.fulfill(fulfil({
+        language: 'de', languages: ['de'],
+        categories: [
+          { id: 'c1', name: 'Pasta', sortOrder: 1, availableNow: true, schedule: null, products: [baseProduct] },
+          { id: 'c2', name: 'Brunch', sortOrder: 2, availableNow: false, schedule: { daysOfWeek: [0, 6], startTime: '10:00', endTime: '14:00' }, products: [{ ...baseProduct, id: 'p7', name: 'Brunch Bowl', availableNow: false }] },
+          { id: 'c3', name: 'Specials', sortOrder: 3, availableNow: false, schedule: { daysOfWeek: [5, 1, 3], startTime: '17:00', endTime: '21:00' }, products: [{ ...baseProduct, id: 'p8', name: 'Special Plate', availableNow: false }] },
+        ],
+      })),
+    );
+    await page.goto('/shops/test-shop');
+    await pills(page).getByRole('button', { name: 'Andere Zeiten' }).click();
+    await expect(page.getByTestId('other-times')).toContainText('Am Wochenende 10:00–14:00');
+    await expect(page.getByTestId('other-times')).toContainText('Mo, Mi, Fr 17:00–21:00');
+  });
+});
