@@ -1,5 +1,5 @@
-// This is the fake response for GET /api/shops
-// The shape must match what your real API returns: { shops: [...] }
+// This is the fake response for GET /api/shops/public
+// The shape must match what the real API returns: { shops: [...] } (public fields only)
 
 export const mockShops = {
   shops: [
@@ -7,21 +7,31 @@ export const mockShops = {
       id: 'shop-001',
       name: 'Burger Palace',
       slug: 'burger-palace',
+      address: { city: 'Berlin', postcode: '10115' },
       branding: {
         logoUrl: 'https://placehold.co/64x64?text=BP',
-        primaryColor: '#FF8C32',
-        secondaryColor: '#2C2C2C',
+        heroImageUrl: null,
+        accentColor: null,
+        showHero: true,
       },
+      openingHours: {},
+      timezone: 'Europe/Berlin',
+      ordersPaused: false,
     },
     {
       id: 'shop-002',
       name: 'Pizza Heaven',
       slug: 'pizza-heaven',
+      address: { city: 'Munich', postcode: '80331' },
       branding: {
         logoUrl: 'https://placehold.co/64x64?text=PH',
-        primaryColor: '#E63946',
-        secondaryColor: '#1D3557',
+        heroImageUrl: null,
+        accentColor: null,
+        showHero: true,
       },
+      openingHours: {},
+      timezone: 'Europe/Berlin',
+      ordersPaused: false,
     },
   ],
 };

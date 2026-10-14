@@ -32,7 +32,7 @@ async function mockShop(page: Page, name = 'Test Shop') {
 }
 
 async function mockHome(page: Page) {
-  await page.route('**/api/shops', (route) =>
+  await page.route('**/api/shops/public', (route) =>
     route.fulfill({
       status: 200,
       contentType: 'application/json',

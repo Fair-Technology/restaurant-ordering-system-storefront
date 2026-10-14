@@ -1,19 +1,19 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Search } from 'lucide-react';
-import { useGetShopsQuery } from '../api/endpoints';
+import { useListPublicShopsQuery, type PublicShopSummary } from '../api/publicShopEndpoints';
 import ShopLogo from '../shared/ShopLogo';
 import PlatformHeader from '../shared/PlatformHeader';
-import { resolveShopBranding, type ShopWithBranding } from '../utils/branding';
-import { openState, type WeeklyHours } from '../utils/openingHours';
+import { resolveShopBranding } from '../utils/branding';
+import { openState } from '../utils/openingHours';
 import { useAppSelector } from '../store/hooks';
 import { currentChoice, pageLanguageOf } from '../utils/pageLanguage';
 import { siteCopy, PLATFORM_NAME, type SiteCopy } from '../utils/siteCopy';
 
-/** Open / closed / paused as a small pill, worked out from the shop's opening hours. */
-function statusOf(shop: ShopWithBranding, copy: SiteCopy): { text: string; open: boolean } | null {
-  if (shop.isPaused) return { text: copy.homePaused, open: false };
-  const hours = shop.openingHours as WeeklyHours | undefined;
+/** Ordering paused / open / closed as a small pill. Offline shops never reach this list: the server leaves them out. */
+function statusOf(shop: PublicShopSummary, copy: SiteCopy): { text: string; open: boolean } | null {
+  if (shop.ordersPaused) return { text: copy.homePaused, open: false };
+  const hours = shop.openingHours;
   if (!hours || Object.keys(hours).length === 0) return null;
   const s = openState(hours, new Date(), shop.timezone);
   if (!s.open) return { text: copy.homeClosed, open: false };
@@ -26,12 +26,12 @@ function statusOf(shop: ShopWithBranding, copy: SiteCopy): { text: string; open:
  * town and open status from sm up; compact rows with the round logo on phones.
  */
 const HomePage = () => {
-  const { data, isLoading, isError } = useGetShopsQuery();
+  const { data, isLoading, isError } = useListPublicShopsQuery();
   const storedLanguage = useAppSelector((state) => state.shop.menuLanguage);
   const copy = siteCopy(pageLanguageOf(currentChoice(storedLanguage, navigator.language)));
   const [query, setQuery] = useState('');
 
-  const shops = useMemo(() => (data?.shops ?? []) as ShopWithBranding[], [data]);
+  const shops = useMemo(() => data?.shops ?? [], [data]);
   const shown = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return shops;
