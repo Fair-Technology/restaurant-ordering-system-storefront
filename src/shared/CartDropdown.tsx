@@ -10,6 +10,8 @@ import {
   clearCart,
 } from '../store/slices/cartSlice';
 import { useMoney } from '../hooks/useMoney';
+import DishTimeLine from './DishTimeLine';
+import { useDishTimes } from '../hooks/useDishTimes';
 import { orderCopy } from '../utils/orderCopy';
 import { currentChoice, pageLanguageOf } from '../utils/pageLanguage';
 import type { FulfilmentMode } from '../store/slices/shopSlice';
@@ -66,6 +68,7 @@ const CartDropdown: React.FC<CartDropdownProps> = ({ dropdownRef, style, onClose
   const storedLanguage = useAppSelector((state) => state.shop.menuLanguage);
   const copy = orderCopy(pageLanguageOf(currentChoice(storedLanguage, navigator.language)));
   const money = useMoney();
+  const dishTimes = useDishTimes();
   const phone = useIsPhone();
   const [askClear, setAskClear] = useState(false);
 
@@ -175,6 +178,7 @@ const CartDropdown: React.FC<CartDropdownProps> = ({ dropdownRef, style, onClose
                     ) : null}
                   </div>
                   {item.detail && <span className="line-clamp-2 text-[13px] leading-snug text-gray-500">{item.detail}</span>}
+                  {dishTimes(item.id) && <DishTimeLine text={dishTimes(item.id)!} />}
                 </div>
                 <span className="whitespace-nowrap text-[15px] font-bold">{money.major(item.quantity * item.price)}</span>
               </div>

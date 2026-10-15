@@ -14,6 +14,8 @@ import type { Product } from '../../../types/Product';
 import type { OrderCopy } from '../../../utils/orderCopy';
 import ProductModal from '../../menu/ProductModal';
 import ConfirmModal from '../../../shared/ConfirmModal';
+import DishTimeLine from '../../../shared/DishTimeLine';
+import { useDishTimes } from '../../../hooks/useDishTimes';
 
 /** "Rigatoni · Mozzarella, Pinienkerne": the chosen variant and extras of a basket line. */
 export function itemDetail(item: CartItem, products: Product[]): string {
@@ -34,6 +36,10 @@ interface CartSummaryProps {
   slug: string;
   products: Product[];
   copy: OrderCopy;
+  /** Basket positions the quote calls time-limited; absent (no quote yet) = work it out from the menu */
+  limitedIndexes?: number[];
+  /** Basket positions that cannot share a time with the rest: their time line turns red */
+  clashIndexes?: number[];
 }
 
 /**
@@ -41,7 +47,8 @@ interface CartSummaryProps {
  * a quantity stepper (the minus becomes a bin at one, asking before it removes), the line
  * total and an Edit link that reopens the dish popup with the current choices.
  */
-const CartSummary: React.FC<CartSummaryProps> = ({ slug, products, copy }) => {
+const CartSummary: React.FC<CartSummaryProps> = ({ slug, products, copy, limitedIndexes, clashIndexes = [] }) => {
+  const dishTimes = useDishTimes();
   const dispatch = useAppDispatch();
   const cartItems = useAppSelector(selectCartItems);
   const money = useMoney();
@@ -70,7 +77,8 @@ const CartSummary: React.FC<CartSummaryProps> = ({ slug, products, copy }) => {
       ) : (
         <>
           <ul>
-            {cartItems.map((item) => {
+            {cartItems.map((item, index) => {
+              const timeText = limitedIndexes && !limitedIndexes.includes(index) ? null : dishTimes(item.id);
               const product = products.find((p) => p.id === item.id);
               const detail = itemDetail(item, products);
               const isOne = item.quantity <= 1;
@@ -92,6 +100,7 @@ const CartSummary: React.FC<CartSummaryProps> = ({ slug, products, copy }) => {
                       </span>
                     </div>
                     {detail && <span className="text-[13px] leading-relaxed text-[#5c524b]">{detail}</span>}
+                    {timeText && <DishTimeLine text={timeText} clash={clashIndexes.includes(index)} />}
                     {item.quantity > 1 && (
                       <span className="text-xs text-[#6b6058]">{copy.basketEach(money.major(item.price))}</span>
                     )}
