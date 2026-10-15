@@ -1921,7 +1921,7 @@ test.describe('Dishes served later', () => {
     await page.goto('/shops/test-shop/checkout');
 
     await expect(page.getByTestId('no-time-fits')).toHaveText(
-      'No single time fits Carbonara, Cola together. Please remove one to continue.',
+      'These dishes are served at different times. Remove one to continue.',
     );
   });
 });
@@ -2145,7 +2145,7 @@ test.describe('Dishes served later: more cases', () => {
     });
     await seedCart(page);
     await page.goto('/shops/test-shop/checkout');
-    await expect(page.getByTestId('no-time-fits')).toContainText('Carbonara');
+    await expect(page.getByTestId('no-time-fits')).toBeVisible();
     await fillDetails(page);
     await expect(page.getByRole('button', { name: 'Continue to payment' })).toBeDisabled();
   });
@@ -2181,5 +2181,119 @@ test.describe('Other times in German: more cases', () => {
     await pills(page).getByRole('button', { name: 'Andere Zeiten' }).click();
     await expect(page.getByTestId('other-times')).toContainText('Am Wochenende 10:00–14:00');
     await expect(page.getByTestId('other-times')).toContainText('Mo, Mi, Fr 17:00–21:00');
+  });
+});
+
+const FRIDAY = { daysOfWeek: [5], startTime: '17:00', endTime: '21:00' };
+const SATURDAY = { daysOfWeek: [6], startTime: '11:30', endTime: '14:30' };
+const dish = (id: string, name: string) => ({ ...baseProduct, id, name });
+
+async function seedDishes(page: Page, dishes: { id: string; name: string }[]) {
+  await page.addInitScript((items) =>
+    localStorage.setItem(
+      'mewmew_cart_v1:test-shop',
+      JSON.stringify(items.map((d) => ({ key: `${d.id}::::`, id: d.id, name: d.name, price: 5, quantity: 1 }))),
+    ), dishes);
+}
+
+async function mockTimedCatalog(page: Page, language: 'en' | 'de', categories: Json[]) {
+  await page.route('**/api/shops/shop-t/catalog**', (route) =>
+    route.fulfill(fulfil({ language, languages: [language], categories })),
+  );
+}
+
+const limitedQuote = (limited: { index: number; servedNow: boolean; servedLater: boolean }[], names: string[], noFit = false) => () => ({
+  ...okQuote,
+  lines: names.map((name, i) => ({ ...okQuote.lines[0], index: i, productId: `d${i + 1}`, name })),
+  ...(noFit ? { slots: [], servedNow: false } : {}),
+  timeLimited: limited,
+});
+
+test.describe('When a basket dish is served', () => {
+  test.use({ locale: 'en-US' });
+  const dessert = { id: 'c1', name: 'Dessert', sortOrder: 1, availableNow: false, schedule: FRIDAY, products: [dish('d1', 'Panna Cotta')] };
+  const kids = { id: 'c2', name: 'Kids', sortOrder: 2, availableNow: false, schedule: SATURDAY, products: [dish('d2', 'Basis Salat')] };
+  const times = (page: Page) => page.getByTestId('dish-time');
+
+  test('a Friday-only dish says when it is served', async ({ page }) => {
+    await mockBackend(page, { quote: limitedQuote([{ index: 0, servedNow: false, servedLater: true }], ['Panna Cotta']) });
+    await mockTimedCatalog(page, 'en', [dessert]);
+    await seedDishes(page, [{ id: 'd1', name: 'Panna Cotta' }]);
+    await page.goto('/shops/test-shop/checkout');
+    await expect(times(page)).toHaveText('Only Fridays 17:00–21:00');
+    await expect(times(page)).not.toHaveAttribute('data-clash', 'true');
+  });
+
+  test('the wording is German in a German page', async ({ browser }) => {
+    const context = await browser.newContext({ locale: 'de-DE' });
+    const page = await context.newPage();
+    await mockBackend(page, { language: 'de', quote: limitedQuote([{ index: 0, servedNow: false, servedLater: true }], ['Panna Cotta']) });
+    await mockTimedCatalog(page, 'de', [dessert]);
+    await seedDishes(page, [{ id: 'd1', name: 'Panna Cotta' }]);
+    await page.goto('/shops/test-shop/checkout');
+    await expect(times(page)).toHaveText('Nur freitags 17:00–21:00');
+    await context.close();
+  });
+
+  test('a dish served any time has no line', async ({ page }) => {
+    await mockBackend(page);
+    await mockTimedCatalog(page, 'en', [{ id: 'c1', name: 'Pasta', sortOrder: 1, availableNow: true, schedule: null, products: [dish('d1', 'Carbonara')] }]);
+    await seedDishes(page, [{ id: 'd1', name: 'Carbonara' }]);
+    const catalog = page.waitForResponse('**/api/shops/shop-t/catalog**');
+    await page.goto('/shops/test-shop/checkout');
+    await catalog;
+    await expect(page.getByText('Carbonara').first()).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Continue to payment' })).toBeVisible();
+    await expect(times(page)).toHaveCount(0);
+  });
+
+  test('a dish in an open and a closed category has no line', async ({ page }) => {
+    await mockBackend(page, { quote: limitedQuote([{ index: 0, servedNow: true, servedLater: true }], ['Panna Cotta']) });
+    await mockTimedCatalog(page, 'en', [
+      { id: 'c0', name: 'Pasta', sortOrder: 0, availableNow: true, schedule: null, products: [dish('d1', 'Panna Cotta')] },
+      dessert,
+    ]);
+    await seedDishes(page, [{ id: 'd1', name: 'Panna Cotta' }]);
+    const catalog = page.waitForResponse('**/api/shops/shop-t/catalog**');
+    await page.goto('/shops/test-shop/checkout');
+    await catalog;
+    await expect(page.getByText('Panna Cotta').first()).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Continue to payment' })).toBeVisible();
+    await expect(times(page)).toHaveCount(0);
+  });
+
+  test('a dish in two timed categories lists both times', async ({ page }) => {
+    await mockBackend(page, { quote: limitedQuote([{ index: 0, servedNow: false, servedLater: true }], ['Panna Cotta']) });
+    await mockTimedCatalog(page, 'en', [dessert, { ...kids, products: [dish('d1', 'Panna Cotta')] }]);
+    await seedDishes(page, [{ id: 'd1', name: 'Panna Cotta' }]);
+    await page.goto('/shops/test-shop/checkout');
+    await expect(times(page)).toHaveText('Only Fridays 17:00–21:00 · Saturdays 11:30–14:30');
+  });
+
+  test('when no time fits, the clashing lines turn red and the banner is short', async ({ page }) => {
+    await mockBackend(page, {
+      quote: limitedQuote(
+        [{ index: 0, servedNow: false, servedLater: true }, { index: 1, servedNow: false, servedLater: true }],
+        ['Panna Cotta', 'Basis Salat'],
+        true,
+      ),
+    });
+    await mockTimedCatalog(page, 'en', [dessert, kids]);
+    await seedDishes(page, [{ id: 'd1', name: 'Panna Cotta' }, { id: 'd2', name: 'Basis Salat' }]);
+    await page.goto('/shops/test-shop/checkout');
+    await expect(page.getByTestId('no-time-fits')).toHaveText('These dishes are served at different times. Remove one to continue.');
+    await expect(times(page)).toHaveText(['Only Fridays 17:00–21:00', 'Only Saturdays 11:30–14:30']);
+    await expect(times(page).first()).toHaveAttribute('data-clash', 'true');
+    await expect(times(page).first()).toHaveCSS('color', 'rgb(138, 31, 18)');
+    await expect(times(page).last()).toHaveAttribute('data-clash', 'true');
+  });
+
+  test('the basket on the menu page shows the line too', async ({ page }) => {
+    await mockBackend(page);
+    await mockTimedCatalog(page, 'en', [dessert]);
+    await seedDishes(page, [{ id: 'd1', name: 'Panna Cotta' }]);
+    await page.goto('/shops/test-shop');
+    await page.getByRole('button', { name: 'Cart' }).click();
+    await expect(page.getByRole('dialog', { name: 'Your order' }).getByTestId('dish-time')).toHaveText('Only Fridays 17:00–21:00');
   });
 });

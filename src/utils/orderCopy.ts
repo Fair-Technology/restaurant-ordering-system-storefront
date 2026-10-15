@@ -164,7 +164,8 @@ export interface OrderCopy {
   availableWhen: (when: string) => string;
   servedLaterOnly: string;
   dishesNeverServed: (names: string) => string;
-  dishesServedApart: (names: string) => string;
+  dishesServedApart: string;
+  onlyWhen: (when: string) => string;
   scheduledLine: (when: string) => string;
   statusScheduled: (shop: string) => string;
   statusScheduledHint: string;
@@ -436,7 +437,8 @@ const en: OrderCopy = {
   availableWhen: (when) => `Available ${when}`,
   servedLaterOnly: 'Some dishes in your basket are only served later. Please choose a time.',
   dishesNeverServed: (names) => `${names}: not on offer at any time you can order for. Please remove it to continue.`,
-  dishesServedApart: (names) => `No single time fits ${names} together. Please remove one to continue.`,
+  dishesServedApart: 'These dishes are served at different times. Remove one to continue.',
+  onlyWhen: (when) => `Only ${when}`,
   scheduledLine: (w) => `For: ${w}`,
   statusScheduled: (s) => `Booked — ${s} confirms it shortly before.`,
   statusScheduledHint:
@@ -716,7 +718,8 @@ const de: OrderCopy = {
   availableWhen: (when) => `Erhältlich ${when}`,
   servedLaterOnly: 'Einige Gerichte in Ihrem Warenkorb gibt es erst später. Bitte wählen Sie eine Uhrzeit.',
   dishesNeverServed: (names) => `${names}: zu keiner bestellbaren Zeit erhältlich. Bitte entfernen, um fortzufahren.`,
-  dishesServedApart: (names) => `Für ${names} gibt es keine gemeinsame Zeit. Bitte entfernen Sie eines davon, um fortzufahren.`,
+  dishesServedApart: 'Diese Gerichte gibt es zu unterschiedlichen Zeiten. Entfernen Sie eines, um fortzufahren.',
+  onlyWhen: (when) => `Nur ${when}`,
   scheduledLine: (w) => `Für: ${w}`,
   statusScheduled: (s) => `Vorbestellt – ${s} bestätigt kurz vorher.`,
   statusScheduledHint:

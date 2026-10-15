@@ -25,6 +25,21 @@ export function categoryWindowText(w: CategoryWindowDto, lang: string): string {
   return `${when} ${w.startTime}–${w.endTime}`;
 }
 
+/**
+ * When a dish is served, from the categories it sits in: every timed window joined with " · ", or
+ * null when it is served any time (it sits in a category with no weekly times, or in none at all).
+ */
+export function dishTimesText(
+  productId: string,
+  categories: { schedule?: CategoryWindowDto | null; products?: { id?: string }[] | null }[],
+  lang: string,
+): string | null {
+  const own = categories.filter((c) => (c.products ?? []).some((p) => p.id === productId));
+  if (own.length === 0 || own.some((c) => !c.schedule)) return null;
+  const texts = [...new Set(own.map((c) => categoryWindowText(c.schedule!, lang)))];
+  return texts.join(' · ');
+}
+
 export function capitalise(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }

@@ -198,10 +198,14 @@ const CheckoutPage: React.FC = () => {
   const lineName = (i: number) => quote?.lines.find((l) => l.index === i)?.name ?? cartItems[i]?.name ?? '';
   const limited = quote?.timeLimited ?? [];
   const neverServed = limited.filter((l) => !l.servedNow && !l.servedLater).map((l) => lineName(l.index));
+  // The lines the banner is about: the dishes never served, else every time-limited dish
+  const clashIndexes = noTimeFits
+    ? (limited.some((l) => !l.servedNow && !l.servedLater) ? limited.filter((l) => !l.servedNow && !l.servedLater) : limited).map((l) => l.index)
+    : [];
   const conflictText =
     neverServed.length > 0
       ? copy.dishesNeverServed(neverServed.join(', '))
-      : copy.dishesServedApart(limited.map((l) => lineName(l.index)).join(', '));
+      : copy.dishesServedApart;
   const when = effectiveWhen(whenChoice, asapPossible, hasSlots);
   const chosenSlot = when === 'later' && slotChoice && quoteSlots.includes(slotChoice) ? slotChoice : null;
   const days = useMemo(
@@ -470,7 +474,13 @@ const CheckoutPage: React.FC = () => {
                   </div>
                 )}
 
-                <CartSummary slug={slug ?? ''} products={products} copy={copy} />
+                <CartSummary
+                  slug={slug ?? ''}
+                  products={products}
+                  copy={copy}
+                  limitedIndexes={quote ? limited.map((l) => l.index) : undefined}
+                  clashIndexes={clashIndexes}
+                />
 
                 {quote && hasSlots && (
                   <section className={card}>
