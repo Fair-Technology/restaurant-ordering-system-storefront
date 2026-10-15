@@ -2059,6 +2059,25 @@ test.describe('Other times: more cases', () => {
     await expect(page.getByTestId('other-times')).toContainText('Mon, Wed, Fri 17:00–21:00');
   });
 
+  test('a dish in two closed categories names both times on its badge', async ({ page }) => {
+    await mockBackend(page);
+    const shared = { ...baseProduct, id: 'p7', name: 'Panna Cotta', availableNow: false };
+    await page.route('**/api/shops/shop-t/catalog**', (route) =>
+      route.fulfill(fulfil({
+        language: 'en', languages: ['en'],
+        categories: [
+          { id: 'c1', name: 'Pasta', sortOrder: 1, availableNow: true, schedule: null, products: [{ ...baseProduct, availableNow: true }] },
+          { id: 'c2', name: 'Dessert', sortOrder: 2, availableNow: false, schedule: { daysOfWeek: [5], startTime: '17:00', endTime: '21:00' }, products: [shared] },
+          { id: 'c3', name: 'Kids', sortOrder: 3, availableNow: false, schedule: { daysOfWeek: [6], startTime: '11:30', endTime: '14:30' }, products: [shared] },
+        ],
+      })),
+    );
+    await page.goto('/shops/test-shop');
+    await pills(page).getByRole('button', { name: 'Other times' }).click();
+    await page.getByTestId('other-times').getByRole('button', { name: /Dessert/ }).click();
+    await expect(page.getByTestId('not-now')).toHaveText('Available Fridays 17:00–21:00 · Saturdays 11:30–14:30');
+  });
+
   test('a dish in both a closed and an open category shows no badge', async ({ page }) => {
     await mockBackend(page);
     await page.route('**/api/shops/shop-t/catalog**', (route) =>

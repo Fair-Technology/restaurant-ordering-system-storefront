@@ -37,7 +37,7 @@ import {
   type CatalogCategoryWithTimes,
   type CatalogProductWithOffer,
 } from '../../utils/catalogMapper';
-import { categoryWindowText, capitalise } from '../../utils/categoryTimes';
+import { categoryWindowText, capitalise, dishTimesText } from '../../utils/categoryTimes';
 import { useBrandingStyle } from '../../hooks/useBrandingStyle';
 import { currentChoice, pageLanguageOf, pickerCurrent, pickerLanguages } from '../../utils/pageLanguage';
 import { useTableSession } from '../../hooks/useTableSession';
@@ -324,8 +324,14 @@ const ShopView = () => {
               ...((p as CatalogProductWithOffer).combo
                 ? { combo: resolveCombo(p as CatalogProductWithOffer, dishes)! }
                 : {}),
+              // every timed category the dish is in, so a dish served Fridays and Saturdays says both
               ...((p as CatalogProductWithOffer).availableNow === false
-                ? { availableLater: copy.availableWhen(windowOf(cat)) }
+                ? {
+                    availableLater: copy.availableWhen(
+                      dishTimesText(p.id!, (catalogData?.categories ?? []) as CatalogCategoryWithTimes[], pageLanguage) ??
+                        windowOf(cat),
+                    ),
+                  }
                 : {}),
             },
             previewState.dish,
@@ -334,7 +340,7 @@ const ShopView = () => {
         );
     });
     return grouped;
-  }, [shownCategories, resolvedLanguage, dishes, previewState.dish, copy, pageLanguage]);
+  }, [shownCategories, resolvedLanguage, dishes, previewState.dish, copy, pageLanguage, catalogData]);
 
   const categoryLabels = useMemo(() => {
     return shownOptions.reduce<Record<string, string>>((acc, category) => {
