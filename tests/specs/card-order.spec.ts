@@ -2345,4 +2345,31 @@ test.describe('Paused popup for a visitor in another time zone', () => {
     const popup = page.getByRole('alertdialog', { name: 'Online ordering is paused' });
     await expect(popup.getByText('We take orders again from 14:30.')).toBeVisible();
   });
+
+  test("the same-day check uses the restaurant's day, not the visitor's", async ({ page }) => {
+    // Berlin: 00:30 on the 18th now, back at 07:00 the same day. New York is still on the 17th.
+    await page.clock.setFixedTime(new Date('2026-10-17T22:30:00Z'));
+    await mockBackend(page, { shop: { ordersPaused: true, ordersPausedUntil: '2026-10-18T05:00:00.000Z' } });
+    await page.goto('/shops/test-shop');
+    const popup = page.getByRole('alertdialog', { name: 'Online ordering is paused' });
+    await expect(popup.getByText('We take orders again from 07:00.')).toBeVisible();
+  });
+});
+
+test.describe('Paused popup with an end time that is already over', () => {
+  test.use({ locale: 'en-US', timezoneId: 'Europe/Berlin' });
+
+  for (const [name, until] of [
+    ['an end time in the past shows no time', '2026-10-17T11:30:00.000Z'],
+    ['an end time exactly now shows no time', '2026-10-17T12:00:00.000Z'],
+  ] as const) {
+    test(name, async ({ page }) => {
+      await page.clock.setFixedTime(new Date('2026-10-17T12:00:00Z'));
+      await mockBackend(page, { shop: { ordersPaused: true, ordersPausedUntil: until } });
+      await page.goto('/shops/test-shop');
+      const popup = page.getByRole('alertdialog', { name: 'Online ordering is paused' });
+      await expect(popup.getByText("We can't take orders right now. Please try again later.")).toBeVisible();
+      await expect(popup.getByText('We take orders again', { exact: false })).toHaveCount(0);
+    });
+  }
 });
