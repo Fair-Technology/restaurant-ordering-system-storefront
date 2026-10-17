@@ -22,6 +22,8 @@ export interface OrderCopy {
   statusCompleted: string;
   statusRejected: string;
   statusCancelled: string;
+  statusRefunded: string;
+  statusRefundedHint: (shop: string) => string;
   notCharged: string;
   reservationBankNote: string;
   rejectReason: Record<RejectReason, string>;
@@ -281,6 +283,8 @@ const en: OrderCopy = {
   statusCompleted: 'Collected — enjoy your meal!',
   statusRejected: 'Your order was declined',
   statusCancelled: 'Cancelled',
+  statusRefunded: 'Order refunded',
+  statusRefundedHint: (s) => `${s} has refunded the full amount. This order is closed.`,
   notCharged: 'You have not been charged. The reservation on your card has been released.',
   reservationBankNote: 'Depending on your bank, the reservation may still show as pending for a few days.',
   rejectReason: {
@@ -559,6 +563,8 @@ const de: OrderCopy = {
   statusCompleted: 'Abgeholt – guten Appetit!',
   statusRejected: 'Ihre Bestellung wurde abgelehnt',
   statusCancelled: 'Storniert',
+  statusRefunded: 'Bestellung erstattet',
+  statusRefundedHint: (s) => `${s} hat den vollen Betrag erstattet. Die Bestellung ist damit beendet.`,
   notCharged: 'Es wurde nichts abgebucht. Die Reservierung auf Ihrer Karte wurde aufgehoben.',
   reservationBankNote:
     'Je nach Bank kann die Reservierung noch einige Tage als vorgemerkt angezeigt werden.',

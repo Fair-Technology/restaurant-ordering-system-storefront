@@ -186,6 +186,10 @@ const CustomerOrderPage: React.FC = () => {
     } else if (order.state === 'CANCELLED') {
       title = copy.statusCancelled;
       tone = 'stopped';
+    } else if (order.state === 'REFUNDED') {
+      title = copy.statusRefunded;
+      subtitle = copy.statusRefundedHint(order.shopName);
+      tone = 'stopped';
     } else if (order.state === 'COMPLETED') {
       title = delivery ? copy.statusCompletedDelivery : dineIn ? copy.statusCompletedDineIn : copy.statusCompleted;
     } else if (order.state === 'OUT_FOR_DELIVERY') {
