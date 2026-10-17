@@ -176,6 +176,7 @@ export interface OrderCopy {
   noticeOk: string;
   noticePausedTitle: string;
   noticePausedText: string;
+  noticePausedBackAt: (time: string) => string;
   noticeCallUs: string;
   noticeOfflineTitle: string;
   noticeOfflineText: string;
@@ -483,6 +484,7 @@ const en: OrderCopy = {
   noticeOk: 'OK',
   noticePausedTitle: 'Online ordering is paused',
   noticePausedText: "We can't take orders right now. Please try again later.",
+  noticePausedBackAt: (t) => `We take orders again from ${t}.`,
   noticeCallUs: 'Order by phone:',
   noticeOfflineTitle: 'This restaurant is offline',
   noticeOfflineText: "It isn't taking orders online at the moment.",
@@ -766,6 +768,7 @@ const de: OrderCopy = {
   noticeOk: 'OK',
   noticePausedTitle: 'Online-Bestellungen pausiert',
   noticePausedText: 'Wir können gerade keine Bestellungen annehmen. Bitte versuchen Sie es später noch einmal.',
+  noticePausedBackAt: (t) => `Ab ${t} Uhr nehmen wir wieder Bestellungen an.`,
   noticeCallUs: 'Telefonisch bestellen:',
   noticeOfflineTitle: 'Dieses Restaurant ist offline',
   noticeOfflineText: 'Es nimmt im Moment keine Online-Bestellungen an.',

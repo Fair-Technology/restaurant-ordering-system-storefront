@@ -28,6 +28,8 @@ export interface ShopNoticeFields {
   ordersPaused?: boolean;
   /** The owner's own text for the paused popup (up to 280 characters) */
   ordersPausedMessage?: string;
+  /** ISO end of a timed pause; null or absent means until the owner switches it back */
+  ordersPausedUntil?: string | null;
 }
 
 /** The backend's stable code on a 409 when the shop is not taking orders right now */
