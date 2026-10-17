@@ -44,7 +44,8 @@ export type StoredOrderState =
   | 'COMPLETED'
   | 'REJECTED'
   | 'CANCELLED'
-  | 'OUT_FOR_DELIVERY';
+  | 'OUT_FOR_DELIVERY'
+  | 'REFUNDED';
 export type PaymentStatus =
   | 'authorized'
   | 'paid'

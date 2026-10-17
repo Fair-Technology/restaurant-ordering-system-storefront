@@ -470,6 +470,25 @@ test.describe('Card order', () => {
     await expect(page.getByText(/The amount is reserved on your card/)).toHaveCount(0);
   });
 
+  test('a fully refunded order says it is closed', async ({ page }) => {
+    await mockBackend(page, {
+      order: {
+        state: 'REFUNDED',
+        displayState: 'REFUNDED',
+        paymentStatus: 'refunded',
+        refundedCents: 1050,
+        canCancel: false,
+        readyAt: '2026-10-05T10:20:00.000Z',
+      },
+    });
+    await page.goto(ORDER_URL);
+
+    await expect(page.getByText('Order refunded')).toBeVisible();
+    await expect(page.getByText('Test Shop has refunded the full amount. This order is closed.')).toBeVisible();
+    await expect(page.getByText('The full amount of €10.50 has been refunded.')).toBeVisible();
+    await expect(page.getByText('Ready for collection')).toHaveCount(0);
+  });
+
   test('the diner downloads the invoice and the correction', async ({ page }) => {
     await mockBackend(page, {
       order: {
