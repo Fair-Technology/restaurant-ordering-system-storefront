@@ -25,6 +25,7 @@ import LogoLoader from '../../shared/LogoLoader';
 import { nextOpening, openState, type WeeklyHours } from '../../utils/openingHours';
 import ShopNoticeModal from './ShopNoticeModal';
 import { orderCopy } from '../../utils/orderCopy';
+import { pauseResumeTime } from '../../utils/pauseResume';
 import type { ShopFulfilment, ShopNoticeFields } from '../../api/orderEndpoints';
 import {
   resolveShopBranding,
@@ -185,7 +186,7 @@ const ShopView = () => {
 
   // Closed, paused or offline: a popup over the page instead of a banner pushing the menu down
   const openingHours = (resolvedShopData as { openingHours?: WeeklyHours } | undefined)?.openingHours;
-  const shopTimeZone = (resolvedShopData as { timeZone?: string } | undefined)?.timeZone;
+  const shopTimeZone = (resolvedShopData as { timezone?: string } | undefined)?.timezone;
   const noticeFields = (resolvedShopData ?? {}) as ShopNoticeFields;
   // Offline: the owner or the platform took the shop off the web. Nothing of the menu is shown.
   const isOffline = noticeFields.isOffline === true;
@@ -417,7 +418,7 @@ const ShopView = () => {
         logoUrl={resolvedBranding.logoUrl}
         address={(resolvedShopData as { address?: { street?: string; postcode?: string; city?: string } } | undefined)?.address}
         openingHours={(resolvedShopData as { openingHours?: WeeklyHours } | undefined)?.openingHours}
-        timeZone={(resolvedShopData as { timeZone?: string } | undefined)?.timeZone}
+        timeZone={shopTimeZone}
         pickupMinutes={visibleModes.includes('collection') ? fulfilment?.prepMinutes?.collection : null}
         overlapsHero={resolvedBranding.showHero}
         languageSwitcher={languageSwitcher}
@@ -438,7 +439,15 @@ const ShopView = () => {
             noticeKind === 'offline'
               ? [copy.noticeOfflineText]
               : noticeKind === 'paused'
-                ? [ordersPausedMessage || copy.noticePausedText]
+                ? [
+                  ordersPausedMessage || copy.noticePausedText,
+                  ...(() => {
+                    const t = noticeFields.ordersPaused === true
+                      ? pauseResumeTime(noticeFields.ordersPausedUntil, shopTimeZone, new Date(), pageLanguage)
+                      : null;
+                    return t ? [copy.noticePausedBackAt(t)] : [];
+                  })(),
+                ]
                 : [
                   ...(() => {
                     const next = openingHours ? nextOpening(openingHours, new Date(), shopTimeZone) : null;

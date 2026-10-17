@@ -1755,6 +1755,24 @@ test.describe('Closed or paused popup', () => {
     await expect(popup.getByText("We can't take orders right now. Please try again later.")).toBeVisible();
   });
 
+  test('a 30-minute pause says when ordering is back', async ({ page }) => {
+    await page.clock.setFixedTime(new Date('2026-10-17T12:00:00Z'));
+    await mockBackend(page, { shop: { ordersPaused: true, ordersPausedUntil: '2026-10-17T12:30:00.000Z' } });
+    await page.goto('/shops/test-shop');
+    const popup = page.getByRole('alertdialog', { name: 'Online ordering is paused' });
+    await expect(popup.getByText("We can't take orders right now. Please try again later.")).toBeVisible();
+    await expect(popup.getByText('We take orders again from 14:30.')).toBeVisible();
+  });
+
+  test('a pause ending tomorrow shows no time', async ({ page }) => {
+    await page.clock.setFixedTime(new Date('2026-10-17T20:00:00Z'));
+    await mockBackend(page, { shop: { ordersPaused: true, ordersPausedUntil: '2026-10-18T02:00:00.000Z' } });
+    await page.goto('/shops/test-shop');
+    const popup = page.getByRole('alertdialog', { name: 'Online ordering is paused' });
+    await expect(popup.getByText("We can't take orders right now. Please try again later.")).toBeVisible();
+    await expect(popup.getByText('We take orders again', { exact: false })).toHaveCount(0);
+  });
+
   test('offline: no menu, popup cannot be closed', async ({ page }) => {
     await mockBackend(page, { shop: { isOffline: true, isPaused: true } });
     await page.route('**/api/shops/shop-t/catalog**', (route) => route.fulfill(fulfil({ error: 'offline' }, 403)));
@@ -2314,5 +2332,17 @@ test.describe('When a basket dish is served', () => {
     await page.goto('/shops/test-shop');
     await page.getByRole('button', { name: 'Cart' }).click();
     await expect(page.getByRole('dialog', { name: 'Your order' }).getByTestId('dish-time')).toHaveText('Only Fridays 17:00–21:00');
+  });
+});
+
+test.describe('Paused popup for a visitor in another time zone', () => {
+  test.use({ locale: 'en-US', timezoneId: 'America/New_York' });
+
+  test("the resume time is the restaurant's, not the visitor's", async ({ page }) => {
+    await page.clock.setFixedTime(new Date('2026-10-17T12:00:00Z'));
+    await mockBackend(page, { shop: { ordersPaused: true, ordersPausedUntil: '2026-10-17T12:30:00.000Z' } });
+    await page.goto('/shops/test-shop');
+    const popup = page.getByRole('alertdialog', { name: 'Online ordering is paused' });
+    await expect(popup.getByText('We take orders again from 14:30.')).toBeVisible();
   });
 });
