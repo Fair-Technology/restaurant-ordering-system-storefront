@@ -489,6 +489,58 @@ test.describe('Card order', () => {
     await expect(page.getByText('Ready for collection')).toHaveCount(0);
   });
 
+  const FAIL_EN = 'Your refund did not go through, so the money has not come back to your card. Please contact Test Shop.';
+  const FAIL_BASE = { state: 'ACCEPTED', displayState: 'ACCEPTED', paymentStatus: 'paid', refundedCents: 0, refundFailed: true, canCancel: false, readyAt: '2026-10-05T10:20:00.000Z' };
+
+  test('a refund that did not go through says so, not refunded', async ({ page }) => {
+    await mockBackend(page, { order: { ...FAIL_BASE } });
+    await page.goto(ORDER_URL);
+
+    await expect(page.getByRole('heading', { name: 'Confirmed — ready for collection at 12:20' })).toBeVisible();
+    await expect(page.getByText(FAIL_EN)).toBeVisible();
+    await expect(page.getByText('Paid online')).toBeVisible();
+    await expect(page.getByText('Order refunded')).toHaveCount(0);
+    await expect(page.getByText(/has been refunded/)).toHaveCount(0);
+  });
+
+  test('a refund that did not go through, in German', async ({ page }) => {
+    await mockBackend(page, { order: { ...FAIL_BASE, language: 'de' } });
+    await page.goto(ORDER_URL);
+
+    await expect(page.getByText('Ihre Erstattung ist fehlgeschlagen – das Geld ist nicht auf Ihre Karte zurückgegangen. Bitte wenden Sie sich an Test Shop.')).toBeVisible();
+    await expect(page.getByText('Online bezahlt')).toBeVisible();
+    await expect(page.getByText('Bestellung erstattet')).toHaveCount(0);
+  });
+
+  test('a partly refunded order whose later refund failed shows both', async ({ page }) => {
+    await mockBackend(page, { order: { ...FAIL_BASE, paymentStatus: 'partially_refunded', refundedCents: 350 } });
+    await page.goto(ORDER_URL);
+
+    await expect(page.getByText('€3.50 has been refunded to you.')).toBeVisible();
+    await expect(page.getByText(FAIL_EN)).toBeVisible();
+  });
+
+  test('a declined order whose refund failed does not promise a refund', async ({ page }) => {
+    await mockBackend(page, {
+      order: { state: 'REJECTED', displayState: 'REJECTED', paymentStatus: 'paid', refundedCents: 0, refundFailed: true, rejectionReason: 'too_busy', canCancel: false },
+    });
+    await page.goto(ORDER_URL);
+
+    await expect(page.getByText('Your order was declined')).toBeVisible();
+    await expect(page.getByText(FAIL_EN)).toBeVisible();
+    await expect(page.getByText(/We are refunding the full amount/)).toHaveCount(0);
+  });
+
+  test('an order still marked refunded whose refund failed does not say refunded', async ({ page }) => {
+    await mockBackend(page, { order: { ...FAIL_BASE, state: 'REFUNDED', displayState: 'REFUNDED' } });
+    await page.goto(ORDER_URL);
+
+    await expect(page.getByRole('heading', { name: 'Refund did not go through' })).toBeVisible();
+    await expect(page.getByText(FAIL_EN)).toBeVisible();
+    await expect(page.getByText('Order refunded')).toHaveCount(0);
+    await expect(page.getByText('Test Shop has refunded the full amount. This order is closed.')).toHaveCount(0);
+  });
+
   test('the diner downloads the invoice and the correction', async ({ page }) => {
     await mockBackend(page, {
       order: {

@@ -249,6 +249,7 @@ export interface CustomerOrderDto {
   scheduledFor?: string | null;
   paymentStatus: PaymentStatus;
   refundedCents: number;
+  refundFailed?: boolean; // absent on a backend from before refund-failure reopening
   documents: OrderDocument[];
   readyAt: string | null;
   items: Array<{

@@ -187,8 +187,8 @@ const CustomerOrderPage: React.FC = () => {
       title = copy.statusCancelled;
       tone = 'stopped';
     } else if (order.state === 'REFUNDED') {
-      title = copy.statusRefunded;
-      subtitle = copy.statusRefundedHint(order.shopName);
+      title = order.refundFailed ? copy.statusRefundFailed : copy.statusRefunded;
+      subtitle = order.refundFailed ? null : copy.statusRefundedHint(order.shopName);
       tone = 'stopped';
     } else if (order.state === 'COMPLETED') {
       title = delivery ? copy.statusCompletedDelivery : dineIn ? copy.statusCompletedDineIn : copy.statusCompleted;
@@ -228,6 +228,11 @@ const CustomerOrderPage: React.FC = () => {
       paymentLines = [copy.refunded(money.cents(order.refundedCents))];
     } else if (order.paymentStatus === 'partially_refunded') {
       paymentLines = [copy.partlyRefunded(money.cents(order.refundedCents))];
+    }
+    if (order.refundFailed) {
+      // Stripe failed or cancelled the refund: the money did not come back, and nothing retries it
+      if (order.paymentStatus === 'paid' && gone) paymentLines = [];
+      paymentLines = [...paymentLines, copy.refundFailed(order.shopName)];
     }
   }
   const notCharged = order?.paymentStatus === 'canceled';
