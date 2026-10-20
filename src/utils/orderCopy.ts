@@ -24,6 +24,7 @@ export interface OrderCopy {
   statusCancelled: string;
   statusRefunded: string;
   statusRefundedHint: (shop: string) => string;
+  statusRefundFailed: string;
   notCharged: string;
   reservationBankNote: string;
   rejectReason: Record<RejectReason, string>;
@@ -58,6 +59,7 @@ export interface OrderCopy {
   refundInProgress: (amount: string) => string;
   refunded: (amount: string) => string;
   partlyRefunded: (amount: string) => string;
+  refundFailed: (shop: string) => string;
   reservedOnline: string;
   paidOnline: string;
   downloadDocument: Record<OrderDocument['kind'], string>;
@@ -285,6 +287,7 @@ const en: OrderCopy = {
   statusCancelled: 'Cancelled',
   statusRefunded: 'Order refunded',
   statusRefundedHint: (s) => `${s} has refunded the full amount. This order is closed.`,
+  statusRefundFailed: 'Refund did not go through',
   notCharged: 'You have not been charged. The reservation on your card has been released.',
   reservationBankNote: 'Depending on your bank, the reservation may still show as pending for a few days.',
   rejectReason: {
@@ -329,6 +332,7 @@ const en: OrderCopy = {
   refundInProgress: (a) => `We are refunding the full amount of ${a}.`,
   refunded: (a) => `The full amount of ${a} has been refunded.`,
   partlyRefunded: (a) => `${a} has been refunded to you.`,
+  refundFailed: (s) => `Your refund did not go through, so the money has not come back to your card. Please contact ${s}.`,
   reservedOnline: 'Reserved online',
   paidOnline: 'Paid online',
   downloadDocument: {
@@ -565,6 +569,7 @@ const de: OrderCopy = {
   statusCancelled: 'Storniert',
   statusRefunded: 'Bestellung erstattet',
   statusRefundedHint: (s) => `${s} hat den vollen Betrag erstattet. Die Bestellung ist damit beendet.`,
+  statusRefundFailed: 'Erstattung fehlgeschlagen',
   notCharged: 'Es wurde nichts abgebucht. Die Reservierung auf Ihrer Karte wurde aufgehoben.',
   reservationBankNote:
     'Je nach Bank kann die Reservierung noch einige Tage als vorgemerkt angezeigt werden.',
@@ -613,6 +618,7 @@ const de: OrderCopy = {
   refundInProgress: (a) => `Wir erstatten Ihnen den vollen Betrag von ${a}.`,
   refunded: (a) => `Der volle Betrag von ${a} wurde erstattet.`,
   partlyRefunded: (a) => `${a} wurde Ihnen erstattet.`,
+  refundFailed: (s) => `Ihre Erstattung ist fehlgeschlagen – das Geld ist nicht auf Ihre Karte zurückgegangen. Bitte wenden Sie sich an ${s}.`,
   reservedOnline: 'Online reserviert',
   paidOnline: 'Online bezahlt',
   downloadDocument: {
