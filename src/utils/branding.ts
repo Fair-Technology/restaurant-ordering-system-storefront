@@ -1,4 +1,7 @@
-import type { ShopResponse } from '../api/endpoints';
+import type { GetShopBySlugResultDto } from '../api/endpoints';
+
+// All-optional on purpose: callers cast both the by-slug and by-id responses here.
+type ShopResponse = Partial<GetShopBySlugResultDto>;
 import defaultCoverUrl from '../assets/default-cover.jpg';
 
 export type ShopBranding = {

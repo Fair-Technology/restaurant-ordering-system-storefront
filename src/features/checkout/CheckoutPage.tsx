@@ -23,7 +23,7 @@ import {
   ORDERS_PAUSED_CODE,
   SLOT_UNAVAILABLE_ERROR,
   TABLE_INVALID_ERROR,
-  usePlaceOrderMutation,
+  useCreateOrderMutation,
   useQuoteBasketQuery,
   type CardCheckoutResult,
   type ShopFulfilment,
@@ -43,7 +43,7 @@ import { chosenMode } from '../../utils/delivery';
 import { stripeForAccount } from '../../utils/stripe';
 import { paymentBreakdown, type SentCharges } from './paymentBreakdown';
 import QuoteNotice from './components/QuoteNotice';
-import { useGetShopLegalQuery } from '../../api/legalEndpoints';
+import { useGetPublicLegalPackQuery } from '../../api/legalEndpoints';
 import { legalCopy } from '../../utils/legalCopy';
 import { currentChoice, pageLanguageOf } from '../../utils/pageLanguage';
 import CartSummary, { itemDetail } from './components/CartSummary';
@@ -96,7 +96,7 @@ const CheckoutPage: React.FC = () => {
   useEffect(() => {
     if (catalogData?.language) dispatch(setResolvedMenuLanguage(catalogData.language));
   }, [dispatch, catalogData?.language]);
-  const { data: legalData, refetch: refetchLegal } = useGetShopLegalQuery(
+  const { data: legalData, refetch: refetchLegal } = useGetPublicLegalPackQuery(
     { slug: slug ?? '', lang },
     { skip: !slug },
   );
@@ -129,7 +129,7 @@ const CheckoutPage: React.FC = () => {
   const [sentCharges, setSentCharges] = useState<SentCharges | null>(null);
   const [paymentError, setPaymentError] = useState<string | null>(null);
 
-  const [placeOrder, { isLoading: isInitiating }] = usePlaceOrderMutation();
+  const [placeOrder, { isLoading: isInitiating }] = useCreateOrderMutation();
   const [placeError, setPlaceError] = useState<string | undefined>(undefined);
 
   // Ask the server to re-price the basket; it flags changed prices, sold-out
