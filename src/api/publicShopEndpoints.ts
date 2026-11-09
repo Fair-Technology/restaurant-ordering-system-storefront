@@ -1,5 +1,5 @@
-// Hand-written endpoint for the diner home page's restaurant list. Kept out of endpoints.ts because
-// that file is generated; shapes mirror the backend's src/application/shop/getPublicShops/dtos.ts.
+// Hand-written types for the diner home page's restaurant list; the endpoint is
+// generated in endpoints.ts. Shapes mirror the backend's src/application/shop/getPublicShops/dtos.ts.
 import { api } from './endpoints';
 import type { WeeklyHours } from '../utils/openingHours';
 
@@ -23,13 +23,5 @@ export interface PublicShopListResponse {
   shops: PublicShopSummary[];
 }
 
-export const publicShopApi = api.injectEndpoints({
-  endpoints: (b) => ({
-    listPublicShops: b.query<PublicShopListResponse, void>({
-      query: () => ({ url: '/shops/public' }),
-      providesTags: ['Shops'],
-    }),
-  }),
-});
-
-export const { useListPublicShopsQuery } = publicShopApi;
+// The endpoint is generated (endpoints.ts: listPublicShops, GET /shops/public).
+export const { useListPublicShopsQuery } = api;

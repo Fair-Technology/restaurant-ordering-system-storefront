@@ -9,8 +9,8 @@ import { setActiveShop } from '../../store/slices/shopSlice';
 import {
   PAYMENT_CONFIRMING_ERROR,
   useCancelCustomerOrderMutation,
-  useGetCustomerDocumentMutation,
-  useGetCustomerOrderQuery,
+  useViewCustomerDocumentMutation,
+  useViewCustomerOrderQuery,
   type CustomerOrderDto,
 } from '../../api/orderEndpoints';
 import { useGetShopBySlugQuery } from '../../api/endpoints';
@@ -84,8 +84,8 @@ const CustomerOrderPage: React.FC = () => {
   const branding = resolveShopBranding((shopData as ShopWithBranding | undefined)?.branding);
   const brandStyle = useBrandingStyle(branding);
 
-  const { data, isLoading, isError, error } = useGetCustomerOrderQuery(
-    { orderId: orderId ?? '', token },
+  const { data, isLoading, isError, error } = useViewCustomerOrderQuery(
+    { orderId: orderId ?? '', body: { token } },
     { skip: !orderId },
   );
   const [graceOver, setGraceOver] = useState(false);
@@ -108,8 +108,8 @@ const CustomerOrderPage: React.FC = () => {
   }, [wasConfirming]);
   // Poll while the order is still moving so acceptance and ready-time show up on
   // their own. Same arguments as above, so both hooks share one cache entry.
-  useGetCustomerOrderQuery(
-    { orderId: orderId ?? '', token },
+  useViewCustomerOrderQuery(
+    { orderId: orderId ?? '', body: { token } },
     {
       skip: !orderId || (!data && !isConfirming && !isRetrying),
       pollingInterval: isConfirming || isRetrying
@@ -122,7 +122,7 @@ const CustomerOrderPage: React.FC = () => {
 
   const [cancelOrder, { data: cancelled, isLoading: isCancelling, isError: cancelFailed }] =
     useCancelCustomerOrderMutation();
-  const [getDocument] = useGetCustomerDocumentMutation();
+  const [getDocument] = useViewCustomerDocumentMutation();
   const [confirmingCancel, setConfirmingCancel] = useState(false);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [documentFailed, setDocumentFailed] = useState(false);
@@ -148,14 +148,14 @@ const CustomerOrderPage: React.FC = () => {
   async function handleCancel() {
     setConfirmingCancel(false);
     if (!order) return;
-    await cancelOrder({ orderId: order.orderId, token });
+    await cancelOrder({ orderId: order.orderId, body: { token } });
   }
 
   async function handleDownload(documentId: string) {
     if (!order) return;
     setDocumentFailed(false);
     setDownloadingId(documentId);
-    const res = await getDocument({ orderId: order.orderId, documentId, token });
+    const res = await getDocument({ orderId: order.orderId, documentId, body: { token } });
     setDownloadingId(null);
     if (res.data) {
       downloadBase64File(res.data.fileName, res.data.contentBase64, res.data.contentType);

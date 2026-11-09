@@ -5,7 +5,7 @@ import NavBar from '../../shared/NavBar';
 import Footer from '../../shared/Footer';
 import NotFound from '../../pages/NotFound';
 import { useAppSelector } from '../../store/hooks';
-import { useGetShopLegalQuery, type PublicLegalPackDto } from '../../api/legalEndpoints';
+import { useGetPublicLegalPackQuery, type PublicLegalPackDto } from '../../api/legalEndpoints';
 import { useGetShopBySlugQuery } from '../../api/endpoints';
 import { useBrandingStyle } from '../../hooks/useBrandingStyle';
 import { resolveShopBranding, type ShopWithBranding } from '../../utils/branding';
@@ -160,7 +160,7 @@ const LegalPage: React.FC = () => {
   const storedLanguage = useAppSelector((state) => state.shop.menuLanguage);
   const lang = currentChoice(storedLanguage, navigator.language);
   const pageLang = pageLanguageOf(lang);
-  const { data, isLoading, isError } = useGetShopLegalQuery(
+  const { data, isLoading, isError } = useGetPublicLegalPackQuery(
     { slug: slug ?? '', lang },
     { skip: !slug || !isLegalDoc(doc) },
   );

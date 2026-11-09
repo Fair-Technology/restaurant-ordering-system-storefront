@@ -1,4 +1,7 @@
-import type { CatalogAdditive, CatalogLabel } from '../api/endpoints';
+import type {
+  CatalogAdditiveDto as CatalogAdditive,
+  CatalogLabelDto as CatalogLabel,
+} from '../api/endpoints';
 export type { CatalogAdditive, CatalogLabel };
 
 export interface Product {

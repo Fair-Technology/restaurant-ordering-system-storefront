@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { useGetShopLegalQuery } from '../api/legalEndpoints';
+import { useGetPublicLegalPackQuery } from '../api/legalEndpoints';
 import { useAppSelector } from '../store/hooks';
 import { currentChoice, pageLanguageOf } from '../utils/pageLanguage';
 import { legalCopy, type LegalDoc } from '../utils/legalCopy';
@@ -13,7 +13,7 @@ import { legalCopy, type LegalDoc } from '../utils/legalCopy';
 const Footer = ({ slug, flush = false, current }: { slug?: string; flush?: boolean; current?: LegalDoc }) => {
   const storedLanguage = useAppSelector((state) => state.shop.menuLanguage);
   const lang = currentChoice(storedLanguage, navigator.language);
-  const { data } = useGetShopLegalQuery({ slug: slug ?? '', lang }, { skip: !slug });
+  const { data } = useGetPublicLegalPackQuery({ slug: slug ?? '', lang }, { skip: !slug });
   const copy = legalCopy(pageLanguageOf(lang));
 
   const links: { doc: LegalDoc; label: string }[] = [

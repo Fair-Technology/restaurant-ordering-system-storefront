@@ -1,6 +1,7 @@
 import type { WeeklyHours } from '../utils/openingHours';
-// Hand-written endpoints for collection orders. Kept out of endpoints.ts because
-// that file is generated; shapes mirror the backend's src/application/order DTOs.
+// Hand-written order types and the backend's literal error strings. The order
+// endpoints are generated in endpoints.ts; this file only re-exports their hooks.
+// Shapes mirror the backend's src/application/order DTOs.
 import { api } from './endpoints';
 import type { FulfilmentMode } from '../store/slices/shopSlice';
 
@@ -287,43 +288,23 @@ export interface ShopFulfilment {
   delivery?: { zones: DeliveryZoneDto[]; hours?: WeeklyHours | null } | null;
 }
 
-export const orderApi = api.injectEndpoints({
-  endpoints: (b) => ({
-    quoteBasket: b.query<BasketQuoteDto, QuoteBasketRequest>({
-      query: (arg) => ({ url: '/orders/quote', method: 'POST', body: arg }),
-    }),
-    placeOrder: b.mutation<PlaceOrderResult, PlaceOrderRequest>({
-      query: (arg) => ({ url: '/orders', method: 'POST', body: arg }),
-    }),
-    getCustomerOrder: b.query<CustomerOrderDto, CustomerOrderArg>({
-      query: ({ orderId, token }) => ({
-        url: `/customer-orders/${orderId}/view`,
-        method: 'POST',
-        body: { token },
-      }),
-      keepUnusedDataFor: 0,
-    }),
-    getCustomerDocument: b.mutation<InvoiceFileDto, CustomerDocumentArg>({
-      query: ({ orderId, documentId, token }) => ({
-        url: `/customer-orders/${orderId}/documents/${documentId}`,
-        method: 'POST',
-        body: { token },
-      }),
-    }),
-    cancelCustomerOrder: b.mutation<CustomerOrderDto, CustomerOrderArg>({
-      query: ({ orderId, token }) => ({
-        url: `/customer-orders/${orderId}/cancel`,
-        method: 'POST',
-        body: { token },
-      }),
-    }),
-  }),
+// The order endpoints themselves are generated (endpoints.ts): quoteBasket,
+// createOrder, viewCustomerOrder, viewCustomerDocument, cancelCustomerOrder.
+// Do not re-declare them here — injecting a second endpoint with the same name
+// is silently ignored by RTK, so the first definition wins.
+//
+// enhanceEndpoints only adjusts the generated definitions (no new endpoints).
+// The order page must not show a stale order from the cache.
+export const orderApi = api.enhanceEndpoints({
+  endpoints: {
+    viewCustomerOrder: { keepUnusedDataFor: 0 },
+  },
 });
 
 export const {
   useQuoteBasketQuery,
-  usePlaceOrderMutation,
-  useGetCustomerOrderQuery,
-  useGetCustomerDocumentMutation,
+  useCreateOrderMutation,
+  useViewCustomerOrderQuery,
+  useViewCustomerDocumentMutation,
   useCancelCustomerOrderMutation,
 } = orderApi;
