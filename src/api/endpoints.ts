@@ -1229,7 +1229,7 @@ export type GetAuditEntriesApiArg = {
   page?: number;
   pageSize?: number;
 };
-export type SetBusyModeApiResponse = /** status 200 Success */ BusyState2;
+export type SetBusyModeApiResponse = /** status 200 Success */ BusyState;
 export type SetBusyModeApiArg = {
   shopId: string;
   body: {
@@ -1466,18 +1466,18 @@ export type GetOrdersByShopApiArg = {
   /** Number of orders per page (default: 20, max: 100) */
   pageSize?: number;
 };
-export type AcceptOrderApiResponse = /** status 200 Success */ OrderDto2;
+export type AcceptOrderApiResponse = /** status 200 Success */ OrderDto;
 export type AcceptOrderApiArg = {
   shopId: string;
   orderId: string;
   acceptOrderBody: AcceptOrderBody;
 };
-export type CompleteOrderApiResponse = /** status 200 Success */ OrderDto2;
+export type CompleteOrderApiResponse = /** status 200 Success */ OrderDto;
 export type CompleteOrderApiArg = {
   shopId: string;
   orderId: string;
 };
-export type DispatchOrderApiResponse = /** status 200 Success */ OrderDto2;
+export type DispatchOrderApiResponse = /** status 200 Success */ OrderDto;
 export type DispatchOrderApiArg = {
   shopId: string;
   orderId: string;
@@ -1489,19 +1489,19 @@ export type GetOrderDocumentApiArg = {
   orderId: string;
   documentId: string;
 };
-export type MarkOrderReadyApiResponse = /** status 200 Success */ OrderDto2;
+export type MarkOrderReadyApiResponse = /** status 200 Success */ OrderDto;
 export type MarkOrderReadyApiArg = {
   shopId: string;
   orderId: string;
 };
 export type RefundOrderApiResponse =
-  /** status 200 Refund recorded; returns the updated order */ OrderDto2;
+  /** status 200 Refund recorded; returns the updated order */ OrderDto;
 export type RefundOrderApiArg = {
   shopId: string;
   orderId: string;
   refundOrderBody: RefundOrderBody;
 };
-export type RejectOrderApiResponse = /** status 200 Success */ OrderDto2;
+export type RejectOrderApiResponse = /** status 200 Success */ OrderDto;
 export type RejectOrderApiArg = {
   shopId: string;
   orderId: string;
@@ -2700,7 +2700,7 @@ export type GetAuditEntriesResultDto = {
     [key: string]: string;
   };
 };
-export type BusyState2 = {
+export type BusyState = {
   active: boolean;
   extraMinutes: number;
 };
@@ -3311,7 +3311,7 @@ export type OrderItemDto = {
     name: string;
   } | null;
 };
-export type OrderDto2 = {
+export type OrderDto = {
   id: string;
   orderRef: string;
   state: StoredOrderState;
@@ -3441,14 +3441,14 @@ export type OrderQueueDto = {
     delivery: number;
     dine_in: number;
   };
-  busy: BusyState2;
-  orders: OrderDto2[];
+  busy: BusyState;
+  orders: OrderDto[];
   upcoming: UpcomingOrderDto[];
   capacity: SlotCapacityDto;
   ordersPause: OrdersPauseFields;
 };
 export type GetOrdersByShopResultDto = {
-  orders: OrderDto2[];
+  orders: OrderDto[];
   total: number;
   page: number;
   pageSize: number;
