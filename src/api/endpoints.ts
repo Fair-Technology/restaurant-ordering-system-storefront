@@ -1145,14 +1145,14 @@ export type UpdateProductApiArg = {
     allergenIds?: string[] | null;
     additiveIds?: string[] | null;
     dietaryTagIds?: string[];
-    spiceLevel?: SpiceLevel;
+    spiceLevel?: SpiceLevel | null;
     prepMinutes?: number | null;
     unavailableModes?: FulfilmentMode[];
     taxClassId?: string | null;
     variantGroups?: ProductVariantGroup[];
     addonGroups?: ProductAddonGroup[];
     isAvailable?: boolean;
-    schedule?: ProductSchedule;
+    schedule?: ProductSchedule | null;
   };
 };
 export type GetReferenceListsApiResponse =
@@ -1189,7 +1189,7 @@ export type UpdateShopApiArg = {
       postcode?: string;
       country?: string;
     };
-    branding?: ShopBranding;
+    branding?: ShopBranding | null;
     openingHours?: {
       mon: {
         open: string;
@@ -1282,7 +1282,7 @@ export type UpdateCategoryApiArg = {
     icon?: string;
     taxClassId?: string;
     isAvailable?: boolean;
-    schedule?: CategorySchedule;
+    schedule?: CategorySchedule | null;
   };
 };
 export type ApplyCategoryTaxClassApiResponse =
@@ -1446,11 +1446,11 @@ export type UpdateOrderSettingsApiArg = {
     alertEmail?: string | null;
     autoAccept?: boolean;
     dineIn?: boolean;
-    autoAcceptHours?: WeeklyHours;
+    autoAcceptHours?: WeeklyHours | null;
     lastOrdersMinutes?: number | null;
     busyExtraMinutes?: number;
     delivery?: boolean;
-    deliveryHours?: WeeklyHours;
+    deliveryHours?: WeeklyHours | null;
     deliveryZones?: DeliveryZone[];
     deliveryFeeTaxClassId?: string | null;
     scheduledOrders?: boolean;
@@ -1763,7 +1763,7 @@ export type CustomerOrderDto = {
   subtotalCents: number;
   totalCents: number;
   deliveryFeeCents: number | null;
-  deliveryAddress: DeliveryAddress;
+  deliveryAddress: DeliveryAddress | null;
   discount: {
     kind: OrderDiscountKind;
     code: string;
@@ -1772,7 +1772,7 @@ export type CustomerOrderDto = {
   currency: string;
   createdAt: string;
   canCancel: boolean;
-  rejectionReason: RejectReason;
+  rejectionReason: RejectReason | null;
 };
 export type ErrorResponse = {
   ok: boolean;
@@ -1971,7 +1971,7 @@ export type BasketQuoteDto = {
     code: string;
     cents: number;
   } | null;
-  discountProblem: DiscountProblem;
+  discountProblem: DiscountProblem | null;
   discountMinSubtotalCents: number | null;
   loyalty: {
     everyOrders: number;
@@ -2217,7 +2217,7 @@ export type CreateProductResultDto = {
   allergenIds: string[] | null;
   additiveIds: string[] | null;
   dietaryTagIds: string[];
-  spiceLevel: SpiceLevel;
+  spiceLevel: SpiceLevel | null;
   prepMinutes: number | null;
   unavailableModes: FulfilmentMode[];
   taxClassId: string | null;
@@ -2229,7 +2229,7 @@ export type CreateProductResultDto = {
   price: number;
   isAvailable: boolean;
   isDeleted: boolean;
-  schedule?: ProductSchedule;
+  schedule?: ProductSchedule | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -2275,14 +2275,14 @@ export type CreateProductRequestDto = {
   allergenIds?: string[] | null;
   additiveIds?: string[] | null;
   dietaryTagIds?: string[];
-  spiceLevel?: SpiceLevel;
+  spiceLevel?: SpiceLevel | null;
   prepMinutes?: number | null;
   unavailableModes?: FulfilmentMode[];
   taxClassId?: string | null;
   variantGroups?: ProductVariantGroup[];
   addonGroups?: ProductAddonGroup[];
   isAvailable?: boolean;
-  schedule?: ProductSchedule;
+  schedule?: ProductSchedule | null;
 };
 export type ProductDto = {
   nameTranslations: TranslationMap;
@@ -2290,7 +2290,7 @@ export type ProductDto = {
   allergenIds: string[] | null;
   additiveIds: string[] | null;
   dietaryTagIds: string[];
-  spiceLevel: SpiceLevel;
+  spiceLevel: SpiceLevel | null;
   prepMinutes: number | null;
   unavailableModes: FulfilmentMode[];
   taxClassId: string | null;
@@ -2309,7 +2309,7 @@ export type ProductDto = {
   images: ProductImage[];
   variantGroups?: ProductVariantGroup[];
   addonGroups?: ProductAddonGroup[];
-  schedule?: ProductSchedule;
+  schedule?: ProductSchedule | null;
   isAvailable: boolean;
   isDeleted: boolean;
   createdAt: string;
@@ -2325,7 +2325,7 @@ export type GetProductResultDto = {
   allergenIds: string[] | null;
   additiveIds: string[] | null;
   dietaryTagIds: string[];
-  spiceLevel: SpiceLevel;
+  spiceLevel: SpiceLevel | null;
   prepMinutes: number | null;
   unavailableModes: FulfilmentMode[];
   taxClassId: string | null;
@@ -2348,7 +2348,7 @@ export type GetProductResultDto = {
   }[];
   variantGroups?: ProductVariantGroup[];
   addonGroups?: ProductAddonGroup[];
-  schedule?: ProductSchedule;
+  schedule?: ProductSchedule | null;
 };
 export type UpdateProductResultDto = {
   nameTranslations: TranslationMap;
@@ -2356,7 +2356,7 @@ export type UpdateProductResultDto = {
   allergenIds: string[] | null;
   additiveIds: string[] | null;
   dietaryTagIds: string[];
-  spiceLevel: SpiceLevel;
+  spiceLevel: SpiceLevel | null;
   prepMinutes: number | null;
   unavailableModes: FulfilmentMode[];
   taxClassId: string | null;
@@ -2368,7 +2368,7 @@ export type UpdateProductResultDto = {
   price: number;
   isAvailable: boolean;
   isDeleted: boolean;
-  schedule?: ProductSchedule;
+  schedule?: ProductSchedule | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -2438,7 +2438,7 @@ export type CreateShopRequestDto = {
     end: string;
     reason?: string;
   }[];
-  branding?: ShopBranding;
+  branding?: ShopBranding | null;
   menuLanguage?: MenuLanguage;
   acceptDpaVersion?: string;
 };
@@ -2456,7 +2456,7 @@ export type ShopSummaryDto = {
   pausedMessage?: string;
   ordersPaused: boolean;
   ordersPausedUntil: string | null;
-  ordersAutoPaused: OrdersAutoPaused;
+  ordersAutoPaused: OrdersAutoPaused | null;
   missedOrdersPauseLimit: number;
   ordersPausedMessage?: string;
   isOffline: boolean;
@@ -2509,7 +2509,7 @@ export type ShopSummaryDto = {
     end: string;
     reason?: string;
   }[];
-  branding: ShopBranding;
+  branding: ShopBranding | null;
   pendingNameChange: {
     requestedName: string;
     requestedSlug: string;
@@ -2567,7 +2567,7 @@ export type OrderSettings = {
   alertEmail: string | null;
   autoAccept: boolean;
   dineIn: boolean;
-  autoAcceptHours: WeeklyHours;
+  autoAcceptHours: WeeklyHours | null;
   prepMinutes: {
     collection: number;
     delivery: number;
@@ -2576,7 +2576,7 @@ export type OrderSettings = {
   lastOrdersMinutes: number | null;
   busyExtraMinutes: number;
   delivery: boolean;
-  deliveryHours: WeeklyHours;
+  deliveryHours: WeeklyHours | null;
   deliveryZones: DeliveryZone[];
   deliveryFeeTaxClassId: string | null;
   scheduledOrders: boolean;
@@ -2592,7 +2592,7 @@ export type GetShopResultDto = {
   pausedMessage?: string;
   ordersPaused: boolean;
   ordersPausedUntil: string | null;
-  ordersAutoPaused: OrdersAutoPaused;
+  ordersAutoPaused: OrdersAutoPaused | null;
   ordersPausedMessage?: string;
   isOffline: boolean;
   offlineBySuperadmin: boolean;
@@ -2648,7 +2648,7 @@ export type GetShopResultDto = {
   callerPermissions: ShopPermission[];
   countryCode: string;
   menuLanguages: MenuLanguage[];
-  branding: ShopBranding;
+  branding: ShopBranding | null;
   pendingNameChange: {
     requestedName: string;
     requestedSlug: string;
@@ -2764,10 +2764,10 @@ export type CatalogProductDto = {
   allergens: CatalogLabelDto[];
   additives: CatalogAdditiveDto[];
   dietaryTags: CatalogLabelDto[];
-  spice: CatalogLabelDto;
+  spice: CatalogLabelDto | null;
   unavailableModes: FulfilmentMode[];
   availableNow: boolean;
-  combo: CatalogComboDto;
+  combo: CatalogComboDto | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -2777,7 +2777,7 @@ export type CatalogCategoryDto = {
   sortOrder: number;
   icon?: string;
   availableNow: boolean;
-  schedule: CatalogCategoryScheduleDto;
+  schedule: CatalogCategoryScheduleDto | null;
   products: CatalogProductDto[];
 };
 export type GetCatalogResultDto = {
@@ -2799,7 +2799,7 @@ export type CreateCategoryResultDto = {
   icon?: string;
   taxClassId: string | null;
   isAvailable: boolean;
-  schedule: CategorySchedule;
+  schedule: CategorySchedule | null;
   isDeleted: boolean;
   createdAt: string;
   updatedAt: string;
@@ -2813,7 +2813,7 @@ export type CategoryDto = {
   icon?: string;
   taxClassId: string | null;
   isAvailable: boolean;
-  schedule: CategorySchedule;
+  schedule: CategorySchedule | null;
   isDeleted: boolean;
   createdAt: string;
   updatedAt: string;
@@ -2837,7 +2837,7 @@ export type GetCategoryResultDto = {
   icon?: string;
   taxClassId: string | null;
   isAvailable: boolean;
-  schedule: CategorySchedule;
+  schedule: CategorySchedule | null;
   isDeleted: boolean;
   createdAt: string;
   updatedAt: string;
@@ -2851,7 +2851,7 @@ export type UpdateCategoryResultDto = {
   icon?: string;
   taxClassId: string | null;
   isAvailable: boolean;
-  schedule: CategorySchedule;
+  schedule: CategorySchedule | null;
   isDeleted: boolean;
   createdAt: string;
   updatedAt: string;
@@ -2887,7 +2887,7 @@ export type ShopCoverImageResultDto = {
   isDeleted: boolean;
   createdAt: string;
   updatedAt: string;
-  branding: ShopBranding;
+  branding: ShopBranding | null;
 };
 export type EraseCustomerResultDto = {
   anonymisedOrderCount: number;
@@ -2918,7 +2918,7 @@ export type Category = {
   icon?: string;
   taxClassId: string | null;
   isAvailable?: boolean;
-  schedule?: CategorySchedule;
+  schedule?: CategorySchedule | null;
   isDeleted: boolean;
   createdAt: string;
   updatedAt: string;
@@ -2948,12 +2948,12 @@ export type Product = {
   allergenIds: string[] | null;
   additiveIds: string[] | null;
   dietaryTagIds: string[];
-  spiceLevel: SpiceLevel;
+  spiceLevel: SpiceLevel | null;
   prepMinutes: number | null;
   unavailableModes?: FulfilmentMode[];
   taxClassId: string | null;
-  schedule?: ProductSchedule;
-  combo?: ProductCombo;
+  schedule?: ProductSchedule | null;
+  combo?: ProductCombo | null;
   isAvailable: boolean;
   isDeleted: boolean;
   createdAt: string;
@@ -3045,7 +3045,7 @@ export type PaymentReleaseFailure = {
   attempts?: number;
 };
 export type OrderHistoryEntry = {
-  from: StoredOrderState;
+  from: StoredOrderState | null;
   to: StoredOrderState;
   at: string;
   actor: OrderActor;
@@ -3154,7 +3154,7 @@ export type ShopDataExportDto = {
       }[];
     };
     menuLanguages: MenuLanguage[];
-    impressum: ImpressumFields;
+    impressum: ImpressumFields | null;
     terms: string | null;
     withdrawal: string | null;
     privacyAddition: string | null;
@@ -3217,10 +3217,10 @@ export type DpaAcceptance = {
   shopNameAtAcceptance: string;
 };
 export type ShopLegalSettingsDto = {
-  impressum: ImpressumFields;
-  terms: LegalTextDto;
-  withdrawal: LegalTextDto;
-  privacyAddition: LegalTextDto;
+  impressum: ImpressumFields | null;
+  terms: LegalTextDto | null;
+  withdrawal: LegalTextDto | null;
+  privacyAddition: LegalTextDto | null;
   missingImpressumFields: ImpressumFieldKey[];
   completeness: {
     dpa: boolean;
@@ -3232,7 +3232,7 @@ export type ShopLegalSettingsDto = {
   dpa: {
     currentVersion: string;
     currentIsDraft: boolean;
-    accepted: DpaAcceptance;
+    accepted: DpaAcceptance | null;
   };
   platformIdentityComplete: boolean;
   callerIsOwner: boolean;
@@ -3261,7 +3261,7 @@ export type SetShopLogoResultDto = {
   isDeleted: boolean;
   createdAt: string;
   updatedAt: string;
-  branding: ShopBranding;
+  branding: ShopBranding | null;
 };
 export type RejectShopNameChangeResultDto = {
   id: string;
@@ -3327,7 +3327,7 @@ export type OrderDto = {
   subtotalCents: number;
   totalCents: number;
   deliveryFeeCents: number | null;
-  deliveryAddress: DeliveryAddress;
+  deliveryAddress: DeliveryAddress | null;
   discount: {
     kind: OrderDiscountKind;
     code: string;
@@ -3346,7 +3346,7 @@ export type OrderDto = {
   prepMinutes: number | null;
   taxBreakdown: TaxBreakdownEntry[];
   rejectionNote: string | null;
-  customerAddress: CustomerAddress;
+  customerAddress: CustomerAddress | null;
   refundedCents: number;
   refunds: {
     amountCents: number;
@@ -3383,7 +3383,7 @@ export type UpcomingOrderDto = {
   subtotalCents: number;
   totalCents: number;
   deliveryFeeCents: number | null;
-  deliveryAddress: DeliveryAddress;
+  deliveryAddress: DeliveryAddress | null;
   discount: {
     kind: OrderDiscountKind;
     code: string;
@@ -3402,7 +3402,7 @@ export type UpcomingOrderDto = {
   prepMinutes: number | null;
   taxBreakdown: TaxBreakdownEntry[];
   rejectionNote: string | null;
-  customerAddress: CustomerAddress;
+  customerAddress: CustomerAddress | null;
   refundedCents: number;
   refunds: {
     amountCents: number;
@@ -3431,7 +3431,7 @@ export type SlotCapacityDto = {
 export type OrdersPauseFields = {
   ordersPaused: boolean;
   ordersPausedUntil: string | null;
-  ordersAutoPaused: OrdersAutoPaused;
+  ordersAutoPaused: OrdersAutoPaused | null;
 };
 export type OrderQueueDto = {
   serverTime: string;
@@ -3444,7 +3444,7 @@ export type OrderQueueDto = {
   busy: BusyState;
   orders: OrderDto[];
   upcoming: UpcomingOrderDto[];
-  capacity: SlotCapacityDto;
+  capacity: SlotCapacityDto | null;
   ordersPause: OrdersPauseFields;
 };
 export type GetOrdersByShopResultDto = {
@@ -3599,9 +3599,9 @@ export type ShopSubscription = {
   overriddenBy: string | null;
   overrideReason: string | null;
   overrideExpiresAt: string | null;
-  limitOverride?: LimitOverride;
+  limitOverride?: LimitOverride | null;
   planBeforeOverride?: string | null;
-  scheduledChange?: ScheduledPlanChange;
+  scheduledChange?: ScheduledPlanChange | null;
   paymentFailedAt?: string | null;
   graceWarningsSent?: number;
   createdAt: string;
@@ -3619,7 +3619,7 @@ export type Entitlements = {
 };
 export type GetShopSubscriptionResultDto = {
   subscription: ShopSubscription;
-  plan: Plan;
+  plan: Plan | null;
   entitlements: Entitlements;
 };
 export type SubscriptionChangeResultDto =
@@ -3707,7 +3707,7 @@ export type PublicShopSummaryDto = {
     city: string | null;
     postcode: string | null;
   };
-  branding: PublicShopBrandingDto;
+  branding: PublicShopBrandingDto | null;
   openingHours: {
     mon?: {
       open: string;
@@ -3803,7 +3803,7 @@ export type GetShopBySlugResultDto = {
     end: string;
     reason?: string;
   }[];
-  branding: ShopBranding;
+  branding: ShopBranding | null;
   countryCode: string;
   fulfilment: {
     modes: FulfilmentMode[];
@@ -3814,7 +3814,7 @@ export type GetShopBySlugResultDto = {
     };
     delivery: {
       zones: DeliveryZone[];
-      hours: WeeklyHours;
+      hours: WeeklyHours | null;
     } | null;
   };
   orderLimitReached: boolean;
@@ -3837,9 +3837,9 @@ export type PublicLegalPackDto = {
   impressum: {
     lines: ImpressumLine[];
   } | null;
-  terms: LegalTextDto;
-  withdrawal: LegalTextDto;
-  privacyNotice: PrivacyNotice;
+  terms: LegalTextDto | null;
+  withdrawal: LegalTextDto | null;
+  privacyNotice: PrivacyNotice | null;
   seller: {
     legalName: string;
     phone: string | null;
