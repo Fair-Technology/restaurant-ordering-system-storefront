@@ -1,15 +1,28 @@
 import { baseApi as api } from './baseApi';
 export const addTagTypes = [
-  'Default',
   'Orders',
+  'Legal',
+  'Reports',
+  'Plans',
+  'Platform',
+  'Reference Lists',
   'Products',
   'Shops',
+  'Audit',
   'Catalog',
   'Categories',
   'Combos',
   'Shop Cover Image',
+  'Data Privacy',
+  'Promotions',
   'Shop Logo',
+  'Usage',
   'Product Images',
+  'Staff',
+  'Stripe',
+  'Subscriptions',
+  'Users',
+  'Webhooks',
 ] as const;
 const injectedRtkApi = api
   .enhanceEndpoints({
@@ -26,7 +39,7 @@ const injectedRtkApi = api
           method: 'POST',
           body: queryArg.body,
         }),
-        invalidatesTags: ['Default'],
+        invalidatesTags: ['Orders'],
       }),
       viewCustomerDocument: build.mutation<
         ViewCustomerDocumentApiResponse,
@@ -48,7 +61,7 @@ const injectedRtkApi = api
           method: 'POST',
           body: queryArg.body,
         }),
-        providesTags: ['Default'],
+        providesTags: ['Orders'],
       }),
       getDpaDocument: build.query<
         GetDpaDocumentApiResponse,
@@ -60,14 +73,14 @@ const injectedRtkApi = api
             version: queryArg,
           },
         }),
-        providesTags: ['Default'],
+        providesTags: ['Legal'],
       }),
       getPlatformLegal: build.query<
         GetPlatformLegalApiResponse,
         GetPlatformLegalApiArg
       >({
         query: () => ({ url: `/legal/platform` }),
-        providesTags: ['Default'],
+        providesTags: ['Legal'],
       }),
       createOrder: build.mutation<CreateOrderApiResponse, CreateOrderApiArg>({
         query: (queryArg) => ({
@@ -90,14 +103,14 @@ const injectedRtkApi = api
           method: 'POST',
           body: queryArg,
         }),
-        providesTags: ['Default'],
+        providesTags: ['Orders'],
       }),
       getOwnerOverview: build.query<
         GetOwnerOverviewApiResponse,
         GetOwnerOverviewApiArg
       >({
         query: () => ({ url: `/owner/overview` }),
-        providesTags: ['Default'],
+        providesTags: ['Reports'],
       }),
       createPlan: build.mutation<CreatePlanApiResponse, CreatePlanApiArg>({
         query: (queryArg) => ({
@@ -105,15 +118,15 @@ const injectedRtkApi = api
           method: 'POST',
           body: queryArg,
         }),
-        invalidatesTags: ['Default'],
+        invalidatesTags: ['Plans'],
       }),
       getPlans: build.query<GetPlansApiResponse, GetPlansApiArg>({
         query: () => ({ url: `/plans` }),
-        providesTags: ['Default'],
+        providesTags: ['Plans'],
       }),
       getPlan: build.query<GetPlanApiResponse, GetPlanApiArg>({
         query: (queryArg) => ({ url: `/plans/${queryArg}` }),
-        providesTags: ['Default'],
+        providesTags: ['Plans'],
       }),
       updatePlan: build.mutation<UpdatePlanApiResponse, UpdatePlanApiArg>({
         query: (queryArg) => ({
@@ -121,14 +134,14 @@ const injectedRtkApi = api
           method: 'PATCH',
           body: queryArg.updatePlanRequestDto,
         }),
-        invalidatesTags: ['Default'],
+        invalidatesTags: ['Plans'],
       }),
       getPlanPricing: build.query<
         GetPlanPricingApiResponse,
         GetPlanPricingApiArg
       >({
         query: (queryArg) => ({ url: `/plans/${queryArg}/pricing` }),
-        providesTags: ['Default'],
+        providesTags: ['Plans'],
       }),
       setPlanPricing: build.mutation<
         SetPlanPricingApiResponse,
@@ -139,14 +152,14 @@ const injectedRtkApi = api
           method: 'POST',
           body: queryArg.setPlanPricingRequestDto,
         }),
-        invalidatesTags: ['Default'],
+        invalidatesTags: ['Plans'],
       }),
       getSystemConfig: build.query<
         GetSystemConfigApiResponse,
         GetSystemConfigApiArg
       >({
         query: () => ({ url: `/platform/config` }),
-        providesTags: ['Default'],
+        providesTags: ['Platform'],
       }),
       updateSystemConfig: build.mutation<
         UpdateSystemConfigApiResponse,
@@ -157,14 +170,14 @@ const injectedRtkApi = api
           method: 'PATCH',
           body: queryArg,
         }),
-        invalidatesTags: ['Default'],
+        invalidatesTags: ['Platform'],
       }),
       getPlatformLegalIdentity: build.query<
         GetPlatformLegalIdentityApiResponse,
         GetPlatformLegalIdentityApiArg
       >({
         query: () => ({ url: `/platform/legal-identity` }),
-        providesTags: ['Default'],
+        providesTags: ['Legal'],
       }),
       updatePlatformLegalIdentity: build.mutation<
         UpdatePlatformLegalIdentityApiResponse,
@@ -175,7 +188,7 @@ const injectedRtkApi = api
           method: 'PUT',
           body: queryArg,
         }),
-        invalidatesTags: ['Default'],
+        invalidatesTags: ['Legal'],
       }),
       updateReferenceLists: build.mutation<
         UpdateReferenceListsApiResponse,
@@ -186,14 +199,14 @@ const injectedRtkApi = api
           method: 'PUT',
           body: queryArg.body,
         }),
-        invalidatesTags: ['Default'],
+        invalidatesTags: ['Reference Lists'],
       }),
       getRolePermissions: build.query<
         GetRolePermissionsApiResponse,
         GetRolePermissionsApiArg
       >({
         query: () => ({ url: `/platform/role-permissions` }),
-        providesTags: ['Default'],
+        providesTags: ['Platform'],
       }),
       updateRolePermissions: build.mutation<
         UpdateRolePermissionsApiResponse,
@@ -204,7 +217,7 @@ const injectedRtkApi = api
           method: 'PUT',
           body: queryArg,
         }),
-        invalidatesTags: ['Default'],
+        invalidatesTags: ['Platform'],
       }),
       updateUserLimits: build.mutation<
         UpdateUserLimitsApiResponse,
@@ -215,7 +228,7 @@ const injectedRtkApi = api
           method: 'PATCH',
           body: queryArg.updateUserLimitsRequestDto,
         }),
-        invalidatesTags: ['Default'],
+        invalidatesTags: ['Platform'],
       }),
       createProduct: build.mutation<
         CreateProductApiResponse,
@@ -281,7 +294,7 @@ const injectedRtkApi = api
         GetReferenceListsApiArg
       >({
         query: (queryArg) => ({ url: `/reference-lists/${queryArg}` }),
-        providesTags: ['Default'],
+        providesTags: ['Reference Lists'],
       }),
       createShop: build.mutation<CreateShopApiResponse, CreateShopApiArg>({
         query: (queryArg) => ({
@@ -322,7 +335,7 @@ const injectedRtkApi = api
             pageSize: queryArg.pageSize,
           },
         }),
-        providesTags: ['Default'],
+        providesTags: ['Audit'],
       }),
       setBusyMode: build.mutation<SetBusyModeApiResponse, SetBusyModeApiArg>({
         query: (queryArg) => ({
@@ -330,7 +343,7 @@ const injectedRtkApi = api
           method: 'PUT',
           body: queryArg.body,
         }),
-        invalidatesTags: ['Default'],
+        invalidatesTags: ['Shops'],
       }),
       getCatalog: build.query<GetCatalogApiResponse, GetCatalogApiArg>({
         query: (queryArg) => ({
@@ -460,14 +473,14 @@ const injectedRtkApi = api
           method: 'POST',
           body: queryArg.body,
         }),
-        invalidatesTags: ['Default'],
+        invalidatesTags: ['Data Privacy'],
       }),
       exportShopData: build.query<
         ExportShopDataApiResponse,
         ExportShopDataApiArg
       >({
         query: (queryArg) => ({ url: `/shops/${queryArg}/data-export` }),
-        providesTags: ['Default'],
+        providesTags: ['Data Privacy'],
       }),
       createDiscountCode: build.mutation<
         CreateDiscountCodeApiResponse,
@@ -478,7 +491,7 @@ const injectedRtkApi = api
           method: 'POST',
           body: queryArg.body,
         }),
-        invalidatesTags: ['Default'],
+        invalidatesTags: ['Promotions'],
       }),
       setDiscountCodeActive: build.mutation<
         SetDiscountCodeActiveApiResponse,
@@ -489,7 +502,7 @@ const injectedRtkApi = api
           method: 'PATCH',
           body: queryArg.body,
         }),
-        invalidatesTags: ['Default'],
+        invalidatesTags: ['Promotions'],
       }),
       acceptDpa: build.mutation<AcceptDpaApiResponse, AcceptDpaApiArg>({
         query: (queryArg) => ({
@@ -497,18 +510,18 @@ const injectedRtkApi = api
           method: 'POST',
           body: queryArg.body,
         }),
-        invalidatesTags: ['Default'],
+        invalidatesTags: ['Legal'],
       }),
       getGoLiveStatus: build.query<
         GetGoLiveStatusApiResponse,
         GetGoLiveStatusApiArg
       >({
         query: (queryArg) => ({ url: `/shops/${queryArg}/go-live-status` }),
-        providesTags: ['Default'],
+        providesTags: ['Shops'],
       }),
       getShopLegal: build.query<GetShopLegalApiResponse, GetShopLegalApiArg>({
         query: (queryArg) => ({ url: `/shops/${queryArg}/legal` }),
-        providesTags: ['Default'],
+        providesTags: ['Legal'],
       }),
       updateShopLegal: build.mutation<
         UpdateShopLegalApiResponse,
@@ -519,7 +532,7 @@ const injectedRtkApi = api
           method: 'PATCH',
           body: queryArg.updateShopLegalBody,
         }),
-        invalidatesTags: ['Default'],
+        invalidatesTags: ['Legal'],
       }),
       setShopLogo: build.mutation<SetShopLogoApiResponse, SetShopLogoApiArg>({
         query: (queryArg) => ({
@@ -549,7 +562,7 @@ const injectedRtkApi = api
           method: 'PUT',
           body: queryArg.body,
         }),
-        invalidatesTags: ['Default'],
+        invalidatesTags: ['Shops'],
       }),
       setMissedOrdersPauseLimit: build.mutation<
         SetMissedOrdersPauseLimitApiResponse,
@@ -570,7 +583,7 @@ const injectedRtkApi = api
           url: `/shops/${queryArg}/name-change-request`,
           method: 'DELETE',
         }),
-        invalidatesTags: ['Default'],
+        invalidatesTags: ['Shops'],
       }),
       requestShopNameChange: build.mutation<
         RequestShopNameChangeApiResponse,
@@ -581,7 +594,7 @@ const injectedRtkApi = api
           method: 'POST',
           body: queryArg.body,
         }),
-        invalidatesTags: ['Default'],
+        invalidatesTags: ['Shops'],
       }),
       approveShopNameChange: build.mutation<
         ApproveShopNameChangeApiResponse,
@@ -591,18 +604,18 @@ const injectedRtkApi = api
           url: `/shops/${queryArg}/name-change-request/approve`,
           method: 'POST',
         }),
-        invalidatesTags: ['Default'],
+        invalidatesTags: ['Shops'],
       }),
       getOrderLimit: build.query<GetOrderLimitApiResponse, GetOrderLimitApiArg>(
         {
           query: (queryArg) => ({ url: `/shops/${queryArg}/order-limit` }),
-          providesTags: ['Default'],
+          providesTags: ['Usage'],
         },
       ),
       getOrderQueue: build.query<GetOrderQueueApiResponse, GetOrderQueueApiArg>(
         {
           query: (queryArg) => ({ url: `/shops/${queryArg}/order-queue` }),
-          providesTags: ['Default'],
+          providesTags: ['Orders'],
         },
       ),
       updateOrderSettings: build.mutation<
@@ -614,7 +627,7 @@ const injectedRtkApi = api
           method: 'PUT',
           body: queryArg.body,
         }),
-        invalidatesTags: ['Default'],
+        invalidatesTags: ['Shops'],
       }),
       getOrdersByShop: build.query<
         GetOrdersByShopApiResponse,
@@ -635,7 +648,7 @@ const injectedRtkApi = api
           method: 'POST',
           body: queryArg.acceptOrderBody,
         }),
-        invalidatesTags: ['Default'],
+        invalidatesTags: ['Orders'],
       }),
       completeOrder: build.mutation<
         CompleteOrderApiResponse,
@@ -645,7 +658,7 @@ const injectedRtkApi = api
           url: `/shops/${queryArg.shopId}/orders/${queryArg.orderId}/complete`,
           method: 'POST',
         }),
-        invalidatesTags: ['Default'],
+        invalidatesTags: ['Orders'],
       }),
       dispatchOrder: build.mutation<
         DispatchOrderApiResponse,
@@ -655,7 +668,7 @@ const injectedRtkApi = api
           url: `/shops/${queryArg.shopId}/orders/${queryArg.orderId}/dispatch`,
           method: 'POST',
         }),
-        invalidatesTags: ['Default'],
+        invalidatesTags: ['Orders'],
       }),
       getOrderDocument: build.query<
         GetOrderDocumentApiResponse,
@@ -674,7 +687,7 @@ const injectedRtkApi = api
           url: `/shops/${queryArg.shopId}/orders/${queryArg.orderId}/ready`,
           method: 'POST',
         }),
-        invalidatesTags: ['Default'],
+        invalidatesTags: ['Orders'],
       }),
       refundOrder: build.mutation<RefundOrderApiResponse, RefundOrderApiArg>({
         query: (queryArg) => ({
@@ -690,7 +703,7 @@ const injectedRtkApi = api
           method: 'POST',
           body: queryArg.rejectOrderBody,
         }),
-        invalidatesTags: ['Default'],
+        invalidatesTags: ['Orders'],
       }),
       addProductImage: build.mutation<
         AddProductImageApiResponse,
@@ -717,7 +730,7 @@ const injectedRtkApi = api
       getPromotions: build.query<GetPromotionsApiResponse, GetPromotionsApiArg>(
         {
           query: (queryArg) => ({ url: `/shops/${queryArg}/promotions` }),
-          providesTags: ['Default'],
+          providesTags: ['Promotions'],
         },
       ),
       getSalesReport: build.query<
@@ -731,7 +744,7 @@ const injectedRtkApi = api
             to: queryArg.to,
           },
         }),
-        providesTags: ['Default'],
+        providesTags: ['Reports'],
       }),
       restoreShop: build.mutation<RestoreShopApiResponse, RestoreShopApiArg>({
         query: (queryArg) => ({
@@ -746,18 +759,18 @@ const injectedRtkApi = api
           method: 'POST',
           body: queryArg.body,
         }),
-        invalidatesTags: ['Default'],
+        invalidatesTags: ['Staff'],
       }),
       listStaff: build.query<ListStaffApiResponse, ListStaffApiArg>({
         query: (queryArg) => ({ url: `/shops/${queryArg}/staff` }),
-        providesTags: ['Default'],
+        providesTags: ['Staff'],
       }),
       deleteStaff: build.mutation<DeleteStaffApiResponse, DeleteStaffApiArg>({
         query: (queryArg) => ({
           url: `/shops/${queryArg.shopId}/staff/${queryArg.staffId}`,
           method: 'DELETE',
         }),
-        invalidatesTags: ['Default'],
+        invalidatesTags: ['Staff'],
       }),
       updateStaff: build.mutation<UpdateStaffApiResponse, UpdateStaffApiArg>({
         query: (queryArg) => ({
@@ -765,7 +778,7 @@ const injectedRtkApi = api
           method: 'PATCH',
           body: queryArg.body,
         }),
-        invalidatesTags: ['Default'],
+        invalidatesTags: ['Staff'],
       }),
       resetStaffPassword: build.mutation<
         ResetStaffPasswordApiResponse,
@@ -776,7 +789,7 @@ const injectedRtkApi = api
           method: 'POST',
           body: queryArg.body,
         }),
-        invalidatesTags: ['Default'],
+        invalidatesTags: ['Staff'],
       }),
       disconnectStripeAccount: build.mutation<
         DisconnectStripeAccountApiResponse,
@@ -786,7 +799,7 @@ const injectedRtkApi = api
           url: `/shops/${queryArg}/stripe/account`,
           method: 'DELETE',
         }),
-        invalidatesTags: ['Default'],
+        invalidatesTags: ['Stripe'],
       }),
       createStripeAccountSession: build.mutation<
         CreateStripeAccountSessionApiResponse,
@@ -797,7 +810,7 @@ const injectedRtkApi = api
           method: 'POST',
           body: queryArg.body,
         }),
-        invalidatesTags: ['Default'],
+        invalidatesTags: ['Stripe'],
       }),
       cancelShopSubscription: build.mutation<
         CancelShopSubscriptionApiResponse,
@@ -807,14 +820,14 @@ const injectedRtkApi = api
           url: `/shops/${queryArg}/subscription`,
           method: 'DELETE',
         }),
-        invalidatesTags: ['Default'],
+        invalidatesTags: ['Subscriptions'],
       }),
       getShopSubscription: build.query<
         GetShopSubscriptionApiResponse,
         GetShopSubscriptionApiArg
       >({
         query: (queryArg) => ({ url: `/shops/${queryArg}/subscription` }),
-        providesTags: ['Default'],
+        providesTags: ['Subscriptions'],
       }),
       createSubscriptionCheckout: build.mutation<
         CreateSubscriptionCheckoutApiResponse,
@@ -825,7 +838,7 @@ const injectedRtkApi = api
           method: 'POST',
           body: queryArg.body,
         }),
-        invalidatesTags: ['Default'],
+        invalidatesTags: ['Subscriptions'],
       }),
       confirmSubscriptionCheckout: build.mutation<
         ConfirmSubscriptionCheckoutApiResponse,
@@ -836,7 +849,7 @@ const injectedRtkApi = api
           method: 'POST',
           body: queryArg.body,
         }),
-        invalidatesTags: ['Default'],
+        invalidatesTags: ['Subscriptions'],
       }),
       clearLimitOverride: build.mutation<
         ClearLimitOverrideApiResponse,
@@ -846,7 +859,7 @@ const injectedRtkApi = api
           url: `/shops/${queryArg}/subscription/limit-override`,
           method: 'DELETE',
         }),
-        invalidatesTags: ['Default'],
+        invalidatesTags: ['Subscriptions'],
       }),
       setLimitOverride: build.mutation<
         SetLimitOverrideApiResponse,
@@ -857,7 +870,7 @@ const injectedRtkApi = api
           method: 'PUT',
           body: queryArg.setLimitOverrideRequestDto,
         }),
-        invalidatesTags: ['Default'],
+        invalidatesTags: ['Subscriptions'],
       }),
       overrideShopSubscription: build.mutation<
         OverrideShopSubscriptionApiResponse,
@@ -868,7 +881,7 @@ const injectedRtkApi = api
           method: 'POST',
           body: queryArg.overrideShopSubscriptionRequestDto,
         }),
-        invalidatesTags: ['Default'],
+        invalidatesTags: ['Subscriptions'],
       }),
       createBillingPortalSession: build.mutation<
         CreateBillingPortalSessionApiResponse,
@@ -878,7 +891,7 @@ const injectedRtkApi = api
           url: `/shops/${queryArg}/subscription/portal`,
           method: 'POST',
         }),
-        invalidatesTags: ['Default'],
+        invalidatesTags: ['Subscriptions'],
       }),
       resumeShopSubscription: build.mutation<
         ResumeShopSubscriptionApiResponse,
@@ -888,7 +901,7 @@ const injectedRtkApi = api
           url: `/shops/${queryArg}/subscription/resume`,
           method: 'POST',
         }),
-        invalidatesTags: ['Default'],
+        invalidatesTags: ['Subscriptions'],
       }),
       retrySubscriptionPayment: build.mutation<
         RetrySubscriptionPaymentApiResponse,
@@ -898,7 +911,7 @@ const injectedRtkApi = api
           url: `/shops/${queryArg}/subscription/retry-payment`,
           method: 'POST',
         }),
-        invalidatesTags: ['Default'],
+        invalidatesTags: ['Subscriptions'],
       }),
       cancelScheduledChange: build.mutation<
         CancelScheduledChangeApiResponse,
@@ -908,7 +921,7 @@ const injectedRtkApi = api
           url: `/shops/${queryArg}/subscription/scheduled-change`,
           method: 'DELETE',
         }),
-        invalidatesTags: ['Default'],
+        invalidatesTags: ['Subscriptions'],
       }),
       setShopOfflineBySuperadmin: build.mutation<
         SetShopOfflineBySuperadminApiResponse,
@@ -923,7 +936,7 @@ const injectedRtkApi = api
       }),
       getShopUsage: build.query<GetShopUsageApiResponse, GetShopUsageApiArg>({
         query: (queryArg) => ({ url: `/shops/${queryArg}/usage` }),
-        providesTags: ['Default'],
+        providesTags: ['Usage'],
       }),
       reconcileShopUsage: build.mutation<
         ReconcileShopUsageApiResponse,
@@ -933,7 +946,7 @@ const injectedRtkApi = api
           url: `/shops/${queryArg}/usage/reconcile`,
           method: 'POST',
         }),
-        invalidatesTags: ['Default'],
+        invalidatesTags: ['Usage'],
       }),
       getMyShops: build.query<GetMyShopsApiResponse, GetMyShopsApiArg>({
         query: () => ({ url: `/shops/me` }),
@@ -962,7 +975,7 @@ const injectedRtkApi = api
             lang: queryArg.lang,
           },
         }),
-        providesTags: ['Default'],
+        providesTags: ['Legal'],
       }),
       staffLogin: build.mutation<StaffLoginApiResponse, StaffLoginApiArg>({
         query: (queryArg) => ({
@@ -970,18 +983,18 @@ const injectedRtkApi = api
           method: 'POST',
           body: queryArg,
         }),
-        invalidatesTags: ['Default'],
+        invalidatesTags: ['Staff'],
       }),
       getRejectionWatch: build.query<
         GetRejectionWatchApiResponse,
         GetRejectionWatchApiArg
       >({
         query: () => ({ url: `/usage/rejection-watch` }),
-        providesTags: ['Default'],
+        providesTags: ['Usage'],
       }),
       getMe: build.query<GetMeApiResponse, GetMeApiArg>({
         query: () => ({ url: `/users/me` }),
-        providesTags: ['Default'],
+        providesTags: ['Users'],
       }),
       stripeWebhook: build.mutation<
         StripeWebhookApiResponse,
@@ -1003,7 +1016,7 @@ const injectedRtkApi = api
           method: 'POST',
           body: queryArg,
         }),
-        invalidatesTags: ['Default'],
+        invalidatesTags: ['Webhooks'],
       }),
     }),
     overrideExisting: false,
