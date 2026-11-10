@@ -118,3 +118,4 @@ CLAUDE.md
 /blob-report/
 /playwright/.cache/
 /playwright/.auth/
+src/api/endpoints.gen.check.ts
