@@ -3879,6 +3879,7 @@ export type GetMeResultDto = {
   email?: string;
   name?: string;
   systemRole: SystemRole;
+  platformAccess?: 'read' | 'write';
   createdAt: string;
   updatedAt: string;
 };
