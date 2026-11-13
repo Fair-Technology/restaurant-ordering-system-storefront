@@ -37,7 +37,7 @@ test('T1/T2/T3 shop landing: 200 html, per-shop og, fallback image', async () =>
   assert.match(a.body, /og:url" content="https:\/\/store.example.com\/shops\/fish"/);
   const b = await run('/shops/bare');
   assert.match(b.body, /og:title" content="Bare Cafe"/);
-  assert.match(b.body, /og:image" content="https:\/\/store.example.com\/vite.svg"/);
+  assert.match(b.body, /og:image" content="https:\/\/store.example.com\/og-fallback.png"/);
   assert.match(b.body, /src="\/assets\/a-123.js"/); // live shell kept
 });
 
@@ -93,10 +93,34 @@ test('shell cached per origin, meta per shop (shell fetched once for two shops)'
   assert.equal(shellHits, 1);
 });
 
+test('SSRF guard: foreign x-ms-original-url host -> minimal page, no fetch, noindex', async () => {
+  let fetched = false;
+  const f = async () => {
+    fetched = true;
+    return { ok: true, text: async () => SHELL };
+  };
+  const r = await handleShell({
+    originalUrl: 'https://evil.example/shops/fish',
+    deps: { fetch: f, shellCache: new Map(), metaCache: new Map(), backendBase: 'https://be/api', expectedHost: 'store.example.com' },
+  });
+  assert.equal(fetched, false);
+  assert.equal(r.status, 200);
+  assert.match(r.body, NOINDEX);
+  assert.doesNotMatch(r.body, /og:/);
+  // same host (port-insensitive) still works
+  const ok = await handleShell({
+    originalUrl: `${ORIGIN}/shops/fish`,
+    deps: { fetch: mkFetch(), shellCache: new Map(), metaCache: new Map(), backendBase: 'https://be/api', expectedHost: 'store.example.com:443' },
+  });
+  assert.match(ok.body, /og:title" content="Fish &amp; Chips"/);
+});
+
 test('helpers', () => {
   assert.equal(escapeHtml(`a&"<'`), 'a&amp;&quot;&lt;&#39;');
   assert.deepEqual(classify('/shops/x/'), { noindex: true, slug: 'x' });
   assert.deepEqual(classify('/shops/x/orders/1'), { noindex: true, slug: null });
   assert.equal(parseOriginalUrl('https://evil host/'), null);
   assert.equal(parseOriginalUrl('ftp://a.com/'), null);
+  assert.equal(parseOriginalUrl('https://other.example/shops/x', 'store.example.com'), null);
+  assert.equal(parseOriginalUrl('https://store.example.com/shops/x', 'store.example.com').pathname, '/shops/x');
 });

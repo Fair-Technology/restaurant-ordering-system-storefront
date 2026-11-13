@@ -39,6 +39,10 @@ jobs:
       - run: npm run check
       - run: npx playwright install --with-deps chromium
       - run: npm test
+      - name: Install the api/ Function deps
+        run: npm ci --prefix api
+      - name: Unit-test the api/ Function (shop shell + route invariants)
+        run: npm test --prefix api
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
@@ -83,6 +87,13 @@ jobs:
     permissions:
       contents: read
     steps:
+      # The `build` job uploads `dist` only, so the api/ Function source must come from the repo.
+      # Check out BEFORE downloading the artifact: actions/checkout runs `git clean -ffdx`, which
+      # would delete the untracked dist/ folder if it were already there.
+      - name: Check out the api/ Function source
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: api
       - uses: actions/download-artifact@v4
         with:
           name: ${{ env.ARTIFACT_NAME }}
@@ -106,6 +117,11 @@ jobs:
       contents: read
       pull-requests: write
     steps:
+      # api_location: 'api' needs the repo, not just the dist artifact (see deploy_dev).
+      - name: Check out the api/ Function source
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: api
       - uses: actions/download-artifact@v4
         with:
           name: ${{ env.ARTIFACT_NAME }}

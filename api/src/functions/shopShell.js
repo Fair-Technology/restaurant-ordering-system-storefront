@@ -18,6 +18,8 @@ app.http('shopShell', {
           fetch,
           shellCache,
           metaCache,
+          // SSRF guard: only serve the origin the request actually arrived on.
+          expectedHost: request.headers.get('x-forwarded-host') || request.headers.get('host'),
           // SWA app setting (owner-side Azure write). Value e.g. https://<backend-host>/api
           backendBase: process.env.BACKEND_API_BASE_URL,
         },

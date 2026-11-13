@@ -13,7 +13,7 @@ export const META_TTL_MS = 5 * 60_000;
 export const META_NEGATIVE_TTL_MS = 30_000;
 export const SHOP_TIMEOUT_MS = 1_000;
 export const NOINDEX_TAG = '<meta name="robots" content="noindex, nofollow">';
-export const FALLBACK_IMAGE_PATH = '/vite.svg'; // static last resort of hero -> logo -> static
+export const FALLBACK_IMAGE_PATH = '/og-fallback.png'; // 1200x630 raster in public/ — social crawlers do not render SVG
 
 const SLUG_RE = /^[a-z0-9][a-z0-9-]{0,63}$/i;
 const HOST_RE = /^[a-z0-9.-]+(:\d{1,5})?$/i;
@@ -27,8 +27,13 @@ export function escapeHtml(v) {
     .replace(/'/g, '&#39;');
 }
 
-/** Parse the x-ms-original-url header. Returns { origin, pathname } or null. */
-export function parseOriginalUrl(header) {
+/**
+ * Parse the x-ms-original-url header. Returns { origin, hostname, pathname } or null.
+ * `expectedHost` (the Host / x-forwarded-host the request actually arrived on) is an SSRF guard:
+ * a direct call to /api/shopShell that sets the header by hand must not make the Function fetch and
+ * re-serve another host's HTML under this origin. Only enforced when we have a host to compare with.
+ */
+export function parseOriginalUrl(header, expectedHost) {
   if (!header) return null;
   let u;
   try {
@@ -38,7 +43,8 @@ export function parseOriginalUrl(header) {
   }
   if (!HOST_RE.test(u.host)) return null;
   if (u.protocol !== 'https:' && !(u.protocol === 'http:' && u.hostname === 'localhost')) return null;
-  return { origin: u.origin, pathname: u.pathname };
+  if (expectedHost && u.hostname.toLowerCase() !== String(expectedHost).toLowerCase().split(':')[0]) return null;
+  return { origin: u.origin, hostname: u.hostname, pathname: u.pathname };
 }
 
 /**
@@ -112,16 +118,17 @@ async function fetchText(fetchFn, url, timeoutMs) {
 
 /**
  * Build the response. Never throws; always status 200.
- * deps: { fetch, now, shellCache: Map, metaCache: Map, backendBase }
+ * deps: { fetch, now, shellCache: Map, metaCache: Map, backendBase, expectedHost }
  */
 export async function handleShell({ originalUrl, deps }) {
-  const { fetch: fetchFn, now = Date.now, shellCache, metaCache, backendBase } = deps;
+  const { fetch: fetchFn, now = Date.now, shellCache, metaCache, backendBase, expectedHost } = deps;
   const headers = {
     'content-type': 'text/html; charset=utf-8',
     'x-robots-tag': 'noindex, nofollow',
     'cache-control': 'no-cache',
   };
-  const parsed = parseOriginalUrl(originalUrl);
+  // expectedHost pins the shell origin to the host the request actually arrived on (SSRF guard).
+  const parsed = parseOriginalUrl(originalUrl, expectedHost);
   if (!parsed) return { status: 200, headers, body: minimalPage() };
 
   const { origin, pathname } = parsed;
