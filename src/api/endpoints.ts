@@ -1744,7 +1744,7 @@ export type OrderDiscountKind = 'code' | 'voucher';
 export type StaffRejectReason =
   'too_busy' | 'item_unavailable' | 'closing_soon' | 'other';
 export type RejectReason =
-  StaffRejectReason | 'no_response' | 'payment_failed' | 'shop_unavailable';
+  StaffRejectReason | 'no_response' | 'payment_failed' | 'payment_unavailable' | 'shop_unavailable';
 export type CustomerOrderDto = {
   orderId: string;
   orderRef: string;
