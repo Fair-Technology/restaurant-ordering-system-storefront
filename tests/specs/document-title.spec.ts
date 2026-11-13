@@ -64,4 +64,21 @@ test.describe('T8: <title> tracks the shop on client-side navigation', () => {
     await spaNavigate(page, '/legal/sub-processors');
     await expect(page).toHaveTitle(SHELL);
   });
+
+  test('deep link keeps the server (Function) title: hook is navigation-only', async ({ page }) => {
+    await mockShop(page, 'a', 'Shop Alpha');
+    await mockShop(page, 'b', 'Shop Beta');
+    // Land directly on a shop URL. The shell title here stands in for the
+    // per-shop title the Function serves on a full load; the hook must not
+    // rewrite it just because the shop name resolved.
+    await page.goto('/shops/a');
+    await page.waitForTimeout(1200);
+    await expect(page).toHaveTitle(SHELL);
+    expect(await page.locator('head > title').count()).toBe(1);
+
+    // A subsequent client-side hop is the hook's job.
+    await spaNavigate(page, '/shops/b');
+    await expect(page).toHaveTitle('Shop Beta');
+    expect(await page.locator('head > title').count()).toBe(1);
+  });
 });
