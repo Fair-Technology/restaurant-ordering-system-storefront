@@ -79,6 +79,11 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path: dist
 
+      - name: Check out the same commit (for the api/ Function)
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: api
+
       - name: Sanity check the downloaded artifact
         run: |
           test -f dist/index.html
