@@ -1,4 +1,8 @@
 {
+  "routes": [
+    { "route": "/shops/*", "rewrite": "/api/shopShell" },
+    { "route": "/legal/*", "rewrite": "/api/shopShell" }
+  ],
   "navigationFallback": {
     "rewrite": "/index.html",
     "exclude": [
