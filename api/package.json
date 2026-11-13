@@ -1,0 +1,11 @@
+{
+  "name": "rs-storefront-api",
+  "private": true,
+  "type": "module",
+  "version": "0.0.0",
+  "description": "SWA-managed Function: injects per-shop link-preview meta + noindex into the storefront shell",
+  "main": "src/functions/*.js",
+  "scripts": { "test": "node --test test/" },
+  "dependencies": { "@azure/functions": "^4.5.0" },
+  "engines": { "node": ">=20" }
+}
