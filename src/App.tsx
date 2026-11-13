@@ -7,12 +7,19 @@ import SubProcessorsPage from './features/legal/SubProcessorsPage';
 import CustomerOrderPage from './features/order/CustomerOrderPage';
 import NotFound from './pages/NotFound';
 import { CheckoutPageSkeleton } from './shared/Skeletons';
+import { useDocumentTitle } from './hooks/useDocumentTitle';
 
 const CheckoutPage = lazy(() => import('./features/checkout/CheckoutPage'));
+
+const DocumentTitleSync: React.FC = () => {
+  useDocumentTitle();
+  return null;
+};
 
 const App: React.FC = () => {
   return (
     <Router>
+      <DocumentTitleSync />
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/shops/:slug" element={<ShopView />} />
