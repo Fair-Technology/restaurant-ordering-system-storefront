@@ -1,19 +1,20 @@
 import { useEffect, useRef } from 'react';
 import { matchPath, useLocation } from 'react-router-dom';
 import { useGetShopBySlugQuery } from '../api/endpoints';
+import { useGetPlatformLegalQuery } from '../api/legalEndpoints';
 
-/** Must match the <title> shipped in index.html. */
-const SHELL_TITLE = 'Restaurant Ordering System';
+/** Shipped in index.html; used only before the platform legal identity loads, or if that read fails. */
+const FALLBACK_TITLE = 'Restaurant Ordering System';
 
 /**
- * Keeps the single shell <title> in sync with the route on CLIENT-SIDE
- * navigation (the Function only sets it on a full page load).
+ * Keeps the single shell <title> in sync with the route.
  *
+ * - The front-page (and every non-shop route) title is the platform legal identity's
+ *   `platformName` (spec §16), never `operator.legalName`; FALLBACK_TITLE until it loads or if it fails.
  * - Mutates `document.title` only; never renders a <title>/<meta> (no duplicates).
  * - Never writes og:* tags (the Function owns them).
- * - Title is the shop name only; nothing path/query-derived (order id, token).
- * - First load is left alone: a deep link already carries the Function's title.
- * - Non-shop routes restore the baseline shell title.
+ * - On shop routes the title is the shop name only; nothing path/query-derived (order id, token).
+ * - Shop deep-link first load is left alone: it already carries the Function's title.
  */
 export function useDocumentTitle(): void {
   const { pathname } = useLocation();
@@ -21,11 +22,9 @@ export function useDocumentTitle(): void {
 
   // Slug at first render; its title was set server-side, so don't rewrite it.
   const initialSlug = useRef<string | undefined | null>(slug);
-  // Baseline = the shipped shell title. If we landed on a shop deep link the live
-  // title is already per-shop, so fall back to the known shell constant.
-  const baseline = useRef<string>(slug ? SHELL_TITLE : document.title || SHELL_TITLE);
-  // True once the tab shows something this hook (or the Function) put there for a shop.
-  const shopTitleShown = useRef(false);
+
+  const { currentData: platformLegal } = useGetPlatformLegalQuery();
+  const platformName = platformLegal?.platformName?.trim() || FALLBACK_TITLE;
 
   const { currentData } = useGetShopBySlugQuery(slug ?? '', { skip: !slug });
   const name = currentData?.name;
@@ -34,18 +33,14 @@ export function useDocumentTitle(): void {
     if (slug !== initialSlug.current) initialSlug.current = null;
 
     if (!slug) {
-      if (shopTitleShown.current) {
-        document.title = baseline.current;
-        shopTitleShown.current = false;
-      }
+      document.title = platformName;
       return;
     }
     if (name) {
       if (slug !== initialSlug.current) document.title = name;
-      shopTitleShown.current = true;
-    } else if (shopTitleShown.current && slug !== initialSlug.current) {
-      // New shop still loading (or unknown): don't leave the previous shop's name.
-      document.title = baseline.current;
+    } else if (slug !== initialSlug.current) {
+      // New shop still loading (or unknown): don't leave the previous title.
+      document.title = platformName;
     }
-  }, [slug, name]);
+  }, [slug, name, platformName]);
 }
