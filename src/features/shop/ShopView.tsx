@@ -13,6 +13,8 @@ import {
   useGetCatalogQuery,
 } from '../../api/endpoints';
 import NavBar from '../../shared/NavBar';
+import PlatformHeader from '../../shared/PlatformHeader';
+import { siteCopy } from '../../utils/siteCopy';
 import { Product } from '../../types/Product';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { setActiveShop, setMenuLanguage, setResolvedMenuLanguage, type FulfilmentMode } from '../../store/slices/shopSlice';
@@ -79,10 +81,16 @@ const ShopView = () => {
     isLoading: isSlugLoading,
     isError: isSlugError,
     error: slugError,
+    refetch: refetchSlugShop,
   } = useGetShopBySlugQuery(slug ?? '', {
     skip: !shouldFetchBySlug,
   });
-  const { data: shopDataById, isLoading: isIdLoading } = useGetShopByIdQuery(shopIdLookup, {
+  const {
+    data: shopDataById,
+    isLoading: isIdLoading,
+    isError: isIdError,
+    refetch: refetchIdShop,
+  } = useGetShopByIdQuery(shopIdLookup, {
     skip: !shopIdLookup,
   });
 
@@ -115,6 +123,7 @@ const ShopView = () => {
     data: catalogData,
     currentData: currentCatalog,
     isLoading: isCatalogLoading,
+    isError: isCatalogError,
     isFetching: isCatalogFetching,
     refetch: refetchCatalog,
   } = useGetCatalogQuery({ shopId: resolvedShopId, lang }, { skip: !resolvedShopId || shopIsOffline });
@@ -264,6 +273,7 @@ const ShopView = () => {
   );
 
   const copy = orderCopy(pageLanguage);
+  const site = siteCopy(pageLanguage);
 
   // Categories outside their times right now wait behind the "Other times" pill; one can be opened at a time
   const [pickedLaterId, setPickedLaterId] = useState<string | null>(null);
@@ -375,6 +385,8 @@ const ShopView = () => {
   }, [pickedLaterId]);
 
   const isLoading = shouldFetchBySlug ? isSlugLoading : isIdLoading;
+  const shopQueryError = shouldFetchBySlug ? isSlugError : isIdError;
+  const refetchShop = shouldFetchBySlug ? refetchSlugShop : refetchIdShop;
 
   if (isLoading) {
     return <ShopPageSkeleton />;
@@ -388,6 +400,27 @@ const ShopView = () => {
     slugError.status === 404
   ) {
     return <NotFound kind="shop" />;
+  }
+
+  if (shopQueryError) {
+    return (
+      <div className="flex min-h-screen flex-col bg-white text-gray-900">
+        <PlatformHeader />
+        <main className="flex flex-1 items-center justify-center px-6 py-12">
+          <div role="alert" data-testid="shop-error" className="flex max-w-[460px] flex-col items-center text-center">
+            <p className="rounded-xl border border-[#f6d3c1] bg-[#fdeee6] px-4 py-3 text-[#7c2a09]">{site.shopError}</p>
+            <button
+              type="button"
+              data-testid="shop-error-retry"
+              onClick={() => void refetchShop()}
+              className="mt-5 inline-flex h-12 items-center justify-center rounded-full bg-gray-900 px-6 text-[15px] font-bold text-white transition-colors hover:bg-black"
+            >
+              {site.retry}
+            </button>
+          </div>
+        </main>
+      </div>
+    );
   }
 
   // One switcher element, placed in the nav bar from sm up and in the shop intro on phones
@@ -519,6 +552,22 @@ const ShopView = () => {
         >
           <LogoLoader logoUrl={resolvedBranding.logoUrl} name={shopName} size={96} decorative />
           {copy.loading}
+        </div>
+      ) : isCatalogError ? (
+        <div
+          role="alert"
+          data-testid="menu-error"
+          className="mx-auto flex w-full max-w-7xl flex-col items-center gap-4 px-6 py-16 text-center"
+        >
+          <p className="rounded-xl border border-[#f6d3c1] bg-[#fdeee6] px-4 py-3 text-[#7c2a09]">{site.menuError}</p>
+          <button
+            type="button"
+            data-testid="menu-error-retry"
+            onClick={() => void refetchCatalog()}
+            className="inline-flex h-12 items-center justify-center rounded-full bg-gray-900 px-6 text-[15px] font-bold text-white transition-colors hover:bg-black"
+          >
+            {site.retry}
+          </button>
         </div>
       ) : (
         <div
