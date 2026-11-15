@@ -35,6 +35,7 @@ export interface OrderCopy {
   cancelOrder: string;
   cancelConfirm: string;
   cancelFailed: string;
+  cancelFailedTransient: string;
   callRestaurant: (phone: string) => string;
   orderNotFound: string;
   total: string;
@@ -312,6 +313,7 @@ const en: OrderCopy = {
   cancelOrder: 'Cancel order',
   cancelConfirm: 'This cannot be undone. Nothing is charged.',
   cancelFailed: 'This order can no longer be cancelled. Please call the restaurant.',
+  cancelFailedTransient: 'We could not cancel your order, please try again.',
   callRestaurant: (p) => `Questions? Call ${p}.`,
   orderNotFound: 'We could not find this order. Please use the link from your email.',
   total: 'Total',
@@ -602,6 +604,8 @@ const de: OrderCopy = {
   cancelConfirm: 'Das kann nicht rückgängig gemacht werden. Es wird nichts abgebucht.',
   cancelFailed:
     'Diese Bestellung kann nicht mehr storniert werden. Bitte rufen Sie das Restaurant an.',
+  cancelFailedTransient:
+    'Ihre Bestellung konnte nicht storniert werden. Bitte versuchen Sie es erneut.',
   callRestaurant: (p) => `Fragen? Rufen Sie ${p} an.`,
   orderNotFound:
     'Diese Bestellung wurde nicht gefunden. Bitte nutzen Sie den Link aus Ihrer E-Mail.',

@@ -120,8 +120,12 @@ const CustomerOrderPage: React.FC = () => {
     },
   );
 
-  const [cancelOrder, { data: cancelled, isLoading: isCancelling, isError: cancelFailed }] =
-    useCancelCustomerOrderMutation();
+  const [
+    cancelOrder,
+    { data: cancelled, isLoading: isCancelling, isError: cancelFailed, error: cancelError },
+  ] = useCancelCustomerOrderMutation();
+  const cancelStatus = (cancelError as { status?: unknown } | undefined)?.status;
+  const cancelIsFinal = cancelFailed && (cancelStatus === 409 || cancelStatus === 400);
   const [getDocument] = useViewCustomerDocumentMutation();
   const [confirmingCancel, setConfirmingCancel] = useState(false);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
@@ -537,12 +541,16 @@ const CustomerOrderPage: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setConfirmingCancel(true)}
-                        disabled={isCancelling}
+                        disabled={isCancelling || cancelIsFinal}
                         className="h-11 self-start rounded-full border-[1.5px] border-[#e3d9ce] bg-white px-5 text-sm font-bold text-[#8a1f12] hover:border-[#8a1f12] disabled:opacity-50"
                       >
                         {copy.cancelOrder}
                       </button>
-                      {cancelFailed && <p className="text-sm text-[#8a1f12]">{copy.cancelFailed}</p>}
+                      {cancelFailed && (
+                        <p role="alert" className="text-sm text-[#8a1f12]">
+                          {cancelIsFinal ? copy.cancelFailed : copy.cancelFailedTransient}
+                        </p>
+                      )}
                     </section>
                   )}
 

@@ -334,6 +334,39 @@ test.describe('Card order', () => {
     expect(cancelBody).toEqual({ token: 'tok' });
   });
 
+  test('a transient cancel failure is not presented as final', async ({ page }) => {
+    await mockBackend(page);
+    await page.route('**/api/customer-orders/o1/cancel', (route) =>
+      route.fulfill(fulfil({ error: 'Internal server error' }, 500)),
+    );
+    await page.goto(ORDER_URL);
+
+    await page.getByRole('button', { name: 'Cancel order' }).click();
+    await page.getByRole('button', { name: 'Yes, cancel order' }).click();
+
+    await expect(page.getByText('We could not cancel your order, please try again.')).toBeVisible();
+    await expect(page.getByText('This order can no longer be cancelled. Please call the restaurant.')).toHaveCount(0);
+    await expect(page.getByRole('alert')).toContainText('We could not cancel your order, please try again.');
+    await expect(page.getByRole('button', { name: 'Cancel order' })).toBeEnabled();
+  });
+
+  test('a genuine 409 on cancel is final', async ({ page }) => {
+    await mockBackend(page);
+    await page.route('**/api/customer-orders/o1/cancel', (route) =>
+      route.fulfill(
+        fulfil({ error: 'This order can no longer be cancelled. Please call the restaurant.' }, 409),
+      ),
+    );
+    await page.goto(ORDER_URL);
+
+    await page.getByRole('button', { name: 'Cancel order' }).click();
+    await page.getByRole('button', { name: 'Yes, cancel order' }).click();
+
+    await expect(page.getByText('This order can no longer be cancelled. Please call the restaurant.')).toBeVisible();
+    await expect(page.getByText('We could not cancel your order, please try again.')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Cancel order' })).toBeDisabled();
+  });
+
   test('a German order opened fresh in an English browser shows German prices', async ({ page }) => {
     await mockBackend(page, { order: { language: 'de' } });
     await page.goto('/shops/test-shop/orders/o1?t=TT');
