@@ -1,6 +1,6 @@
 import { test, expect, type Page } from '@playwright/test';
 
-const SHIPPED = 'Restaurant Ordering System'; // index.html's <title>, untouched on shop deep links
+const SHIPPED = 'Restaurant Ordering System'; // index.html's <title>: the Function replaces it on a real full load
 const PLATFORM = 'Fair Technology';
 
 async function mockPlatformLegal(page: Page, platformName = PLATFORM) {
@@ -91,9 +91,11 @@ test.describe('T8: <title> tracks the shop on client-side navigation', () => {
   test('deep link keeps the server (Function) title: hook is navigation-only', async ({ page }) => {
     await mockShop(page, 'a', 'Shop Alpha');
     await mockShop(page, 'b', 'Shop Beta');
-    // Land directly on a shop URL. The shell title here stands in for the
-    // per-shop title the Function serves on a full load; the hook must not
-    // rewrite it just because the shop name resolved.
+    // Land directly on a shop URL. This suite runs against the bare dev server (no shell Function),
+    // so index.html's shipped title stands in for whatever the Function served on a real full load —
+    // the Function's per-shop title itself is pinned by the live spec in rs-e2e
+    // (tests/customer/document-title.live.spec.mjs). The hook must not rewrite a first load's title
+    // just because the shop name resolved.
     await page.goto('/shops/a');
     await page.waitForTimeout(1200);
     await expect(page).toHaveTitle(SHIPPED);
