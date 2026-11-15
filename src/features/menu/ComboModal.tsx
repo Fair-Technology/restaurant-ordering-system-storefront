@@ -564,15 +564,15 @@ const ComboModal: React.FC<ComboModalProps> = ({ product, isOpen, onClose, shopI
               type="button"
               onClick={handleAdd}
               aria-disabled={!ready}
-              className={`flex h-[52px] min-w-0 flex-1 items-center justify-between gap-2 rounded-full px-5 text-[15px] font-bold transition-transform md:px-6 md:text-base ${
+              className={`flex h-auto min-h-[52px] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-full px-4 py-1.5 text-center text-[15px] font-bold transition-transform md:px-6 md:text-base ${
                 ready
                   ? 'bg-[var(--brand-accent)] text-[var(--brand-on-accent)] shadow-sm active:scale-[0.98]'
                   : 'bg-[#efe9e2] text-[#6b6058]'
               }`}
             >
               {/* On narrow phones an incomplete combo shows only what's open; the label stays for screen readers */}
-              <span className={`truncate ${ready ? '' : 'max-[420px]:sr-only'}`}>{copy.comboAdd}</span>
-              <span className="shrink-0">{ready ? money.major(unit * quantity) : copy.comboOpen(openCount)}</span>
+              <span className={`min-w-0 leading-tight ${ready ? '' : 'max-[420px]:sr-only'}`}>{copy.comboAdd}</span>
+              <span className="shrink-0 whitespace-nowrap text-[13px] font-semibold opacity-90 md:text-sm">{ready ? money.major(unit * quantity) : copy.comboOpen(openCount)}</span>
             </button>
           </div>
         </div>
