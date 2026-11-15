@@ -9,6 +9,16 @@ const EN_FAILED = 'The payment could not be completed when the restaurant accept
 const ORDER_URL = '/shops/test-shop/orders/o1?t=tok';
 const EVIDENCE = 'docs/reports/evidence';
 
+// Evidence screenshots are committed artifacts under docs/reports/evidence/ and are cited by
+// docs/reports/2026-11-14-c1-verify.md. A plain run writes nothing there, so it leaves the working
+// tree clean. To regenerate them: UPDATE_EVIDENCE=1 npx playwright test --project=chromium
+const updateEvidence = process.env.UPDATE_EVIDENCE === '1';
+
+async function captureEvidence(page: Page, file: string): Promise<void> {
+  if (!updateEvidence) return;
+  await page.screenshot({ path: `${EVIDENCE}/${file}`, fullPage: true });
+}
+
 function fulfil(body: unknown, status = 200) {
   return { status, contentType: 'application/json', body: JSON.stringify(body) };
 }
@@ -78,7 +88,7 @@ test.describe('C1 reject reason copy (EN)', () => {
     await expect(page.getByText(EN_UNAVAILABLE, { exact: true })).toBeVisible();
     const body = await page.evaluate(() => document.body.innerText);
     expect(body).not.toContain('rejectReason.payment_unavailable');
-    await page.screenshot({ path: `${EVIDENCE}/c1-payment-unavailable-en.png`, fullPage: true });
+    await captureEvidence(page, 'c1-payment-unavailable-en.png');
   });
 
   test('payment_failed keeps the card-decline copy', async ({ page }) => {
@@ -86,7 +96,7 @@ test.describe('C1 reject reason copy (EN)', () => {
     await page.goto(ORDER_URL);
     await expect(page.getByText(EN_FAILED, { exact: true })).toBeVisible();
     await expect(page.getByText(EN_UNAVAILABLE, { exact: true })).toHaveCount(0);
-    await page.screenshot({ path: `${EVIDENCE}/c1-payment-failed-en.png`, fullPage: true });
+    await captureEvidence(page, 'c1-payment-failed-en.png');
   });
 });
 
@@ -98,6 +108,6 @@ test.describe('C1 reject reason copy (DE)', () => {
     await page.goto(ORDER_URL);
     await expect(page.getByText('Ihre Bestellung wurde abgelehnt', { exact: true })).toBeVisible();
     await expect(page.getByText(DE_UNAVAILABLE, { exact: true })).toBeVisible();
-    await page.screenshot({ path: `${EVIDENCE}/c1-payment-unavailable-de.png`, fullPage: true });
+    await captureEvidence(page, 'c1-payment-unavailable-de.png');
   });
 });
