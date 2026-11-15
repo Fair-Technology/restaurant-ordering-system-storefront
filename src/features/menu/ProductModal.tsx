@@ -1,8 +1,9 @@
-import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useId, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Check, Minus, Plus, UtensilsCrossed, X } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { addItem, removeItem } from '../../store/slices/cartSlice';
+import { useModalFocus } from '../../hooks/useModalFocus';
 import { useMoney } from '../../hooks/useMoney';
 import { useDismissClickGuard } from '../../hooks/useDismissClickGuard';
 import { menuLabels } from '../../utils/menuLabels';
@@ -106,7 +107,9 @@ const ProductModal: React.FC<ProductModalProps> = ({
   const copy = orderCopy(pageLanguageOf(currentChoice(storedLanguage, navigator.language)));
   const labels = menuLabels(product.language);
   const titleId = useId();
-  const dialogRef = useRef<HTMLDivElement>(null);
+  // Focus trap, scroll lock and Escape-to-close live in useModalFocus. Escape calls onClose directly,
+  // so a keyboard close never arms the click guard below.
+  const dialogRef = useModalFocus(isOpen, onClose);
   const guardDismissClick = useDismissClickGuard();
 
   // Pointer closes arm the click guard first, so a double-click's stray second click cannot hit the
@@ -143,22 +146,6 @@ const ProductModal: React.FC<ProductModalProps> = ({
     setQuantity(initialQuantityProp ?? 1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
-
-  // While open: lock page scroll behind the sheet, close on Escape, move focus into the dialog
-  useEffect(() => {
-    if (!isOpen) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', onKey);
-    dialogRef.current?.focus();
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      document.removeEventListener('keydown', onKey);
-    };
-  }, [isOpen, onClose]);
 
   // Flat lookup maps for fast variant/addon option access by ID
   const variantLookup = useMemo(() => {

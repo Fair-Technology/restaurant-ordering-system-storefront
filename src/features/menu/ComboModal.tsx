@@ -1,8 +1,9 @@
-import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useId, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Check, Minus, Plus, UtensilsCrossed, X } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { addItem } from '../../store/slices/cartSlice';
+import { useModalFocus } from '../../hooks/useModalFocus';
 import { useMoney } from '../../hooks/useMoney';
 import { useDismissClickGuard } from '../../hooks/useDismissClickGuard';
 import { menuLabels } from '../../utils/menuLabels';
@@ -74,7 +75,9 @@ const ComboModal: React.FC<ComboModalProps> = ({ product, isOpen, onClose, shopI
   const copy = orderCopy(pageLanguageOf(currentChoice(storedLanguage, navigator.language)));
   const labels = menuLabels(product.language);
   const titleId = useId();
-  const dialogRef = useRef<HTMLDivElement>(null);
+  // Focus trap, scroll lock and Escape-to-close live in useModalFocus. Escape calls onClose directly,
+  // so a keyboard close never arms the click guard below.
+  const dialogRef = useModalFocus(isOpen, onClose);
   const guardDismissClick = useDismissClickGuard();
 
   // Pointer closes arm the click guard first, so a double-click's stray second click cannot hit the
@@ -101,22 +104,6 @@ const ComboModal: React.FC<ComboModalProps> = ({ product, isOpen, onClose, shopI
     setNudge(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
-
-  // While open: lock page scroll, close on Escape, move focus into the dialog
-  useEffect(() => {
-    if (!isOpen) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', onKey);
-    dialogRef.current?.focus();
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      document.removeEventListener('keydown', onKey);
-    };
-  }, [isOpen, onClose]);
 
   // Allergens and additives of every dish on offer in the combo, plus the sizes and extras picked inside it
   const { allergens, additives } = useMemo(() => {
