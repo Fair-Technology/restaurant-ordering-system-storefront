@@ -1789,6 +1789,7 @@ export type CustomerOrderDto = {
   currency: string;
   createdAt: string;
   canCancel: boolean;
+  paymentHeld: boolean;
   rejectionReason: RejectReason | null;
 };
 export type ErrorResponse = {
