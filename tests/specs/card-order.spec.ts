@@ -401,14 +401,42 @@ test.describe('Card order', () => {
 
   test('a wrong link says the order cannot be found once the wait is over', async ({ page }) => {
     await page.clock.install();
+    // Counts the order lookups whose 404 body the page's own fetch code has finished reading.
+    // Passive: it only observes Response.text, which the app's request layer reads the body with.
+    await page.addInitScript(() => {
+      const w = window as unknown as { __orderBodiesRead: number };
+      w.__orderBodiesRead = 0;
+      const text = Response.prototype.text;
+      Response.prototype.text = function (this: Response) {
+        const read = text.call(this);
+        if (this.url.includes('/api/customer-orders/o1/view') && this.status === 404) {
+          read.then(() => (w.__orderBodiesRead += 1), () => undefined);
+        }
+        return read;
+      };
+    });
     await mockBackend(page);
     await page.route('**/api/customer-orders/o1/view', (route) =>
       route.fulfill(fulfil({ error: 'Order not found' }, 404)),
     );
     await page.goto(ORDER_URL);
 
+    // The page has mounted (its 20 s grace timer is armed in the same commit that sends the
+    // lookup) and has read the 404, so the app already knows the order is missing. No DOM
+    // anchor works here: while the page keeps re-asking it shows neither the loading card nor
+    // the alert. One second of fake time then lets that answer render, well inside the grace.
+    await expect
+      .poll(() => page.evaluate(() => (window as unknown as { __orderBodiesRead: number }).__orderBodiesRead), {
+        message: 'the order page asked for the order and read its 404',
+      })
+      .toBeGreaterThanOrEqual(1);
+    await page.clock.fastForward(1_000);
     await expect(page.getByText('We could not find this order')).toHaveCount(0);
-    await page.clock.runFor(21_000);
+
+    // Jump past the 20 s grace period, firing each due timer once. runFor would replay every
+    // animation frame in between, and while the page keeps re-asking for the missing order
+    // each frame waits on a real request, so the jump can outlast the test's 30 s budget.
+    await page.clock.fastForward(20_000);
     await expect(page.getByText('We could not find this order')).toBeVisible();
   });
 
