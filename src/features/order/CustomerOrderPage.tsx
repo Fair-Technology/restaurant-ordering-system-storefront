@@ -94,7 +94,7 @@ const CustomerOrderPage: React.FC = () => {
   // entry's requestId and refetch in a tight loop whenever the query is rejected.
   // The polling cadence depends on the result, so it lives in state (set by the effect below).
   const [pollMs, setPollMs] = useState(CONFIRMING_POLL_MS);
-  const { data, isError, error, refetch, isFetching } = useViewCustomerOrderQuery(
+  const { data, isLoading, isFetching, isError, error, refetch } = useViewCustomerOrderQuery(
     { orderId: orderId ?? '', body: { token } },
     { skip: !orderId, refetchOnMountOrArgChange: true, pollingInterval: pollMs },
   );
@@ -125,6 +125,18 @@ const CustomerOrderPage: React.FC = () => {
     const timer = setTimeout(() => setConfirmingSlow(true), CONFIRMING_SLOW_MS);
     return () => clearTimeout(timer);
   }, [wasConfirming]);
+  // A poll that failed after the order was already on screen: keep showing the order,
+  // but stop claiming the page is live and say the status may be out of date.
+  // Polling below keeps running (data is still there), so the page recovers by itself.
+  const [staleRefresh, setStaleRefresh] = useState(false);
+  useEffect(() => {
+    if (!data) {
+      setStaleRefresh(false);
+      return;
+    }
+    if (isError) setStaleRefresh(true);
+    else if (!isFetching && !isLoading) setStaleRefresh(false);
+  }, [data, isError, isFetching, isLoading]);
   // Poll quickly while the order is not known yet, and every 15 s while it is still moving
   // so acceptance and ready-time show up on their own.
   useEffect(() => {
@@ -315,6 +327,11 @@ const CustomerOrderPage: React.FC = () => {
             </button>
           </div>
         )}
+        {staleRefresh && order && (
+          <p role="alert" className="rounded-2xl bg-[#fdecea] px-5 py-4 text-[15px] text-[#8a1f12]">
+            {copy.refreshFailed}
+          </p>
+        )}
 
         {(order || isConfirming) && (
           <>
@@ -423,13 +440,15 @@ const CustomerOrderPage: React.FC = () => {
 
               {live && (
                 <div className="flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-[#f1ebe4] pt-4 text-sm text-[#5c524b]">
-                  <span className="inline-flex items-center gap-2">
-                    <span className="relative flex h-2.5 w-2.5" aria-hidden="true">
-                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#2f8a4c] opacity-60" />
-                      <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#2f8a4c]" />
+                  {!staleRefresh && (
+                    <span className="inline-flex items-center gap-2">
+                      <span className="relative flex h-2.5 w-2.5" aria-hidden="true">
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#2f8a4c] opacity-60" />
+                        <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-[#2f8a4c]" />
+                      </span>
+                      {copy.liveUpdates}
                     </span>
-                    {copy.liveUpdates}
-                  </span>
+                  )}
                   {order && order.state !== 'PLACED' && (
                     <span className="inline-flex items-center gap-2">
                       <Mail className="h-4 w-4" aria-hidden="true" />
