@@ -38,6 +38,8 @@ export interface OrderCopy {
   cancelFailedTransient: string;
   callRestaurant: (phone: string) => string;
   orderNotFound: string;
+  orderLoadFailed: string;
+  retryLoad: string;
   total: string;
   loading: string;
   continueToPayment: string;
@@ -316,6 +318,9 @@ const en: OrderCopy = {
   cancelFailedTransient: 'We could not cancel your order, please try again.',
   callRestaurant: (p) => `Questions? Call ${p}.`,
   orderNotFound: 'We could not find this order. Please use the link from your email.',
+  orderLoadFailed:
+    'We could not load your order. This is usually temporary — please try again.',
+  retryLoad: 'Try again',
   total: 'Total',
   loading: 'Loading…',
   continueToPayment: 'Continue to payment',
@@ -609,6 +614,9 @@ const de: OrderCopy = {
   callRestaurant: (p) => `Fragen? Rufen Sie ${p} an.`,
   orderNotFound:
     'Diese Bestellung wurde nicht gefunden. Bitte nutzen Sie den Link aus Ihrer E-Mail.',
+  orderLoadFailed:
+    'Ihre Bestellung konnte nicht geladen werden. Das ist meist nur vorübergehend — bitte versuchen Sie es erneut.',
+  retryLoad: 'Erneut versuchen',
   total: 'Summe',
   loading: 'Wird geladen…',
   continueToPayment: 'Weiter zur Zahlung',

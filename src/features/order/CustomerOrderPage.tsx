@@ -43,6 +43,12 @@ interface Step {
  * Sent → Accepted → On the way → Delivered (delivery). `null` order = payment still being confirmed.
  * Orders a restaurant accepts automatically simply arrive already accepted.
  */
+// Only a genuine 404 means the link/order does not exist. Anything else — 5xx, 401/403,
+// 'FETCH_ERROR', 'TIMEOUT', 'PARSING_ERROR' — is a load failure the diner can retry.
+function isOrderNotFound(error: unknown): boolean {
+  return (error as { status?: unknown } | undefined)?.status === 404;
+}
+
 function progressSteps(order: CustomerOrderDto | null, copy: OrderCopy, time: string): Step[] {
   const delivery = order?.fulfilmentMode === 'delivery';
   const state = order?.state ?? 'CONFIRMING';
@@ -88,10 +94,19 @@ const CustomerOrderPage: React.FC = () => {
   // entry's requestId and refetch in a tight loop whenever the query is rejected.
   // The polling cadence depends on the result, so it lives in state (set by the effect below).
   const [pollMs, setPollMs] = useState(CONFIRMING_POLL_MS);
-  const { data, isError, error } = useViewCustomerOrderQuery(
+  const { data, isError, error, refetch, isFetching } = useViewCustomerOrderQuery(
     { orderId: orderId ?? '', body: { token } },
     { skip: !orderId, refetchOnMountOrArgChange: true, pollingInterval: pollMs },
   );
+  const [retrying, setRetrying] = useState(false);
+  async function handleRetry() {
+    setRetrying(true);
+    try {
+      await refetch();
+    } finally {
+      setRetrying(false);
+    }
+  }
   const [graceOver, setGraceOver] = useState(false);
   useEffect(() => {
     const timer = setTimeout(() => setGraceOver(true), NOT_FOUND_GRACE_MS);
@@ -248,9 +263,15 @@ const CustomerOrderPage: React.FC = () => {
   const route = shopAddress ? routeUrl(shopAddress) : null;
   const finished = order ? order.state === 'COMPLETED' || stopped : false;
 
-  // Decided from the query result, not RTK's transient isLoading
-  const showLoading = !!orderId && !order && !isConfirming && !(isError && graceOver);
-  const showError = !!orderId && !order && !isConfirming && isError && graceOver;
+  // Decided from the query result, not RTK's transient isLoading. A manual "Try again"
+  // (retrying) shows the loading state in place of the error until the refetch settles.
+  const showLoading =
+    !!orderId && !order && !isConfirming && (retrying || !(isError && graceOver));
+  const showError = !!orderId && !order && !isConfirming && isError && graceOver && !retrying;
+  // Only a genuine 404 (or a payment that never confirmed) is "not found"; any other
+  // failure is a retryable load error.
+  const showNotFound = showError && (wasConfirming || isOrderNotFound(error));
+  const showLoadFailed = showError && !wasConfirming && !isOrderNotFound(error);
 
   const card = 'rounded-[20px] border border-[#efe7de] bg-white p-5 sm:p-6';
   const outlineButton =
@@ -276,10 +297,23 @@ const CustomerOrderPage: React.FC = () => {
             {copy.loading}
           </div>
         )}
-        {showError && (
+        {showNotFound && (
           <p role="alert" className="rounded-2xl bg-[#fdecea] px-5 py-4 text-[15px] text-[#8a1f12]">
             {wasConfirming ? copy.confirmFailed : copy.orderNotFound}
           </p>
+        )}
+        {showLoadFailed && (
+          <div role="alert" className="flex flex-col items-start gap-3 rounded-2xl bg-[#fdecea] px-5 py-4 text-[15px] text-[#8a1f12]">
+            <p>{copy.orderLoadFailed}</p>
+            <button
+              type="button"
+              onClick={handleRetry}
+              disabled={retrying || isFetching}
+              className="inline-flex min-h-11 items-center justify-center rounded-full border-[1.5px] border-[#8a1f12] bg-white px-5 text-sm font-bold text-[#8a1f12] hover:bg-[#faf6f1] disabled:opacity-50"
+            >
+              {copy.retryLoad}
+            </button>
+          </div>
         )}
 
         {(order || isConfirming) && (
