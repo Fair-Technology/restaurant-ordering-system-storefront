@@ -541,10 +541,10 @@ const ProductModal: React.FC<ProductModalProps> = ({
               type="button"
               onClick={handleAddToCart}
               disabled={addonsIncomplete}
-              className="flex h-[52px] min-w-0 flex-1 items-center justify-between gap-2 rounded-full bg-[var(--brand-accent)] px-5 text-[15px] font-bold text-[var(--brand-on-accent)] shadow-sm transition-transform active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 md:px-6 md:text-base"
+              className="flex h-auto min-h-[52px] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-full bg-[var(--brand-accent)] px-4 py-1.5 text-center text-[15px] font-bold text-[var(--brand-on-accent)] shadow-sm transition-transform active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 md:px-6 md:text-base"
             >
-              <span className="truncate">{editItemKey ? copy.productUpdateOrder : copy.productAddToOrder}</span>
-              <span className="shrink-0">{money.major(unitPrice * quantity)}</span>
+              <span className="min-w-0 leading-tight">{editItemKey ? copy.productUpdateOrder : copy.productAddToOrder}</span>
+              <span className="shrink-0 whitespace-nowrap text-[13px] font-semibold opacity-90 md:text-sm">{money.major(unitPrice * quantity)}</span>
             </button>
           </div>
         </div>
