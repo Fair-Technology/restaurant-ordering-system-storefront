@@ -181,4 +181,52 @@ test.describe('Add to order click-through', () => {
     await expect(page.getByRole('dialog')).toHaveCount(0);
     await expect(page).toHaveURL(/\/shops\/test-shop$/);
   });
+
+  /**
+   * Escape deliberately does NOT arm the click guard (see useDismissClickGuard): a keyboard close has no
+   * stray second click to defend against, and the window would swallow the user's next intentional click
+   * on the menu. This pins that Escape leaves the guard disarmed.
+   *
+   * It uses raw viewport coordinates + page.mouse.click so the click is timing-tight: an ordinary
+   * locator.click() runs Playwright's actionability pass first and lands 50-650 ms after the keypress,
+   * which would let a guard-arming build pass vacuously. Hence the explicit < 250 ms assertion.
+   */
+  test('Escape does not arm the 250 ms click guard', async ({ page }) => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await mockMenu(page);
+    await page.goto('/shops/test-shop');
+    await expect(page.getByText('Lasagne 1').first()).toBeVisible();
+
+    await openModal(page, 'Lasagne 1');
+    await expect(page.getByRole('dialog')).toBeVisible();
+
+    // Capture the target card's viewport centre WHILE the dialog is open. The modal locks page scroll,
+    // so these coordinates stay valid across the Escape. boundingBox() is viewport-relative and does
+    // not scroll the element into view, so the box must already be on screen.
+    const target = page.getByText('Lasagne 2', { exact: true }).first();
+    const box = await target.boundingBox();
+    expect(box, 'the target card must be laid out in the viewport').not.toBeNull();
+    const x = box!.x + box!.width / 2;
+    const y = box!.y + box!.height / 2;
+    expect(x > 0 && x < 1440, `target x ${x} inside the viewport`).toBe(true);
+    expect(y > 0 && y < 900, `target y ${y} inside the viewport`).toBe(true);
+
+    // Escape closes the dialog and must NOT arm the guard.
+    await page.keyboard.press('Escape');
+    const escapeAt = Date.now();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+
+    // Immediately dispatch the follow-up click at raw coordinates: no waitForTimeout, no actionability.
+    await page.mouse.click(x, y);
+    const clickAt = Date.now();
+    expect(
+      clickAt - escapeAt,
+      `Escape -> click must be dispatched inside the 250 ms guard window (was ${clickAt - escapeAt} ms)`,
+    ).toBeLessThan(250);
+
+    // It reached the page: the target dish opened and nothing was added to the cart.
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await expect(page.getByRole('dialog').locator('h2').first()).toHaveText('Lasagne 2');
+    expect(await cartCount(page)).toBe(0);
+  });
 });
