@@ -140,6 +140,7 @@ export interface OrderCopy {
   stepPreparing: string;
   stepPickUpNow: string;
   liveUpdates: string;
+  refreshFailed: string;
   timeReadyAt: string;
   timeDeliveryAround: string;
   placeCollection: string;
@@ -418,6 +419,7 @@ const en: OrderCopy = {
   stepPreparing: 'Being prepared',
   stepPickUpNow: 'Pick it up now',
   liveUpdates: 'This page updates by itself',
+  refreshFailed: "We can't refresh this page right now, so the status below may be out of date. Please reload the page, or check your email for updates.",
   timeReadyAt: 'Ready at',
   timeDeliveryAround: 'Delivery around',
   placeCollection: 'Collection',
@@ -704,6 +706,7 @@ const de: OrderCopy = {
   stepPreparing: 'Wird zubereitet',
   stepPickUpNow: 'Jetzt abholen',
   liveUpdates: 'Diese Seite aktualisiert sich automatisch',
+  refreshFailed: 'Diese Seite kann gerade nicht aktualisiert werden – der angezeigte Status ist möglicherweise nicht aktuell. Bitte laden Sie die Seite neu oder prüfen Sie Ihre E-Mails.',
   timeReadyAt: 'Fertig um',
   timeDeliveryAround: 'Lieferung gegen',
   placeCollection: 'Abholung',
