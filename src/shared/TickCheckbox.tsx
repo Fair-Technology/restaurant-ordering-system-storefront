@@ -23,7 +23,7 @@ const TickCheckbox: React.FC<TickCheckboxProps> = ({
       className={`flex items-center gap-3 cursor-pointer text-sm ${className}`}
     >
       <span
-        className={`flex items-center justify-center w-6 h-6 rounded border ${
+        className={`flex items-center justify-center w-6 h-6 rounded-sm border ${
           checked
             ? 'bg-[var(--brand-accent)] border-transparent'
             : 'bg-white border-gray-300'
