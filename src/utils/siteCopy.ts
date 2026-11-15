@@ -36,6 +36,9 @@ export interface SiteCopy {
   subEuRep: string;
   loading: string;
   loadError: string;
+  shopError: string;
+  menuError: string;
+  retry: string;
 }
 
 const en: SiteCopy = {
@@ -73,6 +76,9 @@ const en: SiteCopy = {
   subEuRep: 'EU representative',
   loading: 'Loading…',
   loadError: 'This page could not be loaded.',
+  shopError: 'This restaurant could not be loaded. Please try again.',
+  menuError: 'The menu could not be loaded. Please try again.',
+  retry: 'Try again',
 };
 
 const de: SiteCopy = {
@@ -110,6 +116,9 @@ const de: SiteCopy = {
   subEuRep: 'EU-Vertreter',
   loading: 'Wird geladen…',
   loadError: 'Diese Seite konnte nicht geladen werden.',
+  shopError: 'Dieses Restaurant konnte nicht geladen werden. Bitte versuchen Sie es erneut.',
+  menuError: 'Die Speisekarte konnte nicht geladen werden. Bitte versuchen Sie es erneut.',
+  retry: 'Erneut versuchen',
 };
 
 export function siteCopy(lang: string): SiteCopy {
