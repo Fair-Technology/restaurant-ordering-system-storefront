@@ -1,10 +1,11 @@
-import React, { useId, useState } from 'react';
+import React, { useEffect, useId, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
 import type { LegalCopy } from '../../../utils/legalCopy';
 import type { CustomerAddress, DeliveryAddress } from '../../../api/orderEndpoints';
 import type { OrderCopy } from '../../../utils/orderCopy';
 import { addressFromForm } from '../../../utils/address';
+import { readCheckoutDetails, writeCheckoutDetails } from '../../../utils/checkoutDetails';
 
 export interface CustomerFormData {
   name: string;
@@ -93,25 +94,45 @@ const CustomerDetailsForm: React.FC<CustomerDetailsFormProps> = ({
   children,
 }) => {
   const uid = useId();
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [notes, setNotes] = useState('');
-  const [address, setAddress] = useState<CustomerAddress>({
-    street: '',
-    postcode: '',
-    city: '',
-    country: '',
-  });
-  const [billingOpen, setBillingOpen] = useState(false);
+  // What the diner typed earlier in this tab (a trip back to the menu re-mounts this form); read once.
+  const [saved] = useState(() => readCheckoutDetails(slug, Date.now()));
+  const [name, setName] = useState(saved?.name ?? '');
+  const [email, setEmail] = useState(saved?.email ?? '');
+  const [phone, setPhone] = useState(saved?.phone ?? '');
+  const [notes, setNotes] = useState(saved?.notes ?? '');
+  const [address, setAddress] = useState<CustomerAddress>(
+    saved?.address ?? {
+      street: '',
+      postcode: '',
+      city: '',
+      country: '',
+    },
+  );
+  const [billingOpen, setBillingOpen] = useState(saved?.billingOpen ?? false);
   const showBilling = addressRequired || billingOpen;
   // Until the diner edits the country, it follows the default, which can change once the shop's
   // language has loaded (Germany → Deutschland). Captured once, a stale default looked like typed input.
-  const [countryEdited, setCountryEdited] = useState(false);
+  const [countryEdited, setCountryEdited] = useState(saved?.countryEdited ?? false);
   const country = countryEdited ? address.country : defaultCountry;
-  const [deliveryStreet, setDeliveryStreet] = useState('');
-  const [deliveryCity, setDeliveryCity] = useState('');
+  const [deliveryStreet, setDeliveryStreet] = useState(saved?.deliveryStreet ?? '');
+  const [deliveryCity, setDeliveryCity] = useState(saved?.deliveryCity ?? '');
   const [addressError, setAddressError] = useState<string | null>(null);
+
+  useEffect(() => {
+    writeCheckoutDetails({
+      slug,
+      name,
+      email,
+      phone,
+      notes,
+      address,
+      countryEdited,
+      billingOpen,
+      deliveryStreet,
+      deliveryCity,
+      savedAt: Date.now(),
+    });
+  }, [slug, name, email, phone, notes, address, countryEdited, billingOpen, deliveryStreet, deliveryCity]);
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
