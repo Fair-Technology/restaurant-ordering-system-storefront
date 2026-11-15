@@ -3,6 +3,8 @@ import { handleShell } from '../lib/shell.js';
 
 const shellCache = new Map();
 const metaCache = new Map();
+// Platform name is platform-global (not per-origin), so this cache is module-level and persists across invocations.
+const platformCache = new Map();
 
 // Route: staticwebapp.config.json `routes` rewrites /shops/* and /legal/* here. The ORIGINAL path is only
 // available in x-ms-original-url (a navigationFallback rewrite would hide it).
@@ -18,6 +20,7 @@ app.http('shopShell', {
           fetch,
           shellCache,
           metaCache,
+          platformCache,
           // SSRF guard: only serve the origin the request actually arrived on.
           // On SWA managed Functions `host` is the internal *.azurewebsites.net host (see lib/shell.js).
           expectedHost: request.headers.get('x-forwarded-host') || request.headers.get('host'),

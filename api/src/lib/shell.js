@@ -14,6 +14,8 @@ export const META_NEGATIVE_TTL_MS = 30_000;
 export const SHOP_TIMEOUT_MS = 1_000;
 export const NOINDEX_TAG = '<meta name="robots" content="noindex, nofollow">';
 export const FALLBACK_IMAGE_PATH = '/og-fallback.png'; // 1200x630 raster in public/ — social crawlers do not render SVG
+export const PLATFORM_DESCRIPTION = 'Order online directly from your favourite local restaurants.';
+export const DEFAULT_PLATFORM_NAME = 'Fair Technology';
 
 const SLUG_RE = /^[a-z0-9][a-z0-9-]{0,63}$/i;
 const HOST_RE = /^[a-z0-9.-]+(:\d{1,5})?$/i;
@@ -97,7 +99,9 @@ export function classify(pathname) {
   const parts = p.split('/').filter(Boolean);
   const noindex = parts[0] === 'shops' || parts[0] === 'legal';
   const slug = parts[0] === 'shops' && parts.length === 2 && SLUG_RE.test(parts[1]) ? parts[1] : null;
-  return { noindex, slug };
+  // platform: the bare front page (`/`), i.e. zero non-empty segments after trailing-slash normalisation.
+  const platform = !noindex && parts.length === 0;
+  return { noindex, slug, platform };
 }
 
 function absoluteHttps(url, origin) {
@@ -140,6 +144,25 @@ export function buildHead({ noindex, meta, slug, origin }) {
   return tags.join('\n    ');
 }
 
+/** Generic, indexable platform og card for the bare front page `/` (sales site — no noindex). */
+export function buildPlatformHead({ platformName, origin }) {
+  const name = platformName || DEFAULT_PLATFORM_NAME;
+  return [
+    `<meta property="og:type" content="website">`,
+    `<meta property="og:title" content="${escapeHtml(name)}">`,
+    `<meta property="og:description" content="${escapeHtml(PLATFORM_DESCRIPTION)}">`,
+    `<meta property="og:url" content="${escapeHtml(`${origin}/`)}">`,
+    `<meta property="og:image" content="${escapeHtml(absoluteHttps(FALLBACK_IMAGE_PATH, origin))}">`,
+    `<meta name="description" content="${escapeHtml(PLATFORM_DESCRIPTION)}">`,
+  ].join('\n    ');
+}
+
+/** Self-contained indexable page for the front page when no shell is available: platform card + visible copy, no robots meta. */
+export function platformPage(meta, origin) {
+  const name = (meta && meta.platformName) || DEFAULT_PLATFORM_NAME;
+  return `<!doctype html><html lang="en"><head><meta charset="UTF-8">${buildPlatformHead({ platformName: name, origin })}<meta name="viewport" content="width=device-width, initial-scale=1.0"></head><body><h1>${escapeHtml(name)}</h1><p>${escapeHtml(PLATFORM_DESCRIPTION)}</p></body></html>`;
+}
+
 export function injectIntoShell(shell, headTags) {
   if (shell.includes(MARKER)) return shell.replace(MARKER, () => headTags);
   if (/<\/head>/i.test(shell)) return shell.replace(/<\/head>/i, () => `${headTags}\n</head>`);
@@ -158,11 +181,31 @@ async function fetchText(fetchFn, url, timeoutMs) {
 }
 
 /**
+ * Resolve the platform display name from the anonymous `GET <backendBase>/legal/platform`
+ * (PlatformLegalPublicDto.platformName). Platform-global, so cached under one key with META_TTL_MS.
+ * On failure nothing new is cached: fall back to the cached (even stale) name, then DEFAULT_PLATFORM_NAME.
+ */
+async function fetchPlatformName(fetchFn, backendBase, platformCache, now) {
+  if (!backendBase) return DEFAULT_PLATFORM_NAME;
+  const cached = platformCache.get('platform');
+  if (cached && now() < cached.expires) return cached.name;
+  try {
+    const raw = JSON.parse(await fetchText(fetchFn, `${backendBase.replace(/\/+$/, '')}/legal/platform`, SHOP_TIMEOUT_MS));
+    const rawName = raw && typeof raw.platformName === 'string' ? raw.platformName.trim() : '';
+    const name = rawName || DEFAULT_PLATFORM_NAME;
+    platformCache.set('platform', { name, expires: now() + META_TTL_MS });
+    return name;
+  } catch {
+    return cached ? cached.name : DEFAULT_PLATFORM_NAME;
+  }
+}
+
+/**
  * Build the response. Never throws; always status 200.
  * deps: { fetch, now, shellCache: Map, metaCache: Map, backendBase, expectedHost, shellHosts }
  */
 export async function handleShell({ originalUrl, deps }) {
-  const { fetch: fetchFn, now = Date.now, shellCache, metaCache, backendBase, expectedHost, shellHosts } = deps;
+  const { fetch: fetchFn, now = Date.now, shellCache, metaCache, platformCache = new Map(), backendBase, expectedHost, shellHosts } = deps;
   const headers = {
     'content-type': 'text/html; charset=utf-8',
     'x-robots-tag': 'noindex, nofollow',
@@ -174,8 +217,9 @@ export async function handleShell({ originalUrl, deps }) {
   if (!parsed) return { status: 200, headers, body: minimalPage() };
 
   const { origin, pathname } = parsed;
-  const { slug } = classify(pathname);
-  // The route rule only sends /shops/* and /legal/* here, so noindex is unconditional (fail safe).
+  const { slug, platform } = classify(pathname);
+  // The route rule sends /shops/*, /legal/* AND the bare `/` here. noindex is unconditional for the
+  // former (fail safe); `/` is the sales site, so it stays indexable and gains a platform og card.
 
   // --- shell: per-origin cache, last-good on failure ---
   let shell = null;
@@ -190,7 +234,16 @@ export async function handleShell({ originalUrl, deps }) {
       shell = cached ? cached.html : null; // last-good (stale) if any
     }
   }
-  if (!shell) return { status: 200, headers, body: minimalPage() };
+  if (!shell) {
+    // Cold-cache shell failure. `/` must stay indexable + carded (sales site); every other path serves the noindex minimal page.
+    if (platform) {
+      const name = await fetchPlatformName(fetchFn, backendBase, platformCache, now);
+      const pageHeaders = { ...headers };
+      delete pageHeaders['x-robots-tag'];
+      return { status: 200, headers: pageHeaders, body: platformPage({ platformName: name }, origin) };
+    }
+    return { status: 200, headers, body: minimalPage() };
+  }
 
   // --- meta: per-shop cache, only for the shop landing path ---
   let meta = null;
@@ -216,6 +269,13 @@ export async function handleShell({ originalUrl, deps }) {
         metaCache.set(key, { meta, expires: now() + META_NEGATIVE_TTL_MS });
       }
     }
+  }
+
+  if (platform) {
+    const name = await fetchPlatformName(fetchFn, backendBase, platformCache, now);
+    const pageHeaders = { ...headers };
+    delete pageHeaders['x-robots-tag'];
+    return { status: 200, headers: pageHeaders, body: injectIntoShell(shell, buildPlatformHead({ platformName: name, origin })) };
   }
 
   const head = buildHead({ noindex: true, meta, slug, origin });

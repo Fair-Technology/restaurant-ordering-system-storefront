@@ -1,5 +1,6 @@
 {
   "routes": [
+    { "route": "/", "rewrite": "/api/shopShell" },
     { "route": "/shops/*", "rewrite": "/api/shopShell" },
     { "route": "/legal/*", "rewrite": "/api/shopShell" }
   ],
