@@ -1,6 +1,6 @@
 // Pure logic for the /shops/* + /legal/* shell Function (spec §14). No Azure imports so it is unit-testable.
 //
-// Invariants (see docs/specs.md §16, "Storefront, URL and going live"):
+// Invariants (see rs-backend/docs/specs.md §16, "Storefront, URL and going live"):
 //  - noindex is PATH-derived and injected on every response, independent of any fetch.
 //  - Every failure path is HTTP 200 at the same URL. Never 3xx, never 5xx.
 //  - The shell is fetched live from the REQUEST's own origin (never configured / baked).
