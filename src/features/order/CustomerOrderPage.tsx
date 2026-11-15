@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
-import { Bike, Check, Download, Mail, MapPin, Phone, ShieldCheck, ShoppingBag, UtensilsCrossed, X } from 'lucide-react';
+import { Bike, Check, Clock, Download, Mail, MapPin, Phone, ShieldCheck, ShoppingBag, UtensilsCrossed, X } from 'lucide-react';
 import NavBar from '../../shared/NavBar';
 import Footer from '../../shared/Footer';
 import ConfirmModal from '../../shared/ConfirmModal';
@@ -427,6 +427,18 @@ const CustomerOrderPage: React.FC = () => {
                     );
                   })}
                 </ol>
+              )}
+
+              {order?.paymentHeld && (
+                <div
+                  role="status"
+                  className="flex items-start gap-3 rounded-2xl bg-[#fbf3e6] px-4 py-3.5 text-[15px] leading-relaxed text-[#7a4b0f]"
+                >
+                  <Clock className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
+                  <p>
+                    <strong>{copy.paymentHeldNotice}</strong>
+                  </p>
+                </div>
               )}
 
               {notCharged && (

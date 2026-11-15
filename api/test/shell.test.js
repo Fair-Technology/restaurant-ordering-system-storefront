@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { handleShell, escapeHtml, classify, parseOriginalUrl, parseShellHosts, isAllowedShellHost } from '../src/lib/shell.js';
+import { handleShell, escapeHtml, classify, parseOriginalUrl, parseShellHosts, isAllowedShellHost, applyTitle, PLATFORM_DESCRIPTION, DEFAULT_PLATFORM_NAME } from '../src/lib/shell.js';
 
 const ORIGIN = 'https://store.example.com';
 const SHELL = '<html><head><!--og-inject--><title>x</title><script type="module" src="/assets/a-123.js"></script></head><body></body></html>';
@@ -8,11 +8,15 @@ const SHOPS = {
   fish: { name: 'Fish & Chips', address: { city: 'Leeds' }, branding: { heroImageUrl: 'https://cdn.example.com/h.jpg', logoUrl: null } },
   bare: { name: 'Bare Cafe', address: {}, branding: { heroImageUrl: null, logoUrl: null } },
 };
-function mkFetch({ shell = SHELL, shopFail, shopHang, shellFail, origin = ORIGIN } = {}) {
+function mkFetch({ shell = SHELL, shopFail, shopHang, shellFail, platformFail, origin = ORIGIN } = {}) {
   return async (url, opts) => {
     if (url === `${origin}/index.html`) {
       if (shellFail) throw new Error('down');
       return { ok: true, text: async () => shell };
+    }
+    if (/\/legal\/platform$/.test(url)) {
+      if (platformFail) throw new Error('down');
+      return { ok: true, text: async () => JSON.stringify({ platformName: 'Fair Technology', salesSiteUrl: null }) };
     }
     const m = /\/shops\/slug\/([^/]+)$/.exec(url);
     if (shopHang) return new Promise((_, rej) => opts.signal.addEventListener('abort', () => rej(new Error('timeout'))));
@@ -36,10 +40,21 @@ test('T1/T2/T3 shop landing: 200 html, per-shop og, fallback image', async () =>
   assert.match(a.body, /og:description" content="Fish &amp; Chips · Leeds"/);
   assert.match(a.body, /og:image" content="https:\/\/cdn.example.com\/h.jpg"/);
   assert.match(a.body, /og:url" content="https:\/\/store.example.com\/shops\/fish"/);
+  assert.match(a.body, /<title>Fish &amp; Chips<\/title>/);
+  assert.equal(a.body.match(/<title[ >]/g).length, 1);
   const b = await run('/shops/bare');
   assert.match(b.body, /og:title" content="Bare Cafe"/);
   assert.match(b.body, /og:image" content="https:\/\/store.example.com\/og-fallback.png"/);
   assert.match(b.body, /src="\/assets\/a-123.js"/); // live shell kept
+  assert.equal(b.body.match(/<title[ >]/g).length, 1);
+});
+
+test('shop read fails, shell live: shipped title stays, exactly one <title>, noindex', async () => {
+  for (const r of [await run('/shops/unknown'), await run('/shops/fish', mkFetch({ shopFail: true }))]) {
+    assert.match(r.body, /<title>x<\/title>/); // the shipped index.html title, left untouched (fail-open)
+    assert.equal(r.body.match(/<title[ >]/g).length, 1);
+    assert.match(r.body, NOINDEX);
+  }
 });
 
 test('T4/T5 no og + noindex on sub-paths and /legal/*', async () => {
@@ -118,12 +133,72 @@ test('SSRF guard: foreign x-ms-original-url host -> minimal page, no fetch, noin
 
 test('helpers', () => {
   assert.equal(escapeHtml(`a&"<'`), 'a&amp;&quot;&lt;&#39;');
-  assert.deepEqual(classify('/shops/x/'), { noindex: true, slug: 'x' });
-  assert.deepEqual(classify('/shops/x/orders/1'), { noindex: true, slug: null });
+  assert.deepEqual(classify('/shops/x/'), { noindex: true, slug: 'x', platform: false });
+  assert.deepEqual(classify('/shops/x/orders/1'), { noindex: true, slug: null, platform: false });
+  assert.deepEqual(classify('/'), { noindex: false, slug: null, platform: true });
+  assert.deepEqual(classify('//'), { noindex: false, slug: null, platform: true });
+  assert.deepEqual(classify('/legal/terms/'), { noindex: true, slug: null, platform: false });
   assert.equal(parseOriginalUrl('https://evil host/'), null);
   assert.equal(parseOriginalUrl('ftp://a.com/'), null);
   assert.equal(parseOriginalUrl('https://other.example/shops/x', 'store.example.com'), null);
   assert.equal(parseOriginalUrl('https://store.example.com/shops/x', 'store.example.com').pathname, '/shops/x');
+  assert.equal(applyTitle('<head><title>old</title></head>', 'New & Co'), '<head><title>New &amp; Co</title></head>');
+  assert.equal(applyTitle('<head></head>', null), '<head></head>');
+});
+
+// --- Platform front page `/`: indexable, generic og card (spec: sales site, unlike /shops/* + /legal/*) ---
+const OG_PLATFORM_DESC = `og:description" content="${PLATFORM_DESCRIPTION}"`;
+
+test('platform: GET / serves indexable og card, live shell kept, no x-robots-tag', async () => {
+  const r = await run('/');
+  assert.equal(r.status, 200);
+  assert.match(r.headers['content-type'], /text\/html/);
+  assert.equal(r.headers['x-robots-tag'], undefined);
+  assert.doesNotMatch(r.body, /name="robots"/);
+  assert.match(r.body, /og:type" content="website"/);
+  assert.match(r.body, new RegExp(`og:title" content="${DEFAULT_PLATFORM_NAME}"`));
+  assert.ok(r.body.includes(OG_PLATFORM_DESC), 'og:description present');
+  assert.match(r.body, /og:url" content="https:\/\/store\.example\.com\/"/);
+  assert.match(r.body, /og:image" content="https:\/\/store\.example\.com\/og-fallback\.png"/);
+  assert.match(r.body, new RegExp(`<meta name="description" content="${PLATFORM_DESCRIPTION}">`));
+  assert.match(r.body, /<title>Fair Technology<\/title>/);
+  assert.equal(r.body.match(/<title[ >]/g).length, 1);
+  assert.match(r.body, /src="\/assets\/a-123\.js"/); // live shell kept
+});
+
+test('platform: GET / when /legal/platform fails -> default name, indexable, carded', async () => {
+  const r = await run('/', mkFetch({ platformFail: true }));
+  assert.equal(r.status, 200);
+  assert.equal(r.headers['x-robots-tag'], undefined);
+  assert.doesNotMatch(r.body, /name="robots"/);
+  assert.match(r.body, /og:title" content="Fair Technology"/);
+  assert.match(r.body, /og:image" content="https:\/\/store\.example\.com\/og-fallback\.png"/);
+  assert.match(r.body, /src="\/assets\/a-123\.js"/); // live shell still kept
+});
+
+test('platform: GET / shell fails cold cache -> indexable platform page, not minimal', async () => {
+  const r = await run('/', mkFetch({ shellFail: true }));
+  assert.equal(r.status, 200);
+  assert.equal(r.headers['x-robots-tag'], undefined);
+  assert.doesNotMatch(r.body, /name="robots"/);
+  assert.doesNotMatch(r.body, /Shop unavailable/);
+  assert.match(r.body, /og:type" content="website"/);
+  assert.match(r.body, /og:title" content="Fair Technology"/);
+  assert.match(r.body, /og:url" content="https:\/\/store\.example\.com\/"/);
+  assert.match(r.body, /og:image" content="https:\/\/store\.example\.com\/og-fallback\.png"/);
+  assert.match(r.body, /<title>Fair Technology<\/title>/);
+  assert.equal(r.body.match(/<title[ >]/g).length, 1);
+  assert.match(r.body, /<h1>/);
+});
+
+test('platform: name fetched at most once across two / requests sharing platformCache', async () => {
+  let platformHits = 0;
+  const inner = mkFetch();
+  const f = (u, o) => (/\/legal\/platform$/.test(u) && platformHits++, inner(u, o));
+  const deps = { fetch: f, shellCache: new Map(), metaCache: new Map(), platformCache: new Map(), backendBase: 'https://be/api' };
+  await handleShell({ originalUrl: `${ORIGIN}/`, deps });
+  await handleShell({ originalUrl: `${ORIGIN}/`, deps });
+  assert.equal(platformHits, 1);
 });
 
 // --- SWA managed Functions: Host is the internal *.azurewebsites.net host, x-forwarded-host is absent ---

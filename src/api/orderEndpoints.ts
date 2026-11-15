@@ -270,6 +270,7 @@ export interface CustomerOrderDto {
   currency: string;
   createdAt: string;
   canCancel: boolean;
+  paymentHeld?: boolean; // absent on a backend from before the held-payment flag
   rejectionReason: RejectReason | null;
 }
 

@@ -26,4 +26,16 @@ export default defineConfig([
       'no-unused-vars': ['error', { varsIgnorePattern: '^[A-Z_]' }],
     },
   },
+  // api/ is the Azure Static Web App managed Function: plain Node (ESM, see
+  // api/package.json "type": "module"), not browser code. It legitimately
+  // uses Node globals such as `process`, so give it globals.node instead of
+  // the browser globals the SPA block above applies.
+  {
+    files: ['api/**/*.js'],
+    languageOptions: {
+      ecmaVersion: 2020,
+      globals: globals.node,
+      parserOptions: { ecmaVersion: 'latest', sourceType: 'module' },
+    },
+  },
 ])
