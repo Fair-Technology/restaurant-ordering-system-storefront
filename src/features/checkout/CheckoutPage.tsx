@@ -41,6 +41,7 @@ import { useTableSession } from '../../hooks/useTableSession';
 import { readTableSession } from '../../utils/tableSession';
 import { useDeliverySession } from '../../hooks/useDeliverySession';
 import { chosenMode } from '../../utils/delivery';
+import { clearCheckoutDetails } from '../../utils/checkoutDetails';
 import { stripeForAccount } from '../../utils/stripe';
 import { paymentBreakdown, type SentCharges } from './paymentBreakdown';
 import QuoteNotice from './components/QuoteNotice';
@@ -277,6 +278,7 @@ const CheckoutPage: React.FC = () => {
     if ('data' in res && res.data) {
       if (res.data.kind === 'placed') {
         dispatch(clearCart());
+        clearCheckoutDetails(slug ?? '');
         navigate(orderPath(slug, res.data.orderId, res.data.accessToken), { replace: true });
       } else {
         setSentCharges({ deliveryFeeCents: sentFee, discount: sentDiscount });
@@ -342,6 +344,7 @@ const CheckoutPage: React.FC = () => {
   function handlePaymentSuccess() {
     if (!checkoutData) return;
     dispatch(clearCart());
+    clearCheckoutDetails(slug ?? '');
     navigate(orderPath(slug, checkoutData.orderId, checkoutData.accessToken), { replace: true });
   }
 
