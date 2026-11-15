@@ -43,6 +43,12 @@ interface Step {
  * Sent → Accepted → On the way → Delivered (delivery). `null` order = payment still being confirmed.
  * Orders a restaurant accepts automatically simply arrive already accepted.
  */
+// Only a genuine 404 means the link/order does not exist. Anything else — 5xx, 401/403,
+// 'FETCH_ERROR', 'TIMEOUT', 'PARSING_ERROR' — is a load failure the diner can retry.
+function isOrderNotFound(error: unknown): boolean {
+  return (error as { status?: unknown } | undefined)?.status === 404;
+}
+
 function progressSteps(order: CustomerOrderDto | null, copy: OrderCopy, time: string): Step[] {
   const delivery = order?.fulfilmentMode === 'delivery';
   const state = order?.state ?? 'CONFIRMING';
@@ -84,10 +90,19 @@ const CustomerOrderPage: React.FC = () => {
   const branding = resolveShopBranding((shopData as ShopWithBranding | undefined)?.branding);
   const brandStyle = useBrandingStyle(branding);
 
-  const { data, isLoading, isError, error } = useViewCustomerOrderQuery(
+  const { data, isLoading, isError, error, refetch, isFetching } = useViewCustomerOrderQuery(
     { orderId: orderId ?? '', body: { token } },
     { skip: !orderId },
   );
+  const [retrying, setRetrying] = useState(false);
+  async function handleRetry() {
+    setRetrying(true);
+    try {
+      await refetch();
+    } finally {
+      setRetrying(false);
+    }
+  }
   const [graceOver, setGraceOver] = useState(false);
   useEffect(() => {
     const timer = setTimeout(() => setGraceOver(true), NOT_FOUND_GRACE_MS);
@@ -260,16 +275,29 @@ const CustomerOrderPage: React.FC = () => {
       </div>
 
       <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-5 px-4 pb-14 pt-6 sm:px-6 lg:pt-8">
-        {(isLoading || (isRetrying && !order)) && !isConfirming && (
+        {(isLoading || retrying || (isRetrying && !order)) && !isConfirming && (
           <div className={`${card} flex items-center gap-3 text-[#5c524b]`}>
             <span className="h-5 w-5 animate-spin rounded-full border-2 border-[#e3d9ce] border-t-gray-900" aria-hidden="true" />
             {copy.loading}
           </div>
         )}
-        {isError && !isConfirming && !isRetrying && !order && (
+        {isError && !isConfirming && !isRetrying && !retrying && !order && (wasConfirming || isOrderNotFound(error)) && (
           <p role="alert" className="rounded-2xl bg-[#fdecea] px-5 py-4 text-[15px] text-[#8a1f12]">
             {wasConfirming ? copy.confirmFailed : copy.orderNotFound}
           </p>
+        )}
+        {isError && !isConfirming && !isRetrying && !retrying && !order && !wasConfirming && !isOrderNotFound(error) && (
+          <div role="alert" className="flex flex-col items-start gap-3 rounded-2xl bg-[#fdecea] px-5 py-4 text-[15px] text-[#8a1f12]">
+            <p>{copy.orderLoadFailed}</p>
+            <button
+              type="button"
+              onClick={handleRetry}
+              disabled={retrying || isFetching}
+              className="inline-flex min-h-11 items-center justify-center rounded-full border-[1.5px] border-[#8a1f12] bg-white px-5 text-sm font-bold text-[#8a1f12] hover:bg-[#faf6f1] disabled:opacity-50"
+            >
+              {copy.retryLoad}
+            </button>
+          </div>
         )}
 
         {(order || isConfirming) && (
