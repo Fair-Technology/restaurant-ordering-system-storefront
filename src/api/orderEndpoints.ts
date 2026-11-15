@@ -61,6 +61,7 @@ export type RejectReason =
   | 'other'
   | 'no_response'
   | 'payment_failed'
+  | 'payment_unavailable'
   | 'shop_unavailable';
 
 export interface CustomerAddress {

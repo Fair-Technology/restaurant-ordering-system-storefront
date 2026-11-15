@@ -297,6 +297,8 @@ const en: OrderCopy = {
     other: 'The restaurant could not take your order.',
     no_response: 'The restaurant did not confirm your order in time.',
     payment_failed: 'The payment could not be completed when the restaurant accepted.',
+    payment_unavailable:
+      'We had a technical problem completing your payment — it is not your card and not the restaurant. You have not been charged; the amount reserved on your card is released.',
     shop_unavailable: 'The restaurant is not taking orders right now.',
   },
   cancelOrder: 'Cancel order',
@@ -580,6 +582,8 @@ const de: OrderCopy = {
     other: 'Das Restaurant konnte Ihre Bestellung nicht annehmen.',
     no_response: 'Das Restaurant hat Ihre Bestellung nicht rechtzeitig bestätigt.',
     payment_failed: 'Die Zahlung konnte bei der Annahme nicht abgeschlossen werden.',
+    payment_unavailable:
+      'Beim Abschluss Ihrer Zahlung ist ein technisches Problem aufgetreten — es liegt nicht an Ihrer Karte und nicht am Restaurant. Es wurde nichts abgebucht; die reservierte Summe wird freigegeben.',
     shop_unavailable: 'Das Restaurant nimmt gerade keine Bestellungen an.',
   },
   cancelOrder: 'Bestellung stornieren',
