@@ -97,7 +97,7 @@ const ShopNoticeModal: React.FC<ShopNoticeModalProps> = ({ kind, title, lines, p
           ref={okRef}
           type="button"
           onClick={onClose}
-          className="mt-5 h-12 w-full rounded-full bg-gray-900 text-base font-bold text-white transition-colors hover:bg-black focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-accent)] focus-visible:ring-offset-2"
+          className="mt-5 h-12 w-full rounded-full bg-gray-900 text-base font-bold text-white transition-colors hover:bg-black focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--brand-accent)] focus-visible:ring-offset-2"
         >
           {okLabel}
         </button>

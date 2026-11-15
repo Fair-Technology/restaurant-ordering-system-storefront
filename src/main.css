@@ -1,6 +1,71 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme {
+  /* Primary brand colour (orange CTA) */
+  --color-primary: #FF8C32;
+  --color-primary-50: #FFF4E9;
+  --color-primary-100: #FFE3CC;
+  --color-primary-200: #FFC199;
+  --color-primary-300: #FF9F66;
+  --color-primary-400: #FF7C33;
+  --color-primary-500: #FF8C32;
+  --color-primary-600: #E67828;
+  --color-primary-700: #B55B1D;
+
+  /* Neutral / secondary (charcoal gray) */
+  --color-secondary: #2C2C2C;
+  --color-secondary-50: #F2F2F2;
+  --color-secondary-100: #E0E0E0;
+  --color-secondary-200: #B3B3B3;
+  --color-secondary-300: #808080;
+  --color-secondary-400: #4D4D4D;
+  --color-secondary-500: #2C2C2C;
+  --color-secondary-600: #1F1F1F;
+  --color-secondary-700: #141414;
+
+  /* Accent (golden yellow for badges/highlights) */
+  --color-accent: #FFC107;
+  --color-accent-50: #FFF8E1;
+  --color-accent-100: #FFECB3;
+  --color-accent-200: #FFE082;
+  --color-accent-300: #FFD54F;
+  --color-accent-400: #FFCA28;
+  --color-accent-500: #FFC107;
+  --color-accent-600: #FFB300;
+  --color-accent-700: #FFA000;
+
+  --color-sidebar-bg: #2c3e50;
+  --color-sidebar-hover: #34495e;
+  --color-sidebar-active: #3498db;
+
+  --font-sans: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  /* Headings: shop name, category titles, dish names in the popup (self-hosted, no Google request) */
+  --font-display: "Fraunces Variable", Georgia, serif;
+
+  --background-image-app-gradient: linear-gradient(to right, white, #FFF8F0, #FFF0E0);
+
+  /* spacing-15 (3.75rem) and border-3 (3px) need no tokens: v4 derives
+     numeric spacing from --spacing (0.25rem) and border-<n> is n px. */
+}
+
+@layer base {
+  /* v4 compat: keep v3 defaults for bare `border` / placeholders / buttons */
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentColor);
+  }
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-gray-400);
+  }
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
 
 @layer base {
   html {

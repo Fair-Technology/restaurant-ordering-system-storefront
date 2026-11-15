@@ -30,7 +30,7 @@ const PlatformHeader: React.FC<{ showLanguage?: boolean }> = ({ showLanguage = t
   return (
     <header className="border-b border-[#f1ebe4] bg-white">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:h-[68px] sm:px-6">
-        <Link to="/" className="rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-900">
+        <Link to="/" className="rounded-lg focus:outline-hidden focus-visible:ring-2 focus-visible:ring-gray-900">
           <PlatformMark />
         </Link>
         {showLanguage && (

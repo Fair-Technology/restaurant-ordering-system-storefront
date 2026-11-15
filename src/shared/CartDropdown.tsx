@@ -115,7 +115,7 @@ const CartDropdown: React.FC<CartDropdownProps> = ({ dropdownRef, style, onClose
         type="button"
         onClick={onClose}
         aria-label={copy.productClose}
-        className={`flex items-center justify-center rounded-full bg-[#f4efe9] text-gray-700 hover:bg-[#ebe4dc] focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-accent)] ${phone ? 'h-11 w-11' : 'h-9 w-9'}`}
+        className={`flex items-center justify-center rounded-full bg-[#f4efe9] text-gray-700 hover:bg-[#ebe4dc] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--brand-accent)] ${phone ? 'h-11 w-11' : 'h-9 w-9'}`}
       >
         <X className="h-4 w-4" aria-hidden="true" />
       </button>
@@ -254,7 +254,7 @@ const CartDropdown: React.FC<CartDropdownProps> = ({ dropdownRef, style, onClose
           onClose();
           onCheckout?.();
         }}
-        className="flex h-[52px] items-center justify-between gap-2 rounded-full bg-[var(--brand-accent)] px-[22px] text-base font-bold text-[var(--brand-on-accent)] shadow-sm transition-transform active:scale-[0.98]"
+        className="flex h-[52px] items-center justify-between gap-2 rounded-full bg-[var(--brand-accent)] px-[22px] text-base font-bold text-[var(--brand-on-accent)] shadow-xs transition-transform active:scale-[0.98]"
       >
         <span>{copy.cartCheckout}</span>
         <span className="flex items-center gap-2">

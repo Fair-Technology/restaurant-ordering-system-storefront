@@ -245,7 +245,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
       type="button"
       onClick={dismiss}
       aria-label={copy.productClose}
-      className={`h-11 w-11 items-center justify-center rounded-full text-gray-800 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-accent)] ${className}`}
+      className={`h-11 w-11 items-center justify-center rounded-full text-gray-800 transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--brand-accent)] ${className}`}
     >
       <X className="h-5 w-5" aria-hidden="true" />
     </button>
@@ -274,7 +274,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className="relative z-[1001] flex h-[100dvh] w-full flex-col overflow-hidden bg-white text-gray-900 shadow-2xl focus:outline-none md:grid md:h-[min(720px,90vh)] md:max-w-[980px] md:grid-cols-[340px_minmax(0,1fr)] md:grid-rows-[auto_minmax(0,1fr)_auto] md:rounded-2xl"
+        className="relative z-[1001] flex h-[100dvh] w-full flex-col overflow-hidden bg-white text-gray-900 shadow-2xl focus:outline-hidden md:grid md:h-[min(720px,90vh)] md:max-w-[980px] md:grid-cols-[340px_minmax(0,1fr)] md:grid-rows-[auto_minmax(0,1fr)_auto] md:rounded-2xl"
       >
         {/* Phone: this wrapper is the single scroll area. md+: it dissolves (display: contents) into the grid. */}
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain md:contents">
@@ -538,7 +538,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
               type="button"
               onClick={handleAddToCart}
               disabled={addonsIncomplete}
-              className="flex h-auto min-h-[52px] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-full bg-[var(--brand-accent)] px-4 py-1.5 text-center text-[15px] font-bold text-[var(--brand-on-accent)] shadow-sm transition-transform active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 md:px-6 md:text-base"
+              className="flex h-auto min-h-[52px] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-full bg-[var(--brand-accent)] px-4 py-1.5 text-center text-[15px] font-bold text-[var(--brand-on-accent)] shadow-xs transition-transform active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 md:px-6 md:text-base"
             >
               <span className="min-w-0 leading-tight">{editItemKey ? copy.productUpdateOrder : copy.productAddToOrder}</span>
               <span className="shrink-0 whitespace-nowrap text-[13px] font-semibold opacity-90 md:text-sm">{money.major(unitPrice * quantity)}</span>

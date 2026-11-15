@@ -60,7 +60,7 @@ const HomePage = () => {
               onChange={(e) => setQuery(e.target.value)}
               aria-label={copy.homeSearch}
               placeholder={copy.homeSearch}
-              className="min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-[#8a7f77]"
+              className="min-w-0 flex-1 bg-transparent text-base outline-hidden placeholder:text-[#8a7f77]"
             />
           </label>
         </div>

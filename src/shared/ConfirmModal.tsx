@@ -72,14 +72,14 @@ const ConfirmModal: React.FC<ConfirmModalProps> = ({
             ref={keepRef}
             type="button"
             onClick={onCancel}
-            className="h-12 w-full rounded-full sm:flex-1 border-[1.5px] border-[#e3d9ce] bg-white text-[15px] font-bold text-gray-900 transition-colors hover:bg-gray-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-gray-900 focus-visible:ring-offset-2"
+            className="h-12 w-full rounded-full sm:flex-1 border-[1.5px] border-[#e3d9ce] bg-white text-[15px] font-bold text-gray-900 transition-colors hover:bg-gray-50 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-gray-900 focus-visible:ring-offset-2"
           >
             {cancelLabel}
           </button>
           <button
             type="button"
             onClick={onConfirm}
-            className="h-12 w-full rounded-full sm:flex-1 bg-[#b42318] text-[15px] font-bold text-white transition-colors hover:bg-[#981b14] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#b42318] focus-visible:ring-offset-2"
+            className="h-12 w-full rounded-full sm:flex-1 bg-[#b42318] text-[15px] font-bold text-white transition-colors hover:bg-[#981b14] focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[#b42318] focus-visible:ring-offset-2"
           >
             {confirmLabel}
           </button>

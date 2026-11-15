@@ -179,7 +179,7 @@ const ComboModal: React.FC<ComboModalProps> = ({ product, isOpen, onClose, shopI
       type="button"
       onClick={dismiss}
       aria-label={copy.productClose}
-      className={`h-11 w-11 items-center justify-center rounded-full text-gray-800 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-accent)] ${className}`}
+      className={`h-11 w-11 items-center justify-center rounded-full text-gray-800 transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--brand-accent)] ${className}`}
     >
       <X className="h-5 w-5" aria-hidden="true" />
     </button>
@@ -243,7 +243,7 @@ const ComboModal: React.FC<ComboModalProps> = ({ product, isOpen, onClose, shopI
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className="relative z-[1001] flex h-[100dvh] w-full flex-col overflow-hidden bg-white text-gray-900 shadow-2xl focus:outline-none md:grid md:h-[min(760px,90vh)] md:max-w-[980px] md:grid-cols-[340px_minmax(0,1fr)] md:grid-rows-[auto_minmax(0,1fr)_auto] md:rounded-2xl"
+        className="relative z-[1001] flex h-[100dvh] w-full flex-col overflow-hidden bg-white text-gray-900 shadow-2xl focus:outline-hidden md:grid md:h-[min(760px,90vh)] md:max-w-[980px] md:grid-cols-[340px_minmax(0,1fr)] md:grid-rows-[auto_minmax(0,1fr)_auto] md:rounded-2xl"
       >
         {/* Phone: this wrapper is the single scroll area. md+: it dissolves (display: contents) into the grid. */}
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain md:contents">
@@ -444,7 +444,7 @@ const ComboModal: React.FC<ComboModalProps> = ({ product, isOpen, onClose, shopI
                                     type="button"
                                     aria-pressed={on}
                                     onClick={() => updatePick(group.id, { variantId: variant.id })}
-                                    className={`inline-flex min-h-10 items-center gap-1.5 rounded-full border-[1.5px] px-4 text-sm font-semibold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-accent)] ${
+                                    className={`inline-flex min-h-10 items-center gap-1.5 rounded-full border-[1.5px] px-4 text-sm font-semibold transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[var(--brand-accent)] ${
                                       on ? 'border-gray-900 bg-gray-900 text-white' : 'border-[#e3d9ce] bg-white hover:border-gray-400'
                                     }`}
                                   >
@@ -563,7 +563,7 @@ const ComboModal: React.FC<ComboModalProps> = ({ product, isOpen, onClose, shopI
               aria-disabled={!ready}
               className={`flex h-auto min-h-[52px] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-full px-4 py-1.5 text-center text-[15px] font-bold transition-transform md:px-6 md:text-base ${
                 ready
-                  ? 'bg-[var(--brand-accent)] text-[var(--brand-on-accent)] shadow-sm active:scale-[0.98]'
+                  ? 'bg-[var(--brand-accent)] text-[var(--brand-on-accent)] shadow-xs active:scale-[0.98]'
                   : 'bg-[#efe9e2] text-[#6b6058]'
               }`}
             >
