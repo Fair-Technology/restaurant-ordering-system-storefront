@@ -1,8 +1,9 @@
-import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useId, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Check, Minus, Plus, UtensilsCrossed, X } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { addItem } from '../../store/slices/cartSlice';
+import { useModalFocus } from '../../hooks/useModalFocus';
 import { useMoney } from '../../hooks/useMoney';
 import { menuLabels } from '../../utils/menuLabels';
 import { orderCopy } from '../../utils/orderCopy';
@@ -73,7 +74,7 @@ const ComboModal: React.FC<ComboModalProps> = ({ product, isOpen, onClose, shopI
   const copy = orderCopy(pageLanguageOf(currentChoice(storedLanguage, navigator.language)));
   const labels = menuLabels(product.language);
   const titleId = useId();
-  const dialogRef = useRef<HTMLDivElement>(null);
+  const dialogRef = useModalFocus(isOpen, onClose);
 
   const urlParts =
     typeof window !== 'undefined' ? window.location.pathname.split('/').filter(Boolean) : [];
@@ -91,22 +92,6 @@ const ComboModal: React.FC<ComboModalProps> = ({ product, isOpen, onClose, shopI
     setNudge(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
-
-  // While open: lock page scroll, close on Escape, move focus into the dialog
-  useEffect(() => {
-    if (!isOpen) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', onKey);
-    dialogRef.current?.focus();
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      document.removeEventListener('keydown', onKey);
-    };
-  }, [isOpen, onClose]);
 
   // Allergens and additives of every dish on offer in the combo, plus the sizes and extras picked inside it
   const { allergens, additives } = useMemo(() => {
