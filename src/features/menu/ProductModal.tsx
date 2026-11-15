@@ -1,9 +1,10 @@
-import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Check, Minus, Plus, UtensilsCrossed, X } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { addItem, removeItem } from '../../store/slices/cartSlice';
 import { useMoney } from '../../hooks/useMoney';
+import { useDismissClickGuard } from '../../hooks/useDismissClickGuard';
 import { menuLabels } from '../../utils/menuLabels';
 import { orderCopy } from '../../utils/orderCopy';
 import { currentChoice, pageLanguageOf } from '../../utils/pageLanguage';
@@ -106,6 +107,15 @@ const ProductModal: React.FC<ProductModalProps> = ({
   const labels = menuLabels(product.language);
   const titleId = useId();
   const dialogRef = useRef<HTMLDivElement>(null);
+  const guardDismissClick = useDismissClickGuard();
+
+  // Pointer closes arm the click guard first, so a double-click's stray second click cannot hit the
+  // page underneath. Escape does not arm it: a keyboard close is not followed by a second click, and
+  // the guard would swallow the user's next intentional click on the menu.
+  const dismiss = useCallback(() => {
+    guardDismissClick();
+    onClose();
+  }, [onClose, guardDismissClick]);
 
   // Fall back to the slug segment from the URL if shopId is not provided
   const urlParts =
@@ -234,7 +244,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
     };
     onAddToCart?.(payload);
     setQuantity(1);
-    onClose();
+    dismiss();
   }
 
   if (!isOpen) return null;
@@ -246,7 +256,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
   const closeButton = (className: string) => (
     <button
       type="button"
-      onClick={onClose}
+      onClick={dismiss}
       aria-label={copy.productClose}
       className={`h-11 w-11 items-center justify-center rounded-full text-gray-800 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-accent)] ${className}`}
     >
@@ -269,7 +279,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
 
   const modalContent = (
     <div className="fixed inset-0 z-[1000] flex items-stretch justify-center md:items-center md:p-6">
-      <div className="absolute inset-0 bg-black/45" onClick={onClose} aria-hidden="true" />
+      <div className="absolute inset-0 bg-black/45" onClick={dismiss} aria-hidden="true" />
 
       <div
         ref={dialogRef}
