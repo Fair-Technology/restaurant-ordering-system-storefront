@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import ShopView from './features/shop/ShopView';
 import LegalPage from './features/legal/LegalPage';
+import ContentReportPage from './features/legal/ContentReportPage';
 import SubProcessorsPage from './features/legal/SubProcessorsPage';
 import CustomerOrderPage from './features/order/CustomerOrderPage';
 import NotFound from './pages/NotFound';
@@ -30,6 +31,7 @@ const App: React.FC = () => {
           } />
         <Route path="/shops/:slug/orders/:orderId" element={<CustomerOrderPage />} />
         <Route path="/shops/:slug/legal/:doc" element={<LegalPage />} />
+        <Route path="/shops/:slug/report" element={<ContentReportPage />} />
         <Route path="/legal/sub-processors" element={<SubProcessorsPage />} />
         <Route path="/*" element={<NotFound />} />
       </Routes>
