@@ -301,7 +301,7 @@ test.describe('Card order', () => {
     await page.goto('/shops/test-shop/checkout');
 
     await expect(page.getByText('This restaurant cannot take online orders yet.')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Loading…' })).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'Continue to payment' })).toBeDisabled();
   });
 
   test('the diner can cancel before the restaurant accepts', async ({ page }) => {

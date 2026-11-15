@@ -51,6 +51,15 @@ async function mockLegal(page: Page, overrides: Record<string, unknown> = {}) {
   });
 }
 
+async function seedCart(page: Page) {
+  await page.addInitScript(() =>
+    localStorage.setItem(
+      'mewmew_cart_v1:test-shop',
+      JSON.stringify([{ key: 'p1::::', id: 'p1', name: 'Carbonara', price: 10.5, quantity: 1 }]),
+    ),
+  );
+}
+
 test.use({ locale: 'en-US' });
 
 test.describe('Legal pages', () => {
@@ -86,6 +95,7 @@ test.describe('Legal pages', () => {
   test('checkout shows the seller statement and allergy line', async ({ page }) => {
     await mockShop(page);
     await mockLegal(page);
+    await seedCart(page);
     await page.goto('/shops/test-shop/checkout');
 
     await expect(page.getByTestId('seller-statement')).toHaveText(
