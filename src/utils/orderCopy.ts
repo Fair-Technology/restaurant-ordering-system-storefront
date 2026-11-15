@@ -14,6 +14,10 @@ export interface OrderCopy {
   belowMinimum: (min: string) => string;
   termsChanged: string;
   orderFailed: string;
+  pricesUnavailable: string;
+  tryAgain: string;
+  couldNotLoadShop: string;
+  couldNotLoadShopText: string;
   yourOrder: (ref: string) => string;
   statusPlaced: (shop: string) => string;
   statusPlacedHint: string;
@@ -276,6 +280,10 @@ const en: OrderCopy = {
   termsChanged:
     'The restaurant has updated its terms. Please read them again, then place your order.',
   orderFailed: 'Your order could not be sent. Please try again.',
+  pricesUnavailable: "We couldn't load the prices for your order. Please try again.",
+  tryAgain: 'Try again',
+  couldNotLoadShop: 'We can’t load this restaurant',
+  couldNotLoadShopText: 'Something went wrong while loading the restaurant. Please try again.',
   yourOrder: (r) => `Order ${r}`,
   statusPlaced: (s) => `Waiting for ${s} to confirm your order`,
   statusPlacedHint:
@@ -560,6 +568,10 @@ const de: OrderCopy = {
   termsChanged:
     'Das Restaurant hat seine Bedingungen aktualisiert. Bitte lesen Sie sie erneut und bestellen Sie dann.',
   orderFailed: 'Ihre Bestellung konnte nicht gesendet werden. Bitte versuchen Sie es erneut.',
+  pricesUnavailable: 'Die Preise für Ihre Bestellung konnten nicht geladen werden. Bitte versuchen Sie es erneut.',
+  tryAgain: 'Erneut versuchen',
+  couldNotLoadShop: 'Dieses Restaurant kann nicht geladen werden',
+  couldNotLoadShopText: 'Beim Laden des Restaurants ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.',
   yourOrder: (r) => `Bestellung ${r}`,
   statusPlaced: (s) => `Warten auf Bestätigung durch ${s}`,
   statusPlacedHint:

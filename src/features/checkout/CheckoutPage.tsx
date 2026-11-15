@@ -6,6 +6,7 @@ import { Elements } from '@stripe/react-stripe-js';
 import { CheckoutPageSkeleton } from '../../shared/Skeletons';
 import NavBar from '../../shared/NavBar';
 import Footer from '../../shared/Footer';
+import NotFound from '../../pages/NotFound';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { setActiveShop, setResolvedMenuLanguage } from '../../store/slices/shopSlice';
 import { loadCart, selectCartItems, clearCart, removeItem, setItemPrice } from '../../store/slices/cartSlice';
@@ -69,9 +70,13 @@ const CheckoutPage: React.FC = () => {
 
   const cartItems = useAppSelector(selectCartItems);
 
-  const { data: shopData, isLoading: isShopLoading } = useGetShopBySlugQuery(slug ?? '', {
-    skip: !slug,
-  });
+  const {
+    data: shopData,
+    isLoading: isShopLoading,
+    isError: isShopError,
+    error: shopError,
+    refetch: refetchShop,
+  } = useGetShopBySlugQuery(slug ?? '', { skip: !slug });
   const resolvedShopData = shopData as ShopWithBranding | undefined;
   const resolvedShopId = shopData?.id ?? '';
   const resolvedBranding = resolveShopBranding(resolvedShopData?.branding);
@@ -116,9 +121,11 @@ const CheckoutPage: React.FC = () => {
   }, [dispatch, shopData?.id, shopData?.currency]);
 
   // Load cart from localStorage using the shop slug as the scope key
+  const [cartLoaded, setCartLoaded] = useState(false);
   useEffect(() => {
     if (!slug) return;
     dispatch(loadCart({ shopId: slug }));
+    setCartLoaded(true);
   }, [dispatch, slug]);
 
   // Checkout flow state
@@ -377,14 +384,69 @@ const CheckoutPage: React.FC = () => {
     window.scrollTo({ top: 0 });
   }, [step]);
 
-  if (isShopLoading) return <CheckoutPageSkeleton />;
+  if (isShopLoading || !cartLoaded) return <CheckoutPageSkeleton />;
+
+  // A link to a restaurant that isn't there: the same page the menu shows for 404
+  if (isShopError && shopError && 'status' in shopError && (shopError as { status?: number }).status === 404) {
+    return <NotFound kind="shop" />;
+  }
+
+  // The restaurant lookup itself failed (5xx / network): offer a retry instead of an endless "Loading…"
+  if (isShopError) {
+    return (
+      <div className="flex min-h-screen flex-col bg-[#faf6f1]">
+        <div className="sticky top-0 z-50">
+          <NavBar shopName="Online Ordering" shopId={slug ?? ''} logoUrl={null} />
+        </div>
+        <main className="mx-auto flex w-full max-w-2xl flex-1 items-center justify-center px-4 py-12">
+          <div className="flex w-full flex-col items-center gap-4 rounded-[20px] border border-[#efe7de] bg-white p-8 text-center" data-testid="shop-error">
+            <h1 className="font-display text-[28px] font-semibold leading-tight text-gray-900">{copy.couldNotLoadShop}</h1>
+            <p className="text-[15px] leading-relaxed text-[#5c524b]">{copy.couldNotLoadShopText}</p>
+            <button
+              type="button"
+              data-testid="retry-shop"
+              onClick={() => refetchShop()}
+              className="flex h-12 items-center justify-center rounded-full bg-gray-900 px-6 text-[15px] font-bold text-white"
+            >
+              {copy.tryAgain}
+            </button>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  // Nothing in the basket: no details form, and certainly no "Loading…"
+  if (cartItems.length === 0 && step === 'info') {
+    return (
+      <div className="flex min-h-screen flex-col bg-[#faf6f1]" style={brandStyle}>
+        <div className="sticky top-0 z-50">
+          <NavBar shopName={shopName} shopId={slug ?? ''} logoUrl={resolvedBranding.logoUrl} />
+        </div>
+        <main className="mx-auto flex w-full max-w-2xl flex-1 items-center justify-center px-4 py-12">
+          <div className="flex w-full flex-col items-center gap-4 rounded-[20px] border border-[#efe7de] bg-white p-8 text-center" data-testid="empty-basket">
+            <h1 className="font-display text-[28px] font-semibold leading-tight text-gray-900">{copy.checkoutTitle}</h1>
+            <p className="text-[15px] leading-relaxed text-[#5c524b]">{copy.basketEmpty}</p>
+            <Link to={`/shops/${slug}`} className="flex h-12 items-center justify-center rounded-full bg-gray-900 px-6 text-[15px] font-bold text-white">
+              {copy.backToMenu}
+            </Link>
+          </div>
+        </main>
+        <Footer slug={slug} />
+      </div>
+    );
+  }
 
   const legalWords = legalCopy(pageLanguage);
   const card = 'rounded-[20px] border border-[#efe7de] bg-white p-5 sm:p-6';
   const errorBox = 'rounded-2xl bg-[#fdecea] px-4 py-3 text-sm leading-relaxed text-[#8a1f12]';
   const warnBox = 'rounded-2xl bg-amber-50 px-4 py-3 text-sm leading-relaxed text-amber-900';
   const totalCents = quote ? quote.totalCents ?? quote.subtotalCents : null;
-  const submitError = placeError ?? (quoteFailed ? pausedMessageOf(quoteError, copy.orderingPaused) ?? copy.orderFailed : undefined);
+  const submitError = placeError;
+  // A failed price check is not a failed order: give it its own message and a retry
+  const quotePausedMessage = quoteFailed ? pausedMessageOf(quoteError, copy.orderingPaused) : undefined;
+  // Show "Loading…" only while a first quote is genuinely in flight, never merely because there is no quote
+  const loadingPrices = quoting && !quote;
   const backClass =
     'inline-flex min-h-11 items-center gap-1.5 self-start text-sm font-semibold text-[#5c524b] hover:text-gray-900';
 
@@ -705,6 +767,20 @@ const CheckoutPage: React.FC = () => {
                   {quote && quote.belowMinimum && (
                     <p className={errorBox}>{copy.belowMinimum(money.cents(quote.minOrderAmountCents))}</p>
                   )}
+                  {quoteFailed && (
+                    <div className="flex flex-col items-start gap-2" data-testid="quote-error">
+                      <p role="alert" className={errorBox}>{quotePausedMessage ?? copy.pricesUnavailable}</p>
+                      <button
+                        type="button"
+                        data-testid="retry-quote"
+                        onClick={() => requote()}
+                        disabled={quoting}
+                        className="h-11 rounded-full border-[1.5px] border-gray-900 bg-white px-5 text-sm font-bold text-gray-900 disabled:opacity-40"
+                      >
+                        {copy.tryAgain}
+                      </button>
+                    </div>
+                  )}
                   {submitError && <p role="alert" className={errorBox}>{submitError}</p>}
 
                   {/* Phones: pinned to the bottom of the screen; from lg: in place */}
@@ -716,7 +792,7 @@ const CheckoutPage: React.FC = () => {
                       disabled={cartItems.length === 0 || isInitiating || !canSubmit}
                     >
                       <span className="truncate">
-                        {isInitiating || method === null ? copy.loading : copy.continueToPayment}
+                        {isInitiating || loadingPrices ? copy.loading : copy.continueToPayment}
                       </span>
                       {totalCents !== null && <span className="shrink-0">{money.cents(totalCents)}</span>}
                     </button>
