@@ -87,6 +87,14 @@ async function mockCatalog(page: Page) {
   });
 }
 
+// The catalog is fetched on mount and on a language switch only, so a quiet window is enough to prove
+// that a failed switch settles instead of retrying on its own.
+async function expectNoMoreCatalogRequests(requested: string[], quietMs = 750) {
+  const seen = requested.length;
+  await new Promise((resolve) => setTimeout(resolve, quietMs));
+  expect(requested.length, 'the failed language switch must settle without another catalog request').toBe(seen);
+}
+
 test.use({ locale: 'en-US' });
 
 test.describe('Menu language', () => {
@@ -117,6 +125,47 @@ test.describe('Menu language', () => {
     await expect(page.getByRole('heading', { name: 'Margherita Pizza' })).toBeVisible();
     await page.getByRole('button', { name: 'DE', exact: true }).click();
     await expect(page.getByRole('heading', { name: 'Pizza Margherita' })).toBeVisible();
+  });
+
+  test('a failed language switch shows a retryable menu error and does not keep the old-language dishes', async ({ page }) => {
+    await mockShop(page);
+    const requested: string[] = [];
+    page.on('request', (request) => {
+      if (request.url().includes('/api/shops/shop-t/catalog')) {
+        requested.push(new URL(request.url()).searchParams.get('lang') ?? '');
+      }
+    });
+    await page.route('**/api/shops/shop-t/catalog**', async (route) => {
+      const lang = new URL(route.request().url()).searchParams.get('lang');
+      if (lang === 'de') {
+        await route.fulfill({ status: 500, contentType: 'application/json', body: JSON.stringify({ message: 'boom' }) });
+        return;
+      }
+      await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(EN_CATALOG) });
+    });
+    await page.goto('/shops/test-shop');
+    await expect(page.getByRole('heading', { name: 'Margherita Pizza' })).toBeVisible();
+
+    await page.getByRole('button', { name: 'DE', exact: true }).click();
+
+    // A retryable error replaces the menu instead of leaving the English dishes on screen
+    await expect(page.locator('[data-testid="menu-error"]')).toBeVisible();
+    await expect(page.getByRole('alert')).toHaveCount(1);
+    await expect(page.getByRole('alert')).toHaveText(/Die Speisekarte konnte nicht geladen werden/);
+    await expect(page.locator('[data-testid="menu-error-retry"]')).toBeVisible();
+    await expect(page.locator('[data-testid="menu"]')).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: 'Margherita Pizza' })).toHaveCount(0);
+
+    // One request per language: the failed switch settles instead of retrying on its own
+    expect(requested).toEqual(['en', 'de']);
+    await expectNoMoreCatalogRequests(requested);
+
+    // Switching back recovers from the cached English menu
+    await page.getByRole('button', { name: 'EN', exact: true }).click();
+    await expect(page.getByRole('heading', { name: 'Margherita Pizza' })).toBeVisible();
+    await expect(page.locator('[data-testid="menu"]')).toBeVisible();
+    await expect(page.getByRole('alert')).toHaveCount(0);
+    await expect(page.locator('[data-testid="menu-error"]')).toHaveCount(0);
   });
 
   test('shows allergens in the dish details', async ({ page }) => {
