@@ -294,18 +294,13 @@ export interface ShopFulfilment {
 // Do not re-declare them here — injecting a second endpoint with the same name
 // is silently ignored by RTK, so the first definition wins.
 //
-// enhanceEndpoints only adjusts the generated definitions (no new endpoints).
-// The order page must not show a stale order from the cache.
-export const orderApi = api.enhanceEndpoints({
-  endpoints: {
-    viewCustomerOrder: { keepUnusedDataFor: 0 },
-  },
-});
-
+// The order page does not rely on evicting the cache entry: it refetches on mount
+// (refetchOnMountOrArgChange), so a diner never sees another order's cached data. The cache
+// key already includes orderId + token, so entries never collide across links.
 export const {
   useQuoteBasketQuery,
   useCreateOrderMutation,
   useViewCustomerOrderQuery,
   useViewCustomerDocumentMutation,
   useCancelCustomerOrderMutation,
-} = orderApi;
+} = api;

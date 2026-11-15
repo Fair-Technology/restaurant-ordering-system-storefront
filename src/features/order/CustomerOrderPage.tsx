@@ -84,9 +84,13 @@ const CustomerOrderPage: React.FC = () => {
   const branding = resolveShopBranding((shopData as ShopWithBranding | undefined)?.branding);
   const brandStyle = useBrandingStyle(branding);
 
-  const { data, isLoading, isError, error } = useViewCustomerOrderQuery(
+  // One subscription only: a second hook on the same cache key makes the two fight over the
+  // entry's requestId and refetch in a tight loop whenever the query is rejected.
+  // The polling cadence depends on the result, so it lives in state (set by the effect below).
+  const [pollMs, setPollMs] = useState(CONFIRMING_POLL_MS);
+  const { data, isError, error } = useViewCustomerOrderQuery(
     { orderId: orderId ?? '', body: { token } },
-    { skip: !orderId },
+    { skip: !orderId, refetchOnMountOrArgChange: true, pollingInterval: pollMs },
   );
   const [graceOver, setGraceOver] = useState(false);
   useEffect(() => {
@@ -106,19 +110,17 @@ const CustomerOrderPage: React.FC = () => {
     const timer = setTimeout(() => setConfirmingSlow(true), CONFIRMING_SLOW_MS);
     return () => clearTimeout(timer);
   }, [wasConfirming]);
-  // Poll while the order is still moving so acceptance and ready-time show up on
-  // their own. Same arguments as above, so both hooks share one cache entry.
-  useViewCustomerOrderQuery(
-    { orderId: orderId ?? '', body: { token } },
-    {
-      skip: !orderId || (!data && !isConfirming && !isRetrying),
-      pollingInterval: isConfirming || isRetrying
+  // Poll quickly while the order is not known yet, and every 15 s while it is still moving
+  // so acceptance and ready-time show up on their own.
+  useEffect(() => {
+    setPollMs(
+      isConfirming || isRetrying
         ? CONFIRMING_POLL_MS
         : data && LIVE_STATES.includes(data.state)
           ? 15000
           : 0,
-    },
-  );
+    );
+  }, [isConfirming, isRetrying, data]);
 
   const [
     cancelOrder,
@@ -246,6 +248,10 @@ const CustomerOrderPage: React.FC = () => {
   const route = shopAddress ? routeUrl(shopAddress) : null;
   const finished = order ? order.state === 'COMPLETED' || stopped : false;
 
+  // Decided from the query result, not RTK's transient isLoading
+  const showLoading = !!orderId && !order && !isConfirming && !(isError && graceOver);
+  const showError = !!orderId && !order && !isConfirming && isError && graceOver;
+
   const card = 'rounded-[20px] border border-[#efe7de] bg-white p-5 sm:p-6';
   const outlineButton =
     'inline-flex h-11 items-center justify-center gap-2 rounded-full border-[1.5px] border-gray-900 px-4 text-sm font-bold text-gray-900 transition-colors hover:bg-[#faf6f1]';
@@ -264,13 +270,13 @@ const CustomerOrderPage: React.FC = () => {
       </div>
 
       <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-5 px-4 pb-14 pt-6 sm:px-6 lg:pt-8">
-        {(isLoading || (isRetrying && !order)) && !isConfirming && (
+        {showLoading && (
           <div className={`${card} flex items-center gap-3 text-[#5c524b]`}>
             <span className="h-5 w-5 animate-spin rounded-full border-2 border-[#e3d9ce] border-t-gray-900" aria-hidden="true" />
             {copy.loading}
           </div>
         )}
-        {isError && !isConfirming && !isRetrying && !order && (
+        {showError && (
           <p role="alert" className="rounded-2xl bg-[#fdecea] px-5 py-4 text-[15px] text-[#8a1f12]">
             {wasConfirming ? copy.confirmFailed : copy.orderNotFound}
           </p>
