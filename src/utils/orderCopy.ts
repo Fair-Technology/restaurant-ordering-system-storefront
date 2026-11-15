@@ -30,6 +30,7 @@ export interface OrderCopy {
   statusRefundedHint: (shop: string) => string;
   statusRefundFailed: string;
   notCharged: string;
+  paymentHeldNotice: string;
   reservationBankNote: string;
   rejectReason: Record<RejectReason, string>;
   cancelOrder: string;
@@ -299,6 +300,8 @@ const en: OrderCopy = {
   statusRefundedHint: (s) => `${s} has refunded the full amount. This order is closed.`,
   statusRefundFailed: 'Refund did not go through',
   notCharged: 'You have not been charged. The reservation on your card has been released.',
+  paymentHeldNotice:
+    'We cannot complete your payment right now because of a technical problem on our side — it is not your card and not the restaurant. Your card is only on hold and nothing has been charged. You don’t need to do anything: if the payment still cannot be completed, your order is declined automatically and the hold is released.',
   reservationBankNote: 'Depending on your bank, the reservation may still show as pending for a few days.',
   rejectReason: {
     too_busy: 'The restaurant is too busy right now.',
@@ -590,6 +593,8 @@ const de: OrderCopy = {
   statusRefundedHint: (s) => `${s} hat den vollen Betrag erstattet. Die Bestellung ist damit beendet.`,
   statusRefundFailed: 'Erstattung fehlgeschlagen',
   notCharged: 'Es wurde nichts abgebucht. Die Reservierung auf Ihrer Karte wurde aufgehoben.',
+  paymentHeldNotice:
+    'Wir können Ihre Zahlung derzeit wegen eines technischen Problems auf unserer Seite nicht abschließen — es liegt nicht an Ihrer Karte und nicht am Restaurant. Ihre Karte ist nur reserviert; es wurde nichts abgebucht. Sie müssen nichts tun: Kann die Zahlung weiterhin nicht abgeschlossen werden, wird Ihre Bestellung automatisch abgelehnt und die Reservierung freigegeben.',
   reservationBankNote:
     'Je nach Bank kann die Reservierung noch einige Tage als vorgemerkt angezeigt werden.',
   rejectReason: {
