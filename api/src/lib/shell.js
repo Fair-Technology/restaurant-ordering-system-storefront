@@ -5,6 +5,7 @@
 //  - Every failure path is HTTP 200 at the same URL. Never 3xx, never 5xx.
 //  - The shell is fetched live from the REQUEST's own origin (never configured / baked).
 //  - Shell cache is per-origin; shop meta cache is per-shop (two lifetimes).
+//  - exactly one <title> in the head: the Function rewrites the shell's own title on a full load.
 
 export const MARKER = '<!--og-inject-->';
 export const SHELL_TTL_MS = 60_000;
@@ -160,13 +161,26 @@ export function buildPlatformHead({ platformName, origin }) {
 /** Self-contained indexable page for the front page when no shell is available: platform card + visible copy, no robots meta. */
 export function platformPage(meta, origin) {
   const name = (meta && meta.platformName) || DEFAULT_PLATFORM_NAME;
-  return `<!doctype html><html lang="en"><head><meta charset="UTF-8">${buildPlatformHead({ platformName: name, origin })}<meta name="viewport" content="width=device-width, initial-scale=1.0"></head><body><h1>${escapeHtml(name)}</h1><p>${escapeHtml(PLATFORM_DESCRIPTION)}</p></body></html>`;
+  return `<!doctype html><html lang="en"><head><meta charset="UTF-8"><title>${escapeHtml(name)}</title>${buildPlatformHead({ platformName: name, origin })}<meta name="viewport" content="width=device-width, initial-scale=1.0"></head><body><h1>${escapeHtml(name)}</h1><p>${escapeHtml(PLATFORM_DESCRIPTION)}</p></body></html>`;
 }
 
 export function injectIntoShell(shell, headTags) {
   if (shell.includes(MARKER)) return shell.replace(MARKER, () => headTags);
   if (/<\/head>/i.test(shell)) return shell.replace(/<\/head>/i, () => `${headTags}\n</head>`);
   return `${headTags}\n${shell}`;
+}
+
+const TITLE_RE = /<title\b[^>]*>[\s\S]*?<\/title>/i;
+
+/**
+ * Replace the shell's own <title> so the head holds exactly one. No-op when there is no title to set
+ * (e.g. the shop read failed: the shipped title stays — the fail-open rule).
+ */
+export function applyTitle(html, title) {
+  if (!title) return html;
+  const tag = `<title>${escapeHtml(title)}</title>`;
+  if (TITLE_RE.test(html)) return html.replace(TITLE_RE, () => tag);
+  return injectIntoShell(html, tag);
 }
 
 /** Self-contained page for when there is no shell at all: no assets, no og:*, noindex. */
@@ -275,9 +289,12 @@ export async function handleShell({ originalUrl, deps }) {
     const name = await fetchPlatformName(fetchFn, backendBase, platformCache, now);
     const pageHeaders = { ...headers };
     delete pageHeaders['x-robots-tag'];
-    return { status: 200, headers: pageHeaders, body: injectIntoShell(shell, buildPlatformHead({ platformName: name, origin })) };
+    return { status: 200, headers: pageHeaders, body: applyTitle(injectIntoShell(shell, buildPlatformHead({ platformName: name, origin })), name) };
   }
 
   const head = buildHead({ noindex: true, meta, slug, origin });
-  return { status: 200, headers, body: injectIntoShell(shell, head) };
+  // The Function owns the <title> on a full load (spec §16): the shop name — the same value as og:title,
+  // so the tab and the unfurl card agree. `meta` is null when the shop read failed, so the shipped
+  // index.html title stays on that path (fail-open), still exactly one <title>.
+  return { status: 200, headers, body: applyTitle(injectIntoShell(shell, head), meta?.name) };
 }

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { handleShell, escapeHtml, classify, parseOriginalUrl, parseShellHosts, isAllowedShellHost, PLATFORM_DESCRIPTION, DEFAULT_PLATFORM_NAME } from '../src/lib/shell.js';
+import { handleShell, escapeHtml, classify, parseOriginalUrl, parseShellHosts, isAllowedShellHost, applyTitle, PLATFORM_DESCRIPTION, DEFAULT_PLATFORM_NAME } from '../src/lib/shell.js';
 
 const ORIGIN = 'https://store.example.com';
 const SHELL = '<html><head><!--og-inject--><title>x</title><script type="module" src="/assets/a-123.js"></script></head><body></body></html>';
@@ -40,10 +40,21 @@ test('T1/T2/T3 shop landing: 200 html, per-shop og, fallback image', async () =>
   assert.match(a.body, /og:description" content="Fish &amp; Chips · Leeds"/);
   assert.match(a.body, /og:image" content="https:\/\/cdn.example.com\/h.jpg"/);
   assert.match(a.body, /og:url" content="https:\/\/store.example.com\/shops\/fish"/);
+  assert.match(a.body, /<title>Fish &amp; Chips<\/title>/);
+  assert.equal(a.body.match(/<title[ >]/g).length, 1);
   const b = await run('/shops/bare');
   assert.match(b.body, /og:title" content="Bare Cafe"/);
   assert.match(b.body, /og:image" content="https:\/\/store.example.com\/og-fallback.png"/);
   assert.match(b.body, /src="\/assets\/a-123.js"/); // live shell kept
+  assert.equal(b.body.match(/<title[ >]/g).length, 1);
+});
+
+test('shop read fails, shell live: shipped title stays, exactly one <title>, noindex', async () => {
+  for (const r of [await run('/shops/unknown'), await run('/shops/fish', mkFetch({ shopFail: true }))]) {
+    assert.match(r.body, /<title>x<\/title>/); // the shipped index.html title, left untouched (fail-open)
+    assert.equal(r.body.match(/<title[ >]/g).length, 1);
+    assert.match(r.body, NOINDEX);
+  }
 });
 
 test('T4/T5 no og + noindex on sub-paths and /legal/*', async () => {
@@ -131,6 +142,8 @@ test('helpers', () => {
   assert.equal(parseOriginalUrl('ftp://a.com/'), null);
   assert.equal(parseOriginalUrl('https://other.example/shops/x', 'store.example.com'), null);
   assert.equal(parseOriginalUrl('https://store.example.com/shops/x', 'store.example.com').pathname, '/shops/x');
+  assert.equal(applyTitle('<head><title>old</title></head>', 'New & Co'), '<head><title>New &amp; Co</title></head>');
+  assert.equal(applyTitle('<head></head>', null), '<head></head>');
 });
 
 // --- Platform front page `/`: indexable, generic og card (spec: sales site, unlike /shops/* + /legal/*) ---
@@ -148,6 +161,8 @@ test('platform: GET / serves indexable og card, live shell kept, no x-robots-tag
   assert.match(r.body, /og:url" content="https:\/\/store\.example\.com\/"/);
   assert.match(r.body, /og:image" content="https:\/\/store\.example\.com\/og-fallback\.png"/);
   assert.match(r.body, new RegExp(`<meta name="description" content="${PLATFORM_DESCRIPTION}">`));
+  assert.match(r.body, /<title>Fair Technology<\/title>/);
+  assert.equal(r.body.match(/<title[ >]/g).length, 1);
   assert.match(r.body, /src="\/assets\/a-123\.js"/); // live shell kept
 });
 
@@ -171,6 +186,8 @@ test('platform: GET / shell fails cold cache -> indexable platform page, not min
   assert.match(r.body, /og:title" content="Fair Technology"/);
   assert.match(r.body, /og:url" content="https:\/\/store\.example\.com\/"/);
   assert.match(r.body, /og:image" content="https:\/\/store\.example\.com\/og-fallback\.png"/);
+  assert.match(r.body, /<title>Fair Technology<\/title>/);
+  assert.equal(r.body.match(/<title[ >]/g).length, 1);
   assert.match(r.body, /<h1>/);
 });
 
