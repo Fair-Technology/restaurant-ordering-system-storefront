@@ -1,6 +1,25 @@
 import { test, expect, type Page } from '@playwright/test';
 
-const SHELL = 'Restaurant Ordering System';
+const SHIPPED = 'Restaurant Ordering System'; // index.html's <title>, untouched on shop deep links
+const PLATFORM = 'Fair Technology';
+
+async function mockPlatformLegal(page: Page, platformName = PLATFORM) {
+  await page.route('**/api/legal/platform', (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        platformName,
+        salesSiteUrl: null,
+        operator: { legalName: 'Example Operator GmbH', address: 'x', email: 'x@example.com' },
+        euRepresentative: null,
+        subProcessors: [],
+        currentDpaVersion: '2026-10-01',
+        currentDpaIsDraft: false,
+      }),
+    }),
+  );
+}
 
 async function mockShop(page: Page, slug: string, name: string) {
   await page.route(`**/api/shops/slug/${slug}`, (route) =>
@@ -23,6 +42,10 @@ const spaNavigate = (page: Page, path: string) =>
   }, path);
 
 test.describe('T8: <title> tracks the shop on client-side navigation', () => {
+  test.beforeEach(async ({ page }) => {
+    await mockPlatformLegal(page);
+  });
+
   test('/shops/a -> /shops/b -> / without reload', async ({ page }) => {
     await mockShop(page, 'a', 'Shop Alpha');
     await mockShop(page, 'b', 'Shop Beta');
@@ -31,7 +54,7 @@ test.describe('T8: <title> tracks the shop on client-side navigation', () => {
     );
 
     await page.goto('/');
-    await expect(page).toHaveTitle(SHELL);
+    await expect(page).toHaveTitle(PLATFORM);
     await spaNavigate(page, '/shops/a');
     await page.evaluate(() => ((window as any).__noReload = true));
 
@@ -39,7 +62,7 @@ test.describe('T8: <title> tracks the shop on client-side navigation', () => {
     await spaNavigate(page, '/shops/b');
     await expect(page).toHaveTitle('Shop Beta');
     await spaNavigate(page, '/');
-    await expect(page).toHaveTitle(SHELL);
+    await expect(page).toHaveTitle(PLATFORM);
 
     expect(await page.evaluate(() => (window as any).__noReload)).toBe(true);
     expect(await page.locator('head > title').count()).toBe(1);
@@ -62,7 +85,7 @@ test.describe('T8: <title> tracks the shop on client-side navigation', () => {
     await spaNavigate(page, '/shops/a');
     await expect(page).toHaveTitle('Shop Alpha');
     await spaNavigate(page, '/legal/sub-processors');
-    await expect(page).toHaveTitle(SHELL);
+    await expect(page).toHaveTitle(PLATFORM);
   });
 
   test('deep link keeps the server (Function) title: hook is navigation-only', async ({ page }) => {
@@ -73,12 +96,30 @@ test.describe('T8: <title> tracks the shop on client-side navigation', () => {
     // rewrite it just because the shop name resolved.
     await page.goto('/shops/a');
     await page.waitForTimeout(1200);
-    await expect(page).toHaveTitle(SHELL);
+    await expect(page).toHaveTitle(SHIPPED);
     expect(await page.locator('head > title').count()).toBe(1);
 
     // A subsequent client-side hop is the hook's job.
     await spaNavigate(page, '/shops/b');
     await expect(page).toHaveTitle('Shop Beta');
     expect(await page.locator('head > title').count()).toBe(1);
+  });
+
+  test('platformName drives the tab; operator.legalName never does', async ({ page }) => {
+    await page.unroute('**/api/legal/platform');
+    await mockPlatformLegal(page, 'Acme Cloud');
+    await page.goto('/');
+    await expect(page).toHaveTitle('Acme Cloud');
+    expect(await page.title()).not.toContain('Example Operator');
+    expect(await page.locator('head > title').count()).toBe(1);
+    expect(await page.locator('head meta[property^="og:"]').count()).toBe(0);
+  });
+
+  test('falls back to the shipped title when the platform read fails', async ({ page }) => {
+    await page.unroute('**/api/legal/platform');
+    await page.route('**/api/legal/platform', (r) => r.fulfill({ status: 500, body: '{}' }));
+    await page.goto('/');
+    await page.waitForTimeout(1200);
+    await expect(page).toHaveTitle(SHIPPED);
   });
 });
