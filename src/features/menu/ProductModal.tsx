@@ -1,8 +1,9 @@
-import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useId, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Check, Minus, Plus, UtensilsCrossed, X } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { addItem, removeItem } from '../../store/slices/cartSlice';
+import { useModalFocus } from '../../hooks/useModalFocus';
 import { useMoney } from '../../hooks/useMoney';
 import { menuLabels } from '../../utils/menuLabels';
 import { orderCopy } from '../../utils/orderCopy';
@@ -105,7 +106,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
   const copy = orderCopy(pageLanguageOf(currentChoice(storedLanguage, navigator.language)));
   const labels = menuLabels(product.language);
   const titleId = useId();
-  const dialogRef = useRef<HTMLDivElement>(null);
+  const dialogRef = useModalFocus(isOpen, onClose);
 
   // Fall back to the slug segment from the URL if shopId is not provided
   const urlParts =
@@ -133,22 +134,6 @@ const ProductModal: React.FC<ProductModalProps> = ({
     setQuantity(initialQuantityProp ?? 1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
-
-  // While open: lock page scroll behind the sheet, close on Escape, move focus into the dialog
-  useEffect(() => {
-    if (!isOpen) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    document.addEventListener('keydown', onKey);
-    dialogRef.current?.focus();
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      document.removeEventListener('keydown', onKey);
-    };
-  }, [isOpen, onClose]);
 
   // Flat lookup maps for fast variant/addon option access by ID
   const variantLookup = useMemo(() => {
