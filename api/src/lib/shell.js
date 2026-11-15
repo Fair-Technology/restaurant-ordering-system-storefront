@@ -28,12 +28,52 @@ export function escapeHtml(v) {
 }
 
 /**
+ * Parse the optional SHELL_HOSTS app setting: comma-separated hostnames (no scheme), whitespace-trimmed,
+ * case-insensitive, empty entries ignored. Returns a Set of lower-cased hostnames.
+ */
+export function parseShellHosts(value) {
+  if (!value || typeof value !== 'string') return new Set();
+  return new Set(
+    value
+      .split(',')
+      .map((h) => h.trim().toLowerCase())
+      .filter(Boolean),
+  );
+}
+
+// Hosts Azure assigns to the SWA site itself (default domain and PR preview environments).
+const PLATFORM_HOST_SUFFIX = '.azurestaticapps.net';
+// Hosts Azure assigns to the managed Functions backend that SWA proxies /api/* to.
+const MANAGED_FUNCTIONS_HOST_SUFFIX = '.azurewebsites.net';
+
+/**
+ * SSRF guard: may we fetch and re-serve the shell from `originalHostname` (taken from x-ms-original-url)?
+ *
+ * 1. It equals the host the request arrived on (Host / x-forwarded-host) — custom domains, local `swa start`.
+ * 2. The arriving host is an Azure-managed Functions host (*.azurewebsites.net). On SWA managed Functions the
+ *    Host header is the INTERNAL Functions host, "a value similar to <randomly-generated-string>.azurewebsites.net",
+ *    and on the default *.azurestaticapps.net domain x-forwarded-host "is not there" at all (GitHub issue
+ *    Azure/static-web-apps#1012). The public URL only survives in x-ms-original-url (Azure/static-web-apps#580).
+ *    So the Host comparison can never match there; instead accept a platform host (*.azurestaticapps.net) or a
+ *    host the owner pinned explicitly in SHELL_HOSTS. A real (non-azurewebsites.net) Host gets no such relaxation.
+ */
+export function isAllowedShellHost(originalHostname, expectedHost, shellHosts = new Set()) {
+  const orig = String(originalHostname).toLowerCase();
+  const arrived = String(expectedHost).toLowerCase().split(':')[0];
+  if (orig === arrived) return true;
+  if (!arrived.endsWith(MANAGED_FUNCTIONS_HOST_SUFFIX)) return false;
+  return orig.endsWith(PLATFORM_HOST_SUFFIX) || shellHosts.has(orig);
+}
+
+/**
  * Parse the x-ms-original-url header. Returns { origin, hostname, pathname } or null.
  * `expectedHost` (the Host / x-forwarded-host the request actually arrived on) is an SSRF guard:
  * a direct call to /api/shopShell that sets the header by hand must not make the Function fetch and
  * re-serve another host's HTML under this origin. Only enforced when we have a host to compare with.
+ * See isAllowedShellHost for the rules (and why *.azurewebsites.net is special). `shellHosts` is the
+ * parsed SHELL_HOSTS allow-list (a Set or the raw comma-separated string).
  */
-export function parseOriginalUrl(header, expectedHost) {
+export function parseOriginalUrl(header, expectedHost, shellHosts) {
   if (!header) return null;
   let u;
   try {
@@ -43,7 +83,8 @@ export function parseOriginalUrl(header, expectedHost) {
   }
   if (!HOST_RE.test(u.host)) return null;
   if (u.protocol !== 'https:' && !(u.protocol === 'http:' && u.hostname === 'localhost')) return null;
-  if (expectedHost && u.hostname.toLowerCase() !== String(expectedHost).toLowerCase().split(':')[0]) return null;
+  const allow = shellHosts instanceof Set ? shellHosts : parseShellHosts(shellHosts);
+  if (expectedHost && !isAllowedShellHost(u.hostname, expectedHost, allow)) return null;
   return { origin: u.origin, hostname: u.hostname, pathname: u.pathname };
 }
 
@@ -118,17 +159,18 @@ async function fetchText(fetchFn, url, timeoutMs) {
 
 /**
  * Build the response. Never throws; always status 200.
- * deps: { fetch, now, shellCache: Map, metaCache: Map, backendBase, expectedHost }
+ * deps: { fetch, now, shellCache: Map, metaCache: Map, backendBase, expectedHost, shellHosts }
  */
 export async function handleShell({ originalUrl, deps }) {
-  const { fetch: fetchFn, now = Date.now, shellCache, metaCache, backendBase, expectedHost } = deps;
+  const { fetch: fetchFn, now = Date.now, shellCache, metaCache, backendBase, expectedHost, shellHosts } = deps;
   const headers = {
     'content-type': 'text/html; charset=utf-8',
     'x-robots-tag': 'noindex, nofollow',
     'cache-control': 'no-cache',
   };
-  // expectedHost pins the shell origin to the host the request actually arrived on (SSRF guard).
-  const parsed = parseOriginalUrl(originalUrl, expectedHost);
+  // expectedHost pins the shell origin to the host the request actually arrived on (SSRF guard);
+  // on SWA managed Functions that host is internal, so platform hosts / SHELL_HOSTS are accepted instead.
+  const parsed = parseOriginalUrl(originalUrl, expectedHost, shellHosts);
   if (!parsed) return { status: 200, headers, body: minimalPage() };
 
   const { origin, pathname } = parsed;

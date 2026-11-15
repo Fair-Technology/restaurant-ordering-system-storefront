@@ -19,7 +19,10 @@ app.http('shopShell', {
           shellCache,
           metaCache,
           // SSRF guard: only serve the origin the request actually arrived on.
+          // On SWA managed Functions `host` is the internal *.azurewebsites.net host (see lib/shell.js).
           expectedHost: request.headers.get('x-forwarded-host') || request.headers.get('host'),
+          // Optional owner-set app setting: comma-separated custom-domain hostnames to accept in that case.
+          shellHosts: process.env.SHELL_HOSTS,
           // SWA app setting (owner-side Azure write). Value e.g. https://<backend-host>/api
           backendBase: process.env.BACKEND_API_BASE_URL,
         },

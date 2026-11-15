@@ -102,11 +102,44 @@ jobs:
         run: |
           test -f dist/index.html
           test -f dist/staticwebapp.config.json
+      # Use the same Azure/static-web-apps-deploy upload as deploy_preview, NOT the SWA CLI: the CLI path
+      # (`swa deploy --api-location`) never builds or reports the api/ Function, so a green dev deploy did
+      # not mean a working /api/* (measured 2026-11-15: run 43683674499's re-run deployed green, yet
+      # /api/shopShell and /shops/mapasta returned 404 at 06:30Z). This action logs the Oryx Function build.
+      # No repo_token: this is a push to main, there is no PR to comment on.
       - name: Deploy the prebuilt output to the dev environment
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
+          action: 'upload'
+          app_location: 'dist'
+          api_location: 'api'
+          output_location: ''
+          skip_app_build: true
+      - name: Verify the dev site really serves the shop shell (a green deploy is not proof)
+        # /shops/* is rewritten to the shopShell Function. If it falls back to its minimal "Shop unavailable"
+        # page (no /assets/), every shop URL is broken while the deploy is green — fail the job instead.
         env:
-          # swa deploy reads the token from this variable when --deployment-token is absent
-          SWA_CLI_DEPLOYMENT_TOKEN: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
-        run: npx --yes @azure/static-web-apps-cli@2 deploy ./dist --api-location ./api --env production
+          ORIGIN: ${{ vars.DEV_SITE_ORIGIN || 'https://salmon-mushroom-015326603.2.azurestaticapps.net' }}
+        run: |
+          set -u
+          attempts=10
+          for i in $(seq 1 "$attempts"); do
+            api_status=$(curl -sS -o /dev/null -w '%{http_code}' "$ORIGIN/api/shopShell?slug=mapasta" || true)
+            shop_body=$(curl -sS "$ORIGIN/shops/mapasta" || true)
+            if [ "$api_status" = "200" ] && printf '%s' "$shop_body" | grep -q '/assets/'; then
+              echo "OK (attempt $i): /api/shopShell -> 200 and /shops/mapasta serves the SPA shell."
+              exit 0
+            fi
+            echo "Attempt $i/$attempts: /api/shopShell -> $api_status; /shops/mapasta has no /assets/ yet."
+            if [ "$i" -lt "$attempts" ]; then sleep 15; fi
+          done
+          echo "::error::$ORIGIN/shops/mapasta does not serve the SPA shell (api status $api_status)."
+          echo "----- /shops/mapasta response body -----"
+          printf '%s\n' "$shop_body"
+          echo "----- /api/shopShell?slug=mapasta response body -----"
+          curl -sS "$ORIGIN/api/shopShell?slug=mapasta" || true
+          exit 1
 
   deploy_preview:
     if: github.event_name == 'pull_request' && github.event.action != 'closed'
