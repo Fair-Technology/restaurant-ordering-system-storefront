@@ -119,3 +119,6 @@ CLAUDE.md
 /playwright/.cache/
 /playwright/.auth/
 src/api/endpoints.gen.check.ts
+
+# Git worktrees created inside the repo (other agents' working copies)
+.worktrees/
