@@ -6,7 +6,8 @@ import { legalCopy, type LegalDoc } from '../utils/legalCopy';
 
 /**
  * Footer — the restaurant's four legal links and "Ordering by <platform>".
- * One row from sm up (links left, platform right); on phones the links sit in two columns.
+ * The four legal links sit in a row from sm up (two columns on phones), with the
+ * "Report illegal content" link on its own line beneath them; platform right from sm up.
  * On a legal page the open document is marked (current).
  */
 // flush: sits right under another footer block (the shop info), so no top gap
@@ -37,24 +38,26 @@ const Footer = ({ slug, flush = false, current }: { slug?: string; flush?: boole
     <footer className={`w-full border-t border-[#efe7de] bg-white ${flush ? '' : 'mt-12'}`}>
       <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-4 pb-7 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:px-6 sm:py-[22px]">
         {slug && (
-          <nav aria-label={copy.legalEyebrow} className="grid grid-cols-2 gap-x-3 sm:flex sm:items-center sm:gap-1">
-            {links.map(({ doc, label }) => {
-              const on = current === doc;
-              return (
-                <Link
-                  key={doc}
-                  to={`/shops/${slug}/legal/${doc}`}
-                  aria-current={on ? 'page' : undefined}
-                  className={`flex min-h-10 items-center rounded-lg text-sm transition-colors sm:px-2.5 ${
-                    on
-                      ? 'font-bold text-gray-900 underline decoration-[var(--brand-accent)] decoration-2 underline-offset-[5px]'
-                      : 'font-medium text-[#5c524b] hover:text-gray-900'
-                  }`}
-                >
-                  {label}
-                </Link>
-              );
-            })}
+          <nav aria-label={copy.legalEyebrow} className="flex flex-col items-start gap-1">
+            <div className="grid grid-cols-2 gap-x-3 sm:flex sm:items-center sm:gap-1">
+              {links.map(({ doc, label }) => {
+                const on = current === doc;
+                return (
+                  <Link
+                    key={doc}
+                    to={`/shops/${slug}/legal/${doc}`}
+                    aria-current={on ? 'page' : undefined}
+                    className={`flex min-h-10 items-center rounded-lg text-sm transition-colors sm:px-2.5 ${
+                      on
+                        ? 'font-bold text-gray-900 underline decoration-[var(--brand-accent)] decoration-2 underline-offset-[5px]'
+                        : 'font-medium text-[#5c524b] hover:text-gray-900'
+                    }`}
+                  >
+                    {label}
+                  </Link>
+                );
+              })}
+            </div>
             <Link
               to={`/shops/${slug}/report`}
               className="flex min-h-10 items-center rounded-lg text-sm font-medium text-[#5c524b] transition-colors hover:text-gray-900 sm:px-2.5"
