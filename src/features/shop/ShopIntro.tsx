@@ -16,6 +16,8 @@ interface ShopIntroProps {
   overlapsHero: boolean;
   /** Shown here on phones only; from sm up the switcher lives in the nav bar */
   languageSwitcher?: React.ReactNode;
+  /** Optional in-page link shown beside "Info" — the diner-facing report link */
+  reportLink?: React.ReactNode;
   copy: OrderCopy;
 }
 
@@ -33,6 +35,7 @@ const ShopIntro: React.FC<ShopIntroProps> = ({
   pickupMinutes,
   overlapsHero,
   languageSwitcher,
+  reportLink,
   copy,
 }) => {
   const place = [address?.street, address?.city].map((p) => p?.trim()).filter(Boolean).join(', ');
@@ -101,6 +104,7 @@ const ShopIntro: React.FC<ShopIntroProps> = ({
               <Info className="h-3.5 w-3.5" aria-hidden="true" />
               {copy.introInfo}
             </a>
+            {reportLink}
           </div>
         </div>
         <div className="pb-5" />

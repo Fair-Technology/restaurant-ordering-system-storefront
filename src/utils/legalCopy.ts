@@ -5,6 +5,7 @@ export interface LegalCopy {
   footerTerms: string;
   footerWithdrawal: string;
   footerPrivacy: string;
+  footerReport: string;
   orderingBy: (platform: string) => string;
   heading: Record<LegalDoc, string>;
   subProcessors: string;
@@ -34,6 +35,7 @@ const en: LegalCopy = {
   footerTerms: 'Terms',
   footerWithdrawal: 'Withdrawal policy',
   footerPrivacy: 'Privacy',
+  footerReport: 'Report illegal content',
   orderingBy: (n) => `Ordering by ${n}`,
   heading: {
     impressum: 'Legal notice',
@@ -70,6 +72,7 @@ const de: LegalCopy = {
   footerTerms: 'AGB',
   footerWithdrawal: 'Widerrufsbelehrung',
   footerPrivacy: 'Datenschutz',
+  footerReport: 'Illegale Inhalte melden',
   orderingBy: (n) => `Online-Bestellung über ${n}`,
   heading: {
     impressum: 'Impressum',

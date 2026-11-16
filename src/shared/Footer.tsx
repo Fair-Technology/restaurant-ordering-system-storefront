@@ -55,6 +55,12 @@ const Footer = ({ slug, flush = false, current }: { slug?: string; flush?: boole
                 </Link>
               );
             })}
+            <Link
+              to={`/shops/${slug}/report`}
+              className="flex min-h-10 items-center rounded-lg text-sm font-medium text-[#5c524b] transition-colors hover:text-gray-900 sm:px-2.5"
+            >
+              {copy.footerReport}
+            </Link>
           </nav>
         )}
         {data && (
