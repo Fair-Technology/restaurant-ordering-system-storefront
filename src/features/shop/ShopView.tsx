@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ShopPageSkeleton } from '../../shared/Skeletons';
 import NotFound from '../../pages/NotFound';
-import { useParams, useNavigate, useSearchParams, Link } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import HeroSection from '../../shared/HeroSection';
 import CategoryFilterBar from '../menu/CategoryFilterBar';
 import LanguageSwitcher from '../menu/LanguageSwitcher';
@@ -27,7 +27,6 @@ import LogoLoader from '../../shared/LogoLoader';
 import { nextOpening, openState, type WeeklyHours } from '../../utils/openingHours';
 import ShopNoticeModal from './ShopNoticeModal';
 import { orderCopy } from '../../utils/orderCopy';
-import { reportCopy } from '../../utils/reportCopy';
 import { pauseResumeTime } from '../../utils/pauseResume';
 import type { ShopFulfilment, ShopNoticeFields } from '../../api/orderEndpoints';
 import {
@@ -275,7 +274,6 @@ const ShopView = () => {
 
   const copy = orderCopy(pageLanguage);
   const site = siteCopy(pageLanguage);
-  const reportWords = reportCopy(pageLanguage);
 
   // Categories outside their times right now wait behind the "Other times" pill; one can be opened at a time
   const [pickedLaterId, setPickedLaterId] = useState<string | null>(null);
@@ -457,16 +455,6 @@ const ShopView = () => {
         pickupMinutes={visibleModes.includes('collection') ? fulfilment?.prepMinutes?.collection : null}
         overlapsHero={resolvedBranding.showHero}
         languageSwitcher={languageSwitcher}
-        reportLink={
-          slug ? (
-            <Link
-              to={`/shops/${slug}/report`}
-              className="inline-flex items-center gap-1.5 rounded-full bg-[#f6f1eb] px-3 py-1 font-semibold text-[#4a413b] transition-colors hover:bg-[#ece3d9]"
-            >
-              {reportWords.link}
-            </Link>
-          ) : null
-        }
         copy={copy}
       />
       {noticeKind && !noticeSeen && !preview && (
