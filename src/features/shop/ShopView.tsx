@@ -459,6 +459,7 @@ const ShopView = () => {
         overlapsHero={resolvedBranding.showHero}
         languageSwitcher={languageSwitcher}
         copy={copy}
+        offline={isOffline}
       />
       {noticeKind && !noticeSeen && !preview && (
         <ShopNoticeModal
