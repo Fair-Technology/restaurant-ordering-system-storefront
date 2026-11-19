@@ -39,9 +39,11 @@ export interface SiteCopy {
   shopError: string;
   menuError: string;
   retry: string;
+  skipToContent: string;
 }
 
 const en: SiteCopy = {
+  skipToContent: 'Skip to content',
   homeTitle: 'Order straight from the restaurant.',
   homeLead: 'Pick a restaurant, put your meal together and collect it – or have it delivered.',
   homeSearch: 'Search restaurant or town',
@@ -82,6 +84,7 @@ const en: SiteCopy = {
 };
 
 const de: SiteCopy = {
+  skipToContent: 'Zum Inhalt springen',
   homeTitle: 'Direkt beim Restaurant bestellen.',
   homeLead: 'Wählen Sie ein Restaurant, stellen Sie Ihr Essen zusammen und holen Sie es ab – oder lassen Sie es liefern.',
   homeSearch: 'Restaurant oder Ort suchen',

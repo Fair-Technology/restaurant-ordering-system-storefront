@@ -1,3 +1,4 @@
+import SkipLink from '../../shared/SkipLink';
 import React from 'react';
 import { Info } from 'lucide-react';
 import { useGetPlatformLegalQuery } from '../../api/legalEndpoints';
@@ -23,6 +24,7 @@ const SubProcessorsPage: React.FC = () => {
 
   return (
     <div className="flex min-h-screen flex-col bg-white text-gray-900">
+      <SkipLink />
       <PlatformHeader />
       <section className="border-b border-[#efe7de] bg-[#faf6f1]">
         <div className="mx-auto max-w-5xl px-4 pb-5 pt-5 sm:px-6 sm:pb-[26px] sm:pt-6">
@@ -36,7 +38,7 @@ const SubProcessorsPage: React.FC = () => {
         </div>
       </section>
 
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 pb-12 pt-2 sm:px-6 sm:pt-6">
+      <main id="main-content" className="mx-auto w-full max-w-5xl flex-1 px-4 pb-12 pt-2 sm:px-6 sm:pt-6">
         {isLoading && <p className="pt-4 text-gray-500">{copy.loading}</p>}
         {isError && <p className="pt-4">{copy.loadError}</p>}
         {data && (

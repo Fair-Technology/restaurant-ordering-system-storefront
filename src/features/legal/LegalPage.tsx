@@ -1,3 +1,4 @@
+import SkipLink from '../../shared/SkipLink';
 import React from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ChevronLeft, FileText, Info } from 'lucide-react';
@@ -197,6 +198,7 @@ const LegalPage: React.FC = () => {
 
   return (
     <div className="flex min-h-screen flex-col bg-white text-gray-900" style={brandStyle}>
+      <SkipLink />
       <NavBar shopName={shopName} shopId={slug ?? ''} logoUrl={branding.logoUrl} />
 
       <section className="border-b border-[#efe7de] bg-[#faf6f1]">
@@ -239,7 +241,7 @@ const LegalPage: React.FC = () => {
         </div>
       </section>
 
-      <div className="mx-auto w-full max-w-7xl flex-1 px-5 pb-12 pt-6 sm:px-6 md:grid md:grid-cols-[230px_minmax(0,1fr)] md:gap-12 md:pb-16 md:pt-9 lg:grid-cols-[250px_minmax(0,1fr)] lg:gap-14">
+      <main id="main-content" className="mx-auto w-full max-w-7xl flex-1 px-5 pb-12 pt-6 sm:px-6 md:grid md:grid-cols-[230px_minmax(0,1fr)] md:gap-12 md:pb-16 md:pt-9 lg:grid-cols-[250px_minmax(0,1fr)] lg:gap-14">
         {/* md+: side menu */}
         <aside className="hidden md:block">
           <div className="sticky top-6 flex flex-col gap-6">
@@ -280,7 +282,7 @@ const LegalPage: React.FC = () => {
           {isError && <p>{copy.loadError}</p>}
           {data && <DocumentBody doc={doc} data={data} copy={copy} />}
         </article>
-      </div>
+      </main>
 
       <Footer slug={slug} flush current={doc} />
     </div>

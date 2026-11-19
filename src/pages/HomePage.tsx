@@ -1,3 +1,4 @@
+import SkipLink from '../shared/SkipLink';
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Search } from 'lucide-react';
@@ -42,6 +43,7 @@ const HomePage = () => {
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-white text-gray-900">
+      <SkipLink />
       <PlatformHeader />
 
       <section className="border-b border-[#efe7de] bg-[#faf6f1]">
@@ -66,7 +68,7 @@ const HomePage = () => {
         </div>
       </section>
 
-      <main className="mx-auto w-full max-w-7xl flex-1 px-4 pb-14 pt-6 sm:px-6 sm:pt-8" data-testid="shop-list-section">
+      <main id="main-content" className="mx-auto w-full max-w-7xl flex-1 px-4 pb-14 pt-6 sm:px-6 sm:pt-8" data-testid="shop-list-section">
         <div className="mb-4 flex items-baseline gap-2.5 sm:mb-5">
           <h2 className="font-display text-2xl font-semibold sm:text-[28px]">{copy.homeRestaurants}</h2>
           {!isLoading && !isError && shops.length > 0 && (
