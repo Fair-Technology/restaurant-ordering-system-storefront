@@ -2,7 +2,9 @@
 //
 // Invariants (see rs-backend/docs/specs.md §16, "Storefront, URL and going live"):
 //  - noindex is PATH-derived and injected on every response, independent of any fetch.
-//  - Every failure path is HTTP 200 at the same URL. Never 3xx, never 5xx.
+//  - Every FAILURE path (timeout, 404, malformed body, backend error, shell fetch failure) is HTTP 200 at the same
+//    URL, noindex. Never 5xx. The single non-failure exception is a 301 on a SUCCESS path: the shop read succeeded
+//    and named a different current slug (a retired slug, spec §16) -> permanent redirect to /shops/<current>.
 //  - The shell is fetched live from the REQUEST's own origin (never configured / baked).
 //  - Shell cache is per-origin; shop meta cache is per-shop (two lifetimes).
 //  - exactly one <title> in the head: the Function rewrites the shell's own title on a full load.
@@ -69,7 +71,7 @@ export function isAllowedShellHost(originalHostname, expectedHost, shellHosts = 
 }
 
 /**
- * Parse the x-ms-original-url header. Returns { origin, hostname, pathname } or null.
+ * Parse the x-ms-original-url header. Returns { origin, hostname, pathname, search } or null (`search` is the raw `?…` query string, '' when none).
  * `expectedHost` (the Host / x-forwarded-host the request actually arrived on) is an SSRF guard:
  * a direct call to /api/shopShell that sets the header by hand must not make the Function fetch and
  * re-serve another host's HTML under this origin. Only enforced when we have a host to compare with.
@@ -88,7 +90,7 @@ export function parseOriginalUrl(header, expectedHost, shellHosts) {
   if (u.protocol !== 'https:' && !(u.protocol === 'http:' && u.hostname === 'localhost')) return null;
   const allow = shellHosts instanceof Set ? shellHosts : parseShellHosts(shellHosts);
   if (expectedHost && !isAllowedShellHost(u.hostname, expectedHost, allow)) return null;
-  return { origin: u.origin, hostname: u.hostname, pathname: u.pathname };
+  return { origin: u.origin, hostname: u.hostname, pathname: u.pathname, search: u.search };
 }
 
 /**
@@ -103,6 +105,21 @@ export function classify(pathname) {
   // platform: the bare front page (`/`), i.e. zero non-empty segments after trailing-slash normalisation.
   const platform = !noindex && parts.length === 0;
   return { noindex, slug, platform };
+}
+
+export const REDIRECT_STATUS = 301;
+const SHOP_PATH_RE = /^\/shops\/([^/?#]+)/;
+
+/** The shop slug of any /shops/<slug>[...] path (landing, checkout, orders, legal, …), or null. */
+export function shopSlugFromPath(pathname) {
+  const m = SHOP_PATH_RE.exec(String(pathname));
+  return m && SLUG_RE.test(m[1]) ? m[1] : null;
+}
+
+/** Permanent-redirect target: the same path with the slug swapped, query preserved verbatim. */
+export function shopRedirectLocation(pathname, search, requestedSlug, currentSlug) {
+  const rest = String(pathname).slice('/shops/'.length + String(requestedSlug).length);
+  return `/shops/${currentSlug}${rest}${typeof search === 'string' ? search : ''}`;
 }
 
 function absoluteHttps(url, origin) {
@@ -215,7 +232,36 @@ async function fetchPlatformName(fetchFn, backendBase, platformCache, now) {
 }
 
 /**
- * Build the response. Never throws; always status 200.
+ * One cached read of GET <backendBase>/shops/slug/<slug>, shared by the redirect decision and the og meta.
+ * Returns { meta, resolvedSlug, expires }. resolvedSlug is the shop's CURRENT slug, or null when the payload
+ * carries no valid slug (so nothing can redirect on a payload that omits it). On failure the last-good
+ * meta/resolvedSlug are kept (a retired slug never becomes live for another shop).
+ */
+async function readShop({ fetchFn, backendBase, origin, slug, metaCache, now }) {
+  const key = `${origin}|${slug.toLowerCase()}`;
+  const cached = metaCache.get(key);
+  if (cached && now() < cached.expires) return cached;
+  let entry;
+  try {
+    const raw = JSON.parse(
+      await fetchText(fetchFn, `${backendBase.replace(/\/+$/, '')}/shops/slug/${encodeURIComponent(slug)}`, SHOP_TIMEOUT_MS),
+    );
+    const shop = raw && (raw.shop ?? raw.data ?? raw);
+    // The slug ends up in a Location header, so it must pass the same SLUG_RE as the request path (no ?, #, .., whitespace, CR/LF).
+    const resolvedSlug =
+      shop && typeof shop.slug === 'string' && SLUG_RE.test(shop.slug.trim()) ? shop.slug.trim() : null;
+    const meta = toMeta(raw, origin);
+    entry = { meta, resolvedSlug, expires: now() + (meta ? META_TTL_MS : META_NEGATIVE_TTL_MS) };
+  } catch {
+    // negative-cache briefly so an outage/hang is not re-hit per unfurl; keep last-good meta + resolvedSlug
+    entry = { meta: cached?.meta ?? null, resolvedSlug: cached?.resolvedSlug ?? null, expires: now() + META_NEGATIVE_TTL_MS };
+  }
+  metaCache.set(key, entry);
+  return entry;
+}
+
+/**
+ * Build the response. Never throws; status 200, except a 301 when a successful shop read names a different current slug.
  * deps: { fetch, now, shellCache: Map, metaCache: Map, backendBase, expectedHost, shellHosts }
  */
 export async function handleShell({ originalUrl, deps }) {
@@ -230,10 +276,24 @@ export async function handleShell({ originalUrl, deps }) {
   const parsed = parseOriginalUrl(originalUrl, expectedHost, shellHosts);
   if (!parsed) return { status: 200, headers, body: minimalPage() };
 
-  const { origin, pathname } = parsed;
+  const { origin, pathname, search } = parsed;
   const { slug, platform } = classify(pathname);
   // The route rule sends /shops/*, /legal/* AND the bare `/` here. noindex is unconditional for the
   // former (fail safe); `/` is the sales site, so it stays indexable and gains a platform og card.
+
+  // --- retired slug: a successful read naming a different current slug is a permanent redirect (no shell needed) ---
+  const shopSlug = shopSlugFromPath(pathname);
+  let shopRead = null;
+  if (shopSlug && backendBase && !platform) {
+    shopRead = await readShop({ fetchFn, backendBase, origin, slug: shopSlug, metaCache, now });
+    if (shopRead.resolvedSlug && shopRead.resolvedSlug !== shopSlug) {
+      return {
+        status: REDIRECT_STATUS,
+        headers: { ...headers, location: shopRedirectLocation(pathname, search, shopSlug, shopRead.resolvedSlug) },
+        body: '',
+      };
+    }
+  }
 
   // --- shell: per-origin cache, last-good on failure ---
   let shell = null;
@@ -259,31 +319,8 @@ export async function handleShell({ originalUrl, deps }) {
     return { status: 200, headers, body: minimalPage() };
   }
 
-  // --- meta: per-shop cache, only for the shop landing path ---
-  let meta = null;
-  if (slug && backendBase) {
-    const key = `${origin}|${slug.toLowerCase()}`;
-    const m = metaCache.get(key);
-    if (m && now() < m.expires) {
-      meta = m.meta;
-    } else {
-      try {
-        const raw = JSON.parse(
-          await fetchText(
-            fetchFn,
-            `${backendBase.replace(/\/+$/, '')}/shops/slug/${encodeURIComponent(slug)}`,
-            SHOP_TIMEOUT_MS,
-          ),
-        );
-        meta = toMeta(raw, origin);
-        metaCache.set(key, { meta, expires: now() + (meta ? META_TTL_MS : META_NEGATIVE_TTL_MS) });
-      } catch {
-        // negative-cache briefly so an outage/hang is not re-hit per unfurl; serve stale meta if we have it
-        meta = m ? m.meta : null;
-        metaCache.set(key, { meta, expires: now() + META_NEGATIVE_TTL_MS });
-      }
-    }
-  }
+  // --- meta: only for the shop landing path, from the shared per-shop read ---
+  const meta = slug && shopRead ? shopRead.meta : null;
 
   if (platform) {
     const name = await fetchPlatformName(fetchFn, backendBase, platformCache, now);

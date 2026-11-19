@@ -1,11 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { handleShell, escapeHtml, classify, parseOriginalUrl, parseShellHosts, isAllowedShellHost, applyTitle, PLATFORM_DESCRIPTION, DEFAULT_PLATFORM_NAME } from '../src/lib/shell.js';
+import { handleShell, escapeHtml, classify, parseOriginalUrl, parseShellHosts, isAllowedShellHost, applyTitle, shopSlugFromPath, shopRedirectLocation, REDIRECT_STATUS, PLATFORM_DESCRIPTION, DEFAULT_PLATFORM_NAME } from '../src/lib/shell.js';
 
 const ORIGIN = 'https://store.example.com';
 const SHELL = '<html><head><!--og-inject--><title>x</title><script type="module" src="/assets/a-123.js"></script></head><body></body></html>';
+// A retired slug resolves to the shop that now owns the current slug (what GET /shops/slug/{slug} returns after a rename).
+const ALIASES = { retired: 'fish' };
 const SHOPS = {
-  fish: { name: 'Fish & Chips', address: { city: 'Leeds' }, branding: { heroImageUrl: 'https://cdn.example.com/h.jpg', logoUrl: null } },
+  fish: { slug: 'fish', name: 'Fish & Chips', address: { city: 'Leeds' }, branding: { heroImageUrl: 'https://cdn.example.com/h.jpg', logoUrl: null } },
+  junk: { slug: 'x/../y', name: 'Junk Cafe', address: {}, branding: { heroImageUrl: null, logoUrl: null } },
   bare: { name: 'Bare Cafe', address: {}, branding: { heroImageUrl: null, logoUrl: null } },
 };
 function mkFetch({ shell = SHELL, shopFail, shopHang, shellFail, platformFail, origin = ORIGIN } = {}) {
@@ -20,8 +23,8 @@ function mkFetch({ shell = SHELL, shopFail, shopHang, shellFail, platformFail, o
     }
     const m = /\/shops\/slug\/([^/]+)$/.exec(url);
     if (shopHang) return new Promise((_, rej) => opts.signal.addEventListener('abort', () => rej(new Error('timeout'))));
-    if (shopFail || !SHOPS[m?.[1]]) return { ok: false, status: shopFail ? 500 : 404, text: async () => '' };
-    return { ok: true, text: async () => JSON.stringify(SHOPS[m[1]]) };
+    if (shopFail || !SHOPS[ALIASES[m?.[1]] ?? m?.[1]]) return { ok: false, status: shopFail ? 500 : 404, text: async () => '' };
+    return { ok: true, text: async () => JSON.stringify(SHOPS[ALIASES[m[1]] ?? m[1]]) };
   };
 }
 // `extra.origin` overrides the x-ms-original-url origin; `extra.expectedHost` / `extra.shellHosts` pass through to deps.
@@ -266,4 +269,87 @@ test('parseShellHosts: whitespace, empty entries, case-insensitive', () => {
     parseOriginalUrl('https://store.example.com/shops/x', INTERNAL_HOST, ' store.example.com ').pathname,
     '/shops/x',
   );
+});
+
+test('retired slug -> 301 to the current slug, noindex kept', async () => {
+  const r = await run('/shops/retired');
+  assert.equal(r.status, REDIRECT_STATUS);
+  assert.equal(r.status, 301);
+  assert.equal(r.headers.location, '/shops/fish');
+  assert.equal(r.headers['x-robots-tag'], 'noindex, nofollow');
+  assert.equal(r.body, '');
+});
+
+test('retired slug deep paths: path after the slug and the query are preserved verbatim', async () => {
+  const a = await run('/shops/retired/checkout?t=tok&x=1');
+  assert.equal(a.status, 301);
+  assert.equal(a.headers.location, '/shops/fish/checkout?t=tok&x=1');
+  const b = await run('/shops/retired/orders/abc?t=tok');
+  assert.equal(b.status, 301);
+  assert.equal(b.headers.location, '/shops/fish/orders/abc?t=tok');
+});
+
+test('one hop: the redirect target is 200, never a second 301', async () => {
+  const r = await run('/shops/fish/checkout?t=tok&x=1');
+  assert.equal(r.status, 200);
+  assert.equal(r.headers.location, undefined);
+  assert.match(r.body, NOINDEX);
+});
+
+test('live slug 200 no location; unknown slug 200 + noindex no location', async () => {
+  const live = await run('/shops/fish');
+  assert.equal(live.status, 200);
+  assert.equal(live.headers.location, undefined);
+  const unknown = await run('/shops/nope');
+  assert.equal(unknown.status, 200);
+  assert.equal(unknown.headers.location, undefined);
+  assert.match(unknown.body, NOINDEX);
+});
+
+test('backend failure on a retired slug -> 200 + noindex, no location (fail-open)', async () => {
+  const r = await run('/shops/retired', mkFetch({ shopFail: true }));
+  assert.equal(r.status, 200);
+  assert.equal(r.headers.location, undefined);
+  assert.match(r.body, NOINDEX);
+});
+
+test('redirect needs no shell: served even when the shell fetch fails', async () => {
+  const r = await run('/shops/retired', mkFetch({ shellFail: true }));
+  assert.equal(r.status, 301);
+});
+
+test('last-good resolvedSlug survives one backend blip', async () => {
+  const metaCache = new Map();
+  let t = 0;
+  const go = (f) => handleShell({ originalUrl: `${ORIGIN}/shops/retired`, deps: { fetch: f, shellCache: new Map(), metaCache, backendBase: 'https://be/api', now: () => t } });
+  assert.equal((await go(mkFetch())).status, 301);
+  t += 10 * 60_000; // past the positive TTL
+  assert.equal((await go(mkFetch({ shopFail: true }))).status, 301);
+});
+
+test('payload with no slug field (legacy/fixture) never redirects', async () => {
+  const r = await run('/shops/bare');
+  assert.equal(r.status, 200);
+  assert.equal(r.headers.location, undefined);
+});
+
+test('payload slug that is not a valid slug never becomes a redirect target (200, no location)', async () => {
+  const r = await run('/shops/junk');
+  assert.equal(r.status, 200);
+  assert.equal(r.headers.location, undefined);
+  assert.match(r.body, /Junk Cafe/);
+});
+
+test('redirect helpers', () => {
+  assert.equal(shopSlugFromPath('/shops/x'), 'x');
+  assert.equal(shopSlugFromPath('/shops/x/'), 'x');
+  assert.equal(shopSlugFromPath('/shops/x/checkout'), 'x');
+  assert.equal(shopSlugFromPath('/legal/x'), null);
+  assert.equal(shopSlugFromPath('/'), null);
+  assert.equal(shopRedirectLocation('/shops/old', '', 'old', 'new'), '/shops/new');
+  assert.equal(shopRedirectLocation('/shops/old/', '?a=1', 'old', 'new'), '/shops/new/?a=1');
+  assert.equal(shopRedirectLocation('/shops/old/checkout', '?t=tok&x=1', 'old', 'new'), '/shops/new/checkout?t=tok&x=1');
+  assert.equal(shopRedirectLocation('/shops/old', undefined, 'old', 'new'), '/shops/new');
+  assert.equal(parseOriginalUrl(`${ORIGIN}/shops/x/checkout?t=tok&x=1`).search, '?t=tok&x=1');
+  assert.equal(parseOriginalUrl(`${ORIGIN}/shops/x`).search, '');
 });
