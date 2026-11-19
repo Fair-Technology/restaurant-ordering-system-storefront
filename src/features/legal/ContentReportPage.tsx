@@ -153,7 +153,13 @@ const ContentReportPage: React.FC = () => {
 
   return (
     <div className="flex min-h-screen flex-col bg-white text-gray-900" style={brandStyle}>
-      <NavBar shopName={shopName} shopId={slug ?? ''} logoUrl={branding.logoUrl} hideCart />
+      <NavBar
+        shopName={shopName}
+        shopId={slug ?? ''}
+        logoUrl={branding.logoUrl}
+        hideCart
+        fallbackLabel={copy.backToMenu}
+      />
 
       <section className="border-b border-[#efe7de] bg-[#faf6f1]">
         <div className="mx-auto max-w-7xl px-4 pt-3 sm:px-6 sm:pb-[30px] sm:pt-[22px]">
