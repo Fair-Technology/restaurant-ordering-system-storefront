@@ -19,6 +19,7 @@ import {
 import { useBrandingStyle } from '../../hooks/useBrandingStyle';
 import { resolveShopBranding, type ShopWithBranding } from '../../utils/branding';
 import { currentChoice, pageLanguageOf } from '../../utils/pageLanguage';
+import { isBlank } from '../../utils/formValidation';
 import { REPORT_CATEGORIES, reportCopy, type ReportCategory } from '../../utils/reportCopy';
 
 const isHttpUrl = (value: string): boolean => {
@@ -103,7 +104,7 @@ const ContentReportPage: React.FC = () => {
       errors.category = copy.categoryRequiredError;
       invalidOrder.push({ field: 'category', id: 'report-category' });
     }
-    if (!reason.trim()) {
+    if (isBlank(reason)) {
       errors.reason = copy.reasonRequiredError;
       invalidOrder.push({ field: 'reason', id: 'report-reason' });
     }

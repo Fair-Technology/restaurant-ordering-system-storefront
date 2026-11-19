@@ -14,6 +14,8 @@ export const LEGAL_CHANGED_ERROR =
 export const MODE_NOT_OFFERED_ERROR = 'This restaurant is not taking orders this way right now';
 export const TABLE_INVALID_ERROR = 'Please scan the QR code on your table again';
 export const PAYMENT_CONFIRMING_ERROR = 'Your payment is being confirmed';
+export const CUSTOMER_PHONE_ERROR =
+  'customerPhone must be a phone number: digits, spaces, and + - ( ) . only, with 6 to 15 digits';
 export const ADDRESS_REQUIRED_ERROR = 'An address is required for orders over 250 €';
 export const ORDER_LIMIT_REACHED_ERROR = 'This restaurant has paused online ordering for now';
 export const DELIVERY_POSTCODE_NOT_SERVED_ERROR = 'This restaurant does not deliver to this postcode';

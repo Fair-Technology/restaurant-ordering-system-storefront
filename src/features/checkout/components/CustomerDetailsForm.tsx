@@ -1,10 +1,11 @@
-import React, { useEffect, useId, useState } from 'react';
+import React, { useEffect, useId, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
 import type { LegalCopy } from '../../../utils/legalCopy';
 import type { CustomerAddress, DeliveryAddress } from '../../../api/orderEndpoints';
 import type { OrderCopy } from '../../../utils/orderCopy';
 import { addressFromForm } from '../../../utils/address';
+import { isBlank, isPlausiblePhone } from '../../../utils/formValidation';
 import { readCheckoutDetails, writeCheckoutDetails } from '../../../utils/checkoutDetails';
 
 export interface CustomerFormData {
@@ -27,6 +28,9 @@ type FormCopy = Pick<
   | 'phoneLabel'
   | 'phoneHint'
   | 'phonePlaceholder'
+  | 'nameRequiredError'
+  | 'phoneRequiredError'
+  | 'phoneInvalidError'
   | 'billingToggle'
   | 'addressTitleOptional'
   | 'addressTitleRequired'
@@ -60,6 +64,7 @@ interface CustomerDetailsFormProps {
 export const inputClass =
   'h-12 w-full rounded-xl border-[1.5px] border-[#e3d9ce] bg-white px-3.5 text-base text-gray-900 placeholder:text-[#9a8f86] focus:border-gray-900 focus:outline-hidden focus:ring-2 focus:ring-[var(--brand-accent)] focus:ring-offset-1 sm:text-[15px]';
 const labelClass = 'mb-1.5 block text-[13px] font-semibold text-[#4a413b]';
+const fieldErrorClass = 'mt-1.5 rounded-xl bg-[#fdecea] px-3.5 py-2.5 text-sm text-[#8a1f12]';
 const hintClass = 'font-normal text-[#6b6058]';
 
 /** "Postcode 10115 – change it on the menu": the part after the dash links back to the menu. */
@@ -117,6 +122,10 @@ const CustomerDetailsForm: React.FC<CustomerDetailsFormProps> = ({
   const [deliveryStreet, setDeliveryStreet] = useState(saved?.deliveryStreet ?? '');
   const [deliveryCity, setDeliveryCity] = useState(saved?.deliveryCity ?? '');
   const [addressError, setAddressError] = useState<string | null>(null);
+  const [nameError, setNameError] = useState<string | null>(null);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
+  const nameRef = useRef<HTMLInputElement>(null);
+  const phoneRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     writeCheckoutDetails({
@@ -134,8 +143,27 @@ const CustomerDetailsForm: React.FC<CustomerDetailsFormProps> = ({
     });
   }, [slug, name, email, phone, notes, address, countryEdited, billingOpen, deliveryStreet, deliveryCity]);
 
-  function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    // Our own checks come first (the form is noValidate), so the diner sees inline messages, not a browser bubble.
+    const nextNameError = isBlank(name) ? copy.nameRequiredError : null;
+    const nextPhoneError = isBlank(phone)
+      ? copy.phoneRequiredError
+      : !isPlausiblePhone(phone)
+        ? copy.phoneInvalidError
+        : null;
+    if (nextNameError || nextPhoneError) {
+      setNameError(nextNameError);
+      setPhoneError(nextPhoneError);
+      const first = nextNameError ? nameRef.current : phoneRef.current;
+      first?.focus();
+      first?.scrollIntoView({ block: 'center' });
+      return;
+    }
+    setNameError(null);
+    setPhoneError(null);
+    // noValidate switched off the browser's checks for the other required fields too; keep them.
+    if (!e.currentTarget.reportValidity()) return;
     // The prefilled country alone is not an address: an untouched optional form sends none.
     const untouched =
       !address.street.trim() &&
@@ -162,7 +190,7 @@ const CustomerDetailsForm: React.FC<CustomerDetailsFormProps> = ({
   }
 
   return (
-    <form id={formId} onSubmit={handleSubmit} className="flex flex-col gap-4">
+    <form id={formId} onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
       <h2 className="text-[19px] font-bold text-gray-900">{copy.detailsTitle}</h2>
 
       <div>
@@ -171,14 +199,26 @@ const CustomerDetailsForm: React.FC<CustomerDetailsFormProps> = ({
         </label>
         <input
           id={`${uid}-name`}
+          ref={nameRef}
           type="text"
           required
+          aria-required="true"
+          aria-invalid={!!nameError}
+          aria-describedby={nameError ? `${uid}-name-error` : undefined}
           autoComplete="name"
           className={inputClass}
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={(e) => {
+            setName(e.target.value);
+            setNameError(null);
+          }}
           placeholder={copy.namePlaceholder}
         />
+        {nameError && (
+          <p id={`${uid}-name-error`} role="alert" className={fieldErrorClass}>
+            {nameError}
+          </p>
+        )}
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 sm:gap-3">
@@ -203,14 +243,26 @@ const CustomerDetailsForm: React.FC<CustomerDetailsFormProps> = ({
           </label>
           <input
             id={`${uid}-phone`}
+            ref={phoneRef}
             type="tel"
             required
+            aria-required="true"
+            aria-invalid={!!phoneError}
+            aria-describedby={phoneError ? `${uid}-phone-error` : undefined}
             autoComplete="tel"
             className={inputClass}
             value={phone}
-            onChange={(e) => setPhone(e.target.value)}
+            onChange={(e) => {
+              setPhone(e.target.value);
+              setPhoneError(null);
+            }}
             placeholder={copy.phonePlaceholder}
           />
+          {phoneError && (
+            <p id={`${uid}-phone-error`} role="alert" className={fieldErrorClass}>
+              {phoneError}
+            </p>
+          )}
         </div>
       </div>
 

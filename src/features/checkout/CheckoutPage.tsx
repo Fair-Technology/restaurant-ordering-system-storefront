@@ -14,6 +14,7 @@ import { useGetShopBySlugQuery, useGetCatalogQuery } from '../../api/endpoints';
 import {
   ADDRESS_REQUIRED_ERROR,
   BASKET_CHANGED_ERROR,
+  CUSTOMER_PHONE_ERROR,
   DELIVERY_FEE_CHANGED_ERROR,
   DISCOUNT_ALREADY_USED_ERROR,
   DISCOUNT_CHANGED_ERROR,
@@ -346,6 +347,8 @@ const CheckoutPage: React.FC = () => {
     } else if (msg === ORDER_LIMIT_REACHED_ERROR) {
       requote();
       setPlaceError(copy.orderingPaused);
+    } else if (msg === CUSTOMER_PHONE_ERROR) {
+      setPlaceError(copy.phoneInvalidError);
     } else {
       setPlaceError(msg ?? copy.orderFailed);
     }
