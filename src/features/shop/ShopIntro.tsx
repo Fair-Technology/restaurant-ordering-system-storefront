@@ -99,7 +99,7 @@ const ShopIntro: React.FC<ShopIntroProps> = ({
                 </span>
               ))
             )}
-            {(pickupMinutes ?? 0) > 0 && (
+            {!offline && (pickupMinutes ?? 0) > 0 && (
               <span className="rounded-full bg-[#f6f1eb] px-3 py-1 text-[#4a413b]">
                 {copy.introPickupIn(pickupMinutes as number)}
               </span>

@@ -19,6 +19,7 @@ function shopWith(isOffline: boolean) {
   return {
     id: 'shop-t', slug: 'test-shop', name: 'Test Shop', currency: 'EUR', branding: null,
     timezone: 'Europe/Berlin', openingHours: HOURS, closures: [], isOffline,
+    fulfilment: { modes: ['collection'], prepMinutes: { collection: 20, delivery: 0, dine_in: 0 }, delivery: null },
   };
 }
 
@@ -45,5 +46,16 @@ test.describe('shop intro status pill vs offline flag', () => {
     await page.goto('/shops/test-shop');
     await expect(page.getByRole('alertdialog')).toHaveCount(0);
     await expect(page.getByTestId('shop-intro')).toContainText(/Open (now|until)/);
+    // Positive control: the fulfilment fixture really produces a pickup pill when online.
+    await expect(page.getByTestId('shop-intro')).toContainText(/Pickup in about/i);
+  });
+
+  test('offline shop with collection prep time hides the pickup pill too', async ({ page }) => {
+    await stub(page, true);
+    await page.goto('/shops/test-shop');
+    await expect(page.getByRole('alertdialog').getByRole('heading', { name: 'This restaurant is offline' })).toBeVisible();
+    const intro = page.getByTestId('shop-intro');
+    await expect(intro).toContainText('Offline');
+    await expect(intro).not.toContainText(/Pickup in about/i);
   });
 });
