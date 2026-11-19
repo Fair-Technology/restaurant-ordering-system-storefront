@@ -261,6 +261,8 @@ export interface CustomerOrderDto {
     lineTotalCents: number;
     selectedVariantOptionName: string | null;
     selectedAddonOptionNames: string[];
+    /** Set when the item is a component of a combo; items sharing `line` are one combo instance. Absent on older backends. */
+    combo?: { line: number; productId: string; name: string } | null;
   }>;
   subtotalCents: number;
   totalCents?: number;

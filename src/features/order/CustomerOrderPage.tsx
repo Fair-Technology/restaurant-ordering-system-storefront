@@ -1,3 +1,4 @@
+import { groupOrderItems } from '../../utils/orderItemGroups';
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { Bike, Check, Clock, Download, Mail, MapPin, Phone, ShieldCheck, ShoppingBag, UtensilsCrossed, X } from 'lucide-react';
@@ -477,22 +478,22 @@ const CustomerOrderPage: React.FC = () => {
                 <section className={`${card} flex flex-col gap-3.5`}>
                   <h2 className="text-[19px] font-bold text-gray-900">{copy.checkoutTitle}</h2>
                   <ul className="flex flex-col">
-                    {order.items.map((item, i) => (
+                    {groupOrderItems(order.items).map((row, i) => (
                       <li key={i} className="flex justify-between gap-3 border-b border-[#f1ebe4] py-3 first:pt-0">
                         <div>
                           <div className="text-[15px] font-bold text-gray-900">
-                            {item.quantity} × {item.productName}
+                            {row.kind === 'combo' ? row.label : `${row.quantity} × ${row.label}`}
                           </div>
-                          {(item.selectedVariantOptionName || item.selectedAddonOptionNames.length > 0) && (
-                            <div className="text-[13px] text-[#5c524b]">
-                              {[item.selectedVariantOptionName, ...item.selectedAddonOptionNames]
-                                .filter(Boolean)
-                                .join(' · ')}
-                            </div>
-                          )}
+                          {row.kind === 'combo'
+                            ? row.components.map((c, j) => (
+                                <div key={j} className="text-[13px] text-[#5c524b]">
+                                  {c}
+                                </div>
+                              ))
+                            : row.detail && <div className="text-[13px] text-[#5c524b]">{row.detail}</div>}
                         </div>
                         <div className="whitespace-nowrap text-[15px] font-semibold text-gray-900">
-                          {money.cents(item.lineTotalCents)}
+                          {money.cents(row.totalCents)}
                         </div>
                       </li>
                     ))}
