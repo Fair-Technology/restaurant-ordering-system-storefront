@@ -1,4 +1,5 @@
 import { groupOrderItems } from '../../utils/orderItemGroups';
+import SkipLink from '../../shared/SkipLink';
 import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { Bike, Check, Clock, Download, Mail, MapPin, Phone, ShieldCheck, ShoppingBag, UtensilsCrossed, X } from 'lucide-react';
@@ -294,6 +295,7 @@ const CustomerOrderPage: React.FC = () => {
 
   return (
     <div className="flex min-h-screen flex-col bg-[#faf6f1]" style={brandStyle}>
+      <SkipLink />
       <div className="sticky top-0 z-50">
         <NavBar
           shopName={order?.shopName ?? shopData?.name ?? 'Online Ordering'}
@@ -303,7 +305,7 @@ const CustomerOrderPage: React.FC = () => {
         />
       </div>
 
-      <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-5 px-4 pb-14 pt-6 sm:px-6 lg:pt-8">
+      <main id="main-content" className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-5 px-4 pb-14 pt-6 sm:px-6 lg:pt-8">
         {showLoading && (
           <div className={`${card} flex items-center gap-3 text-[#5c524b]`}>
             <span className="h-5 w-5 animate-spin rounded-full border-2 border-[#e3d9ce] border-t-gray-900" aria-hidden="true" />

@@ -1,3 +1,4 @@
+import SkipLink from '../../shared/SkipLink';
 import React, { useEffect, useMemo, useState } from 'react';
 import { toComboChoiceDtos } from '../../utils/combo';
 import { Link, useNavigate, useParams } from 'react-router-dom';
@@ -412,10 +413,11 @@ const CheckoutPage: React.FC = () => {
   if (isShopError) {
     return (
       <div className="flex min-h-screen flex-col bg-[#faf6f1]">
+        <SkipLink />
         <div className="sticky top-0 z-50">
           <NavBar shopName="Online Ordering" shopId={slug ?? ''} logoUrl={null} />
         </div>
-        <main className="mx-auto flex w-full max-w-2xl flex-1 items-center justify-center px-4 py-12">
+        <main id="main-content" className="mx-auto flex w-full max-w-2xl flex-1 items-center justify-center px-4 py-12">
           <div className="flex w-full flex-col items-center gap-4 rounded-[20px] border border-[#efe7de] bg-white p-8 text-center" data-testid="shop-error">
             <h1 className="font-display text-[28px] font-semibold leading-tight text-gray-900">{copy.couldNotLoadShop}</h1>
             <p className="text-[15px] leading-relaxed text-[#5c524b]">{copy.couldNotLoadShopText}</p>
@@ -437,10 +439,11 @@ const CheckoutPage: React.FC = () => {
   if (isOffline) {
     return (
       <div className="flex min-h-screen flex-col bg-[#faf6f1]" style={brandStyle}>
+        <SkipLink />
         <div className="sticky top-0 z-50">
           <NavBar shopName={shopName} shopId={slug ?? ''} logoUrl={resolvedBranding.logoUrl} />
         </div>
-        <main className="mx-auto flex w-full max-w-2xl flex-1 items-center justify-center px-4 py-12">
+        <main id="main-content" className="mx-auto flex w-full max-w-2xl flex-1 items-center justify-center px-4 py-12">
           <div className="flex w-full flex-col items-center gap-4 rounded-[20px] border border-[#efe7de] bg-white p-8 text-center" data-testid="shop-offline">
             <h1 className="font-display text-[28px] font-semibold leading-tight text-gray-900">{copy.noticeOfflineTitle}</h1>
             <p className="text-[15px] leading-relaxed text-[#5c524b]">{copy.noticeOfflineText}</p>
@@ -458,10 +461,11 @@ const CheckoutPage: React.FC = () => {
   if (cartItems.length === 0 && step === 'info') {
     return (
       <div className="flex min-h-screen flex-col bg-[#faf6f1]" style={brandStyle}>
+        <SkipLink />
         <div className="sticky top-0 z-50">
           <NavBar shopName={shopName} shopId={slug ?? ''} logoUrl={resolvedBranding.logoUrl} />
         </div>
-        <main className="mx-auto flex w-full max-w-2xl flex-1 items-center justify-center px-4 py-12">
+        <main id="main-content" className="mx-auto flex w-full max-w-2xl flex-1 items-center justify-center px-4 py-12">
           <div className="flex w-full flex-col items-center gap-4 rounded-[20px] border border-[#efe7de] bg-white p-8 text-center" data-testid="empty-basket">
             <h1 className="font-display text-[28px] font-semibold leading-tight text-gray-900">{copy.checkoutTitle}</h1>
             <p className="text-[15px] leading-relaxed text-[#5c524b]">{copy.basketEmpty}</p>
@@ -490,11 +494,12 @@ const CheckoutPage: React.FC = () => {
 
   return (
     <div className="flex min-h-screen flex-col bg-[#faf6f1] pb-24 lg:pb-0" style={brandStyle}>
+      <SkipLink />
       <div className="sticky top-0 z-50">
         <NavBar shopName={shopName} shopId={slug ?? ''} logoUrl={resolvedBranding.logoUrl} />
       </div>
 
-      <main className="mx-auto w-full max-w-7xl flex-1 px-4 pb-10 pt-5 sm:px-6 lg:pb-16 lg:pt-7">
+      <main id="main-content" className="mx-auto w-full max-w-7xl flex-1 px-4 pb-10 pt-5 sm:px-6 lg:pb-16 lg:pt-7">
         {/* Back link, title, steps */}
         <div className="mb-5 flex flex-wrap items-end justify-between gap-4 lg:mb-6">
           <div className="flex flex-col gap-1">

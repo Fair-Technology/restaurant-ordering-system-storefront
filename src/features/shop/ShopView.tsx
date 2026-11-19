@@ -1,3 +1,4 @@
+import SkipLink from '../../shared/SkipLink';
 import { useEffect, useMemo, useState } from 'react';
 import { ShopPageSkeleton } from '../../shared/Skeletons';
 import NotFound from '../../pages/NotFound';
@@ -408,8 +409,9 @@ const ShopView = () => {
   if (shopQueryError) {
     return (
       <div className="flex min-h-screen flex-col bg-white text-gray-900">
+        <SkipLink />
         <PlatformHeader />
-        <main className="flex flex-1 items-center justify-center px-6 py-12">
+        <main id="main-content" className="flex flex-1 items-center justify-center px-6 py-12">
           <div role="alert" data-testid="shop-error" className="flex max-w-[460px] flex-col items-center text-center">
             <p className="rounded-xl border border-[#f6d3c1] bg-[#fdeee6] px-4 py-3 text-[#7c2a09]">{site.shopError}</p>
             <button
@@ -438,6 +440,7 @@ const ShopView = () => {
 
   return (
     <div className="bg-white min-h-screen" style={brandStyle}>
+      <SkipLink />
       <div className="sticky top-0 z-50">
         <NavBar
           shopName={shopName}
@@ -448,6 +451,7 @@ const ShopView = () => {
           cartContext={cartContext}
         />
       </div>
+      <main id="main-content">
       {resolvedBranding.showHero && <HeroSection heroImageUrl={resolvedBranding.heroImageUrl} />}
       <ShopIntro
         name={shopName}
@@ -613,6 +617,7 @@ const ShopView = () => {
           copy={copy}
         />
       )}
+      </main>
       <Footer slug={slug} flush={!!resolvedShopData} />
       {!isOffline && <MobileCartBar onCheckout={() => !preview && navigate(`/shops/${slug}/checkout`)} copy={copy} />}
     </div>

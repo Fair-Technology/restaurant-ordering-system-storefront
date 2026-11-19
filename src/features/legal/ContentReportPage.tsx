@@ -1,3 +1,4 @@
+import SkipLink from '../../shared/SkipLink';
 import React, { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ChevronLeft } from 'lucide-react';
@@ -154,6 +155,7 @@ const ContentReportPage: React.FC = () => {
 
   return (
     <div className="flex min-h-screen flex-col bg-white text-gray-900" style={brandStyle}>
+      <SkipLink />
       <NavBar
         shopName={shopName}
         shopId={slug ?? ''}
@@ -182,7 +184,7 @@ const ContentReportPage: React.FC = () => {
         </div>
       </section>
 
-      <div className="mx-auto w-full max-w-7xl flex-1 px-5 pb-12 pt-6 sm:px-6">
+      <main id="main-content" className="mx-auto w-full max-w-7xl flex-1 px-5 pb-12 pt-6 sm:px-6">
         <article className="max-w-[680px] text-base leading-[1.7] text-[#3a322d]">
           {receipt ? (
             <div
@@ -359,7 +361,7 @@ const ContentReportPage: React.FC = () => {
             </>
           )}
         </article>
-      </div>
+      </main>
 
       <Footer slug={slug} flush />
     </div>

@@ -1,3 +1,4 @@
+import SkipLink from '../shared/SkipLink';
 import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import PlatformHeader from '../shared/PlatformHeader';
@@ -33,8 +34,9 @@ const NotFound: React.FC<{ kind?: 'page' | 'shop' }> = ({ kind = 'page' }) => {
 
   return (
     <div className="flex min-h-screen flex-col bg-white text-gray-900">
+      <SkipLink />
       <PlatformHeader />
-      <main className="flex flex-1 items-center justify-center px-6 py-12">
+      <main id="main-content" className="flex flex-1 items-center justify-center px-6 py-12">
         <div className="flex max-w-[460px] flex-col items-center text-center">
           <EmptyPlate label={shop ? undefined : '404'} className="h-[104px] w-[140px] sm:h-[132px] sm:w-[180px]" />
           <h1 className="mt-4 font-display text-[28px] font-semibold leading-tight sm:mt-5 sm:text-4xl">
