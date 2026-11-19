@@ -128,6 +128,9 @@ export interface OrderCopy {
   phoneLabel: string;
   phoneHint: string;
   phonePlaceholder: string;
+  nameRequiredError: string;
+  phoneRequiredError: string;
+  phoneInvalidError: string;
   billingToggle: string;
   summaryTitle: string;
   inclVat: string;
@@ -421,6 +424,9 @@ const en: OrderCopy = {
   phoneLabel: 'Phone',
   phoneHint: 'in case the restaurant has a question',
   phonePlaceholder: '+1 (555) 000-0000',
+  nameRequiredError: 'Please enter your name.',
+  phoneRequiredError: 'Please enter your phone number.',
+  phoneInvalidError: 'Please enter a valid phone number (digits, spaces, and + - ( ) . only, 6 to 15 digits).',
   billingToggle: 'Add a billing address (optional)',
   summaryTitle: 'Summary',
   inclVat: 'incl. VAT',
@@ -724,6 +730,9 @@ const de: OrderCopy = {
   phoneLabel: 'Telefon',
   phoneHint: 'für Rückfragen des Restaurants',
   phonePlaceholder: '0170 1234567',
+  nameRequiredError: 'Bitte geben Sie Ihren Namen ein.',
+  phoneRequiredError: 'Bitte geben Sie Ihre Telefonnummer ein.',
+  phoneInvalidError: 'Bitte geben Sie eine gültige Telefonnummer ein (Ziffern, Leerzeichen und + - ( ) ., 6 bis 15 Ziffern).',
   billingToggle: 'Rechnungsadresse hinzufügen (optional)',
   summaryTitle: 'Übersicht',
   inclVat: 'inkl. MwSt.',
