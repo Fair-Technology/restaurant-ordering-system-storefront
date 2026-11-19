@@ -181,6 +181,35 @@ test.describe('Legal pages – layout', () => {
     await page.goto('/shops/test-shop/legal/terms');
     await expect(page.getByRole('link', { name: '030 1234567' })).toHaveAttribute('href', 'tel:0301234567');
   });
+
+  test('all-digit register values stay plain text, only phone and email are links', async ({ page }) => {
+    await mockShop(page);
+    await mockLegal(page, {
+      impressum: {
+        lines: [
+          { label: 'Provider', value: 'Test Shop GmbH' },
+          { label: 'Phone', value: '030 1234567' },
+          { label: 'Email', value: 'hello@test-shop.test' },
+          { label: 'Register court', value: '2222222' },
+          { label: 'Register number', value: '333333' },
+          { label: 'Supervisory authority', value: '555555' },
+        ],
+      },
+    });
+    await page.goto('/shops/test-shop/legal/impressum');
+
+    await expect(page.getByRole('link', { name: '030 1234567' })).toHaveAttribute('href', 'tel:0301234567');
+    await expect(page.getByRole('link', { name: 'hello@test-shop.test' })).toHaveAttribute(
+      'href',
+      'mailto:hello@test-shop.test',
+    );
+    await expect(page.getByRole('link', { name: '2222222' })).toHaveCount(0);
+    await expect(page.getByRole('link', { name: '333333' })).toHaveCount(0);
+    await expect(page.getByRole('link', { name: '555555' })).toHaveCount(0);
+    await expect(page.getByText('2222222')).toBeVisible();
+    await expect(page.getByText('333333')).toBeVisible();
+    await expect(page.getByText('555555')).toBeVisible();
+  });
 });
 
 test.describe('Not found', () => {
