@@ -11,9 +11,21 @@ import { legalCopy, type LegalDoc } from '../utils/legalCopy';
  * On a legal page the open document is marked (current).
  */
 // flush: sits right under another footer block (the shop info), so no top gap
-const Footer = ({ slug, flush = false, current }: { slug?: string; flush?: boolean; current?: LegalDoc }) => {
+// language: an authoritative language for the surrounding page (the order page passes the order's own);
+// it wins over the stored storefront choice and the browser language.
+const Footer = ({
+  slug,
+  flush = false,
+  current,
+  language,
+}: {
+  slug?: string;
+  flush?: boolean;
+  current?: LegalDoc;
+  language?: string;
+}) => {
   const storedLanguage = useAppSelector((state) => state.shop.menuLanguage);
-  const lang = currentChoice(storedLanguage, navigator.language);
+  const lang = language ?? currentChoice(storedLanguage, navigator.language);
   const { data } = useGetPublicLegalPackQuery({ slug: slug ?? '', lang }, { skip: !slug });
   const copy = legalCopy(pageLanguageOf(lang));
 

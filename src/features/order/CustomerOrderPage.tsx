@@ -653,7 +653,7 @@ const CustomerOrderPage: React.FC = () => {
         onCancel={() => setConfirmingCancel(false)}
       />
 
-      <Footer slug={slug} />
+      <Footer slug={slug} language={order?.language} />
     </div>
   );
 };
