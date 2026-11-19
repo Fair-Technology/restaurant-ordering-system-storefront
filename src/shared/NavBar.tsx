@@ -8,6 +8,7 @@ import { loadCart, selectCartCount } from '../store/slices/cartSlice';
 import CartDropdown, { type CartContext } from './CartDropdown';
 import ShopLogo from './ShopLogo';
 import { orderCopy } from '../utils/orderCopy';
+import { siteCopy } from '../utils/siteCopy';
 import { currentChoice, pageLanguageOf } from '../utils/pageLanguage';
 
 // The cart label in every page language, for a button width that doesn't change with the language
@@ -24,6 +25,8 @@ interface NavBarProps {
   hideCart?: boolean;
   /** How the order will be handed over, for the line at the top of the cart */
   cartContext?: CartContext;
+  /** Shown instead of the logo and name while the shop has neither (not loaded, or failed to load) */
+  fallbackLabel?: string;
 }
 
 const NavBar: React.FC<NavBarProps> = ({
@@ -34,9 +37,13 @@ const NavBar: React.FC<NavBarProps> = ({
   languageSwitcher,
   hideCart = false,
   cartContext,
+  fallbackLabel,
 }) => {
   const storedLanguage = useAppSelector((state) => state.shop.menuLanguage);
-  const copy = orderCopy(pageLanguageOf(currentChoice(storedLanguage, navigator.language)));
+  const pageLang = pageLanguageOf(currentChoice(storedLanguage, navigator.language));
+  const copy = orderCopy(pageLang);
+  const hasIdentity = Boolean(shopName || logoUrl);
+  const homeLabel = fallbackLabel || siteCopy(pageLang).toHome;
   // `isCartOpen` tracks the visibility of the cart dropdown
   const [isCartOpen, setIsCartOpen] = useState(false);
   const navigate = useNavigate();
@@ -113,20 +120,26 @@ const NavBar: React.FC<NavBarProps> = ({
           <button
             className="flex min-w-0 items-center gap-2 hover:opacity-80 transition-opacity"
             onClick={() => navigate(`/shops/${shopId}`)}
-            aria-label={`Go to ${shopName}`}
+            aria-label={hasIdentity ? `Go to ${shopName}` : homeLabel}
           >
-            <ShopLogo
-              name={shopName}
-              logoUrl={logoUrl}
-              className="h-8 w-8 rounded-sm ring-2 ring-[var(--brand-accent)]"
-              logoClassName="h-10 w-10 md:h-12 md:w-12 max-h-[var(--logo-h)] max-w-[var(--logo-w)]"
-              wideClassName="h-10 md:h-12 w-auto max-h-[var(--logo-h)] max-w-[min(var(--logo-w),200px)] md:max-w-[min(var(--logo-w),320px)]"
-              textClassName="text-xs"
-            />
-            {!logoUrl && (
-              <span className="truncate font-bold text-xl text-gray-900">
-                {shopName}
-              </span>
+            {hasIdentity ? (
+              <>
+                <ShopLogo
+                  name={shopName}
+                  logoUrl={logoUrl}
+                  className="h-8 w-8 rounded-sm ring-2 ring-[var(--brand-accent)]"
+                  logoClassName="h-10 w-10 md:h-12 md:w-12 max-h-[var(--logo-h)] max-w-[var(--logo-w)]"
+                  wideClassName="h-10 md:h-12 w-auto max-h-[var(--logo-h)] max-w-[min(var(--logo-w),200px)] md:max-w-[min(var(--logo-w),320px)]"
+                  textClassName="text-xs"
+                />
+                {!logoUrl && (
+                  <span className="truncate font-bold text-xl text-gray-900">
+                    {shopName}
+                  </span>
+                )}
+              </>
+            ) : (
+              <span className="truncate font-bold text-xl text-gray-900">{homeLabel}</span>
             )}
           </button>
 

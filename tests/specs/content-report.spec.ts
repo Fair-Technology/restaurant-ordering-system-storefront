@@ -62,6 +62,20 @@ test.describe('Content report', () => {
 
     await expect(page).toHaveURL(/\/shops\/test-shop\/report$/);
     await expect(page.getByRole('heading', { name: 'Report illegal content' })).toBeVisible();
+    // Resolved shop: the header still names the shop
+    await expect(page.getByRole('banner').getByRole('button', { name: 'Go to Test Shop' })).toBeVisible();
+  });
+
+  test('header is never an empty "Go to" button when the shop fails to load', async ({ page }) => {
+    await mockLegal(page);
+    await page.route('**/api/shops/slug/test-shop', (route) =>
+      route.fulfill({ status: 500, contentType: 'application/json', body: '{"error":"boom"}' }),
+    );
+    await page.goto('/shops/test-shop/report');
+
+    const header = page.getByRole('banner');
+    await expect(header.getByRole('button', { name: 'Back to the menu' })).toBeVisible();
+    await expect(header.getByRole('button', { name: /^Go to\s*$/ })).toHaveCount(0);
   });
 
   test('an anonymous report shows the receipt id', async ({ page }) => {
