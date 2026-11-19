@@ -34,6 +34,10 @@ export interface ReportCopy {
   receiptKeep: string;
   formErrorTitle: string;
   shopUnknown: string;
+  categoryRequiredError: string;
+  reasonRequiredError: string;
+  urlInvalidError: string;
+  genericSubmitError: string;
 }
 
 const en: ReportCopy = {
@@ -68,6 +72,10 @@ const en: ReportCopy = {
   receiptKeep: 'Please keep the receipt number for your records.',
   formErrorTitle: 'The report could not be sent.',
   shopUnknown: 'This restaurant could not be loaded.',
+  categoryRequiredError: 'Please choose a category.',
+  reasonRequiredError: 'Please describe the problem.',
+  urlInvalidError: 'Please enter a valid http:// or https:// link, or leave this field empty.',
+  genericSubmitError: 'Something went wrong. Please try again.',
 };
 
 const de: ReportCopy = {
@@ -102,6 +110,11 @@ const de: ReportCopy = {
   receiptKeep: 'Bitte bewahren Sie die Vorgangsnummer auf.',
   formErrorTitle: 'Die Meldung konnte nicht gesendet werden.',
   shopUnknown: 'Dieses Restaurant konnte nicht geladen werden.',
+  categoryRequiredError: 'Bitte wählen Sie eine Kategorie aus.',
+  reasonRequiredError: 'Bitte beschreiben Sie das Problem.',
+  urlInvalidError:
+    'Bitte geben Sie einen gültigen http://- oder https://-Link ein, oder lassen Sie dieses Feld leer.',
+  genericSubmitError: 'Etwas ist schiefgelaufen. Bitte versuchen Sie es erneut.',
 };
 
 /** The report page's own fixed text, in the diner's page language. */

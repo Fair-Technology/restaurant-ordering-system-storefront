@@ -8,8 +8,6 @@ import { useAppSelector } from '../../store/hooks';
 import { useGetShopBySlugQuery } from '../../api/endpoints';
 import {
   useSubmitContentReportMutation,
-  readApiError,
-  REPORT_FAILED_FALLBACK,
   REPORT_REASON_MAX_LENGTH,
   REPORT_URL_MAX_LENGTH,
   REPORTER_NAME_MAX_LENGTH,
@@ -22,6 +20,17 @@ import { useBrandingStyle } from '../../hooks/useBrandingStyle';
 import { resolveShopBranding, type ShopWithBranding } from '../../utils/branding';
 import { currentChoice, pageLanguageOf } from '../../utils/pageLanguage';
 import { REPORT_CATEGORIES, reportCopy, type ReportCategory } from '../../utils/reportCopy';
+
+const isHttpUrl = (value: string): boolean => {
+  // Reject obviously bad schemes (ftp:, javascript:, data:, ...) before constructing the URL.
+  if (/^[a-z][a-z0-9+.-]*:/i.test(value) && !/^https?:/i.test(value)) return false;
+  try {
+    const url = new URL(value);
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch {
+    return false;
+  }
+};
 
 const labelClass = 'block text-sm font-semibold text-gray-900';
 const inputClass =
@@ -86,6 +95,32 @@ const ContentReportPage: React.FC = () => {
     setFieldErrors({});
     setFormError(null);
 
+    // Client-side validation, in field order: category -> reason -> contentUrl.
+    const errors: Partial<Record<ReportField, string>> = {};
+    const invalidOrder: { field: ReportField; id: string }[] = [];
+    const trimmedUrl = contentUrl.trim();
+    if (!category || !(REPORT_CATEGORIES as readonly string[]).includes(category)) {
+      errors.category = copy.categoryRequiredError;
+      invalidOrder.push({ field: 'category', id: 'report-category' });
+    }
+    if (!reason.trim()) {
+      errors.reason = copy.reasonRequiredError;
+      invalidOrder.push({ field: 'reason', id: 'report-reason' });
+    }
+    if (trimmedUrl && !isHttpUrl(trimmedUrl)) {
+      errors.contentUrl = copy.urlInvalidError;
+      invalidOrder.push({ field: 'contentUrl', id: 'report-url' });
+    }
+    if (invalidOrder.length > 0) {
+      setFieldErrors(errors);
+      const first = document.getElementById(invalidOrder[0].id);
+      if (first) {
+        first.focus();
+        first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+      return;
+    }
+
     // Send clean data: the backend treats an empty string as absent, but omit blank optional fields.
     const body: SubmitContentReportRequest = {
       shopId: shop.id,
@@ -102,13 +137,9 @@ const ContentReportPage: React.FC = () => {
     try {
       const result = await submit(body).unwrap();
       setReceipt(result);
-    } catch (error) {
-      const parsed = readApiError(error);
-      if (parsed?.field) {
-        setFieldErrors({ [parsed.field]: parsed.message });
-      } else {
-        setFormError(parsed ? parsed.message : REPORT_FAILED_FALLBACK);
-      }
+    } catch {
+      // Never surface the raw backend message; show the translated generic error.
+      setFormError(copy.genericSubmitError);
     }
   };
 

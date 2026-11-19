@@ -84,7 +84,46 @@ test.describe('Content report', () => {
     expect(request.body).not.toHaveProperty('reporterEmail');
   });
 
-  test('an INVALID_INPUT message is rendered against its field', async ({ page }) => {
+  test('empty form is validated client-side: no API call, translated errors, focus on first invalid field', async ({ page }) => {
+    await mockShop(page);
+    await mockLegal(page);
+    const request = await mockSubmit(page, () => ({ status: 200, body: {} }));
+    await page.goto('/shops/test-shop/report');
+
+    await page.getByTestId('report-reason').fill('   ');
+    await page.getByTestId('report-url').fill('javascript:alert(1)');
+    await page.getByRole('button', { name: 'Send report' }).click();
+
+    await expect(page.getByTestId('error-category')).toHaveText('Please choose a category.');
+    await expect(page.getByTestId('error-reason')).toHaveText('Please describe the problem.');
+    await expect(page.getByTestId('error-contentUrl')).toContainText('http:// or https://');
+    await expect(page.getByTestId('report-category')).toBeFocused();
+    expect(request.body).toBeNull();
+  });
+
+  test('a non-http content URL is rejected, an https one is accepted', async ({ page }) => {
+    await mockShop(page);
+    await mockLegal(page);
+    const request = await mockSubmit(page, () => ({
+      status: 200,
+      body: { reportId: 'rep-1', status: 'received', receivedAt: '2026-11-15T10:00:00.000Z' },
+    }));
+    await page.goto('/shops/test-shop/report');
+
+    await page.getByTestId('report-category').selectOption('other');
+    await page.getByTestId('report-reason').fill('Bad listing.');
+    await page.getByTestId('report-url').fill('ftp://example.com/x');
+    await page.getByRole('button', { name: 'Send report' }).click();
+    await expect(page.getByTestId('error-contentUrl')).toBeVisible();
+    await expect(page.getByTestId('report-url')).toBeFocused();
+    expect(request.body).toBeNull();
+
+    await page.getByTestId('report-url').fill('HTTPS://example.com/x');
+    await page.getByRole('button', { name: 'Send report' }).click();
+    await expect(page.getByTestId('report-id')).toHaveText('rep-1');
+  });
+
+  test('a server 400 shows the translated generic error, never the backend text', async ({ page }) => {
     await mockShop(page);
     await mockLegal(page);
     await mockSubmit(page, () => ({
@@ -94,26 +133,11 @@ test.describe('Content report', () => {
     await page.goto('/shops/test-shop/report');
 
     await page.getByTestId('report-category').selectOption('other');
-    await page.getByRole('button', { name: 'Send report' }).click();
-
-    await expect(page.getByTestId('error-reason')).toHaveText('reason is required and must be a non-empty string');
-  });
-
-  test('a non-field API error is rendered, not swallowed', async ({ page }) => {
-    await mockShop(page);
-    await mockLegal(page);
-    await mockSubmit(page, () => ({
-      status: 400,
-      body: { error: 'Request body must be a JSON object' },
-    }));
-    await page.goto('/shops/test-shop/report');
-
-    await page.getByTestId('report-category').selectOption('other');
     await page.getByTestId('report-reason').fill('Something is wrong here.');
     await page.getByRole('button', { name: 'Send report' }).click();
 
     const alert = page.getByTestId('report-error');
-    await expect(alert).toBeVisible();
-    await expect(alert).toContainText('Request body must be a JSON object');
+    await expect(alert).toContainText('Something went wrong. Please try again.');
+    await expect(alert).not.toContainText('non-empty string');
   });
 });
