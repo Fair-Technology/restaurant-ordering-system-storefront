@@ -28,6 +28,7 @@ import {
   useQuoteBasketQuery,
   type CardCheckoutResult,
   type ShopFulfilment,
+  type ShopNoticeFields,
 } from '../../api/orderEndpoints';
 import type { Product } from '../../types/Product';
 import { mapApiProductToProduct } from '../../utils/catalogMapper';
@@ -82,6 +83,8 @@ const CheckoutPage: React.FC = () => {
   const resolvedShopId = shopData?.id ?? '';
   const resolvedBranding = resolveShopBranding(resolvedShopData?.branding);
   const shopName = resolvedShopData?.name ?? 'Online Ordering';
+  // Offline: the owner or the platform took the shop off the web. Its catalog answers 403.
+  const shopIsOffline = (shopData as ShopNoticeFields | undefined)?.isOffline === true;
 
   // Apply CSS custom properties and get page wrapper style
   const brandStyle = useBrandingStyle(resolvedBranding);
@@ -91,10 +94,14 @@ const CheckoutPage: React.FC = () => {
   const lang = currentChoice(storedMenuLanguage, navigator.language);
 
   // Fetch the product catalog so CartSummary can show variant/addon names and open the edit modal
-  const { data: catalogData } = useGetCatalogQuery(
+  const { data: catalogData, isError: isCatalogError, error: catalogError } = useGetCatalogQuery(
     { shopId: resolvedShopId, lang },
-    { skip: !resolvedShopId },
+    { skip: !resolvedShopId || shopIsOffline },
   );
+  // A 403 from the catalog is how an offline shop refuses the menu, even if the shop payload missed the flag
+  const catalogForbidden =
+    isCatalogError && (catalogError as { status?: number } | undefined)?.status === 403;
+  const isOffline = shopIsOffline || catalogForbidden;
   const resolvedLanguage = catalogData?.language ?? lang; // menu language
   const pageLanguage = pageLanguageOf(lang); // language of the page text and of the order
 
@@ -415,6 +422,27 @@ const CheckoutPage: React.FC = () => {
             </button>
           </div>
         </main>
+      </div>
+    );
+  }
+
+  // An offline shop takes no orders, whatever is in the basket
+  if (isOffline) {
+    return (
+      <div className="flex min-h-screen flex-col bg-[#faf6f1]" style={brandStyle}>
+        <div className="sticky top-0 z-50">
+          <NavBar shopName={shopName} shopId={slug ?? ''} logoUrl={resolvedBranding.logoUrl} />
+        </div>
+        <main className="mx-auto flex w-full max-w-2xl flex-1 items-center justify-center px-4 py-12">
+          <div className="flex w-full flex-col items-center gap-4 rounded-[20px] border border-[#efe7de] bg-white p-8 text-center" data-testid="shop-offline">
+            <h1 className="font-display text-[28px] font-semibold leading-tight text-gray-900">{copy.noticeOfflineTitle}</h1>
+            <p className="text-[15px] leading-relaxed text-[#5c524b]">{copy.noticeOfflineText}</p>
+            <Link to={`/shops/${slug}`} className="flex h-12 items-center justify-center rounded-full bg-gray-900 px-6 text-[15px] font-bold text-white">
+              {copy.backToMenu}
+            </Link>
+          </div>
+        </main>
+        <Footer slug={slug} />
       </div>
     );
   }
