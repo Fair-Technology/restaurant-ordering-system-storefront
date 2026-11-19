@@ -24,7 +24,7 @@ import ShopInfoFooter from './ShopInfoFooter';
 import ShopIntro from './ShopIntro';
 import MobileCartBar from './MobileCartBar';
 import LogoLoader from '../../shared/LogoLoader';
-import { nextOpening, openState, type WeeklyHours } from '../../utils/openingHours';
+import { nextOpening, openState, activeClosure, type WeeklyHours, type ShopClosure } from '../../utils/openingHours';
 import ShopNoticeModal from './ShopNoticeModal';
 import { orderCopy } from '../../utils/orderCopy';
 import { pauseResumeTime } from '../../utils/pauseResume';
@@ -202,11 +202,14 @@ const ShopView = () => {
   // Paused: the owner stopped new orders for now (optional message of their own), or the monthly limit is used up
   const ordersPaused = noticeFields.ordersPaused === true || orderLimitReached;
   const ordersPausedMessage = noticeFields.ordersPausedMessage?.trim();
+  const closures = (resolvedShopData as { closures?: ShopClosure[] } | undefined)?.closures;
+  const closureNow = activeClosure(closures, new Date());
+  const closedByHours = !!openingHours && !openState(openingHours, new Date(), shopTimeZone).open;
   const noticeKind: 'offline' | 'paused' | 'closed' | null = isOffline
     ? 'offline'
     : ordersPaused
       ? 'paused'
-      : openingHours && !openState(openingHours, new Date(), shopTimeZone).open
+      : closureNow || closedByHours
         ? 'closed'
         : null;
   // Only the "closed" popup is remembered per visit. Paused shows on every page load; offline cannot be closed.
@@ -483,6 +486,7 @@ const ShopView = () => {
                 ]
                 : [
                   ...(() => {
+                    if (closureNow) return [closureNow.reason?.trim() || copy.noticeClosedToday];
                     const next = openingHours ? nextOpening(openingHours, new Date(), shopTimeZone) : null;
                     return next ? [copy.noticeOpensAt(next.inDays, copy.weekdayLong[next.day], next.time)] : [];
                   })(),
