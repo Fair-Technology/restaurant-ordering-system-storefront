@@ -124,3 +124,22 @@ export function nextOpening(
   }
   return null;
 }
+
+export interface ShopClosure {
+  id?: string;
+  start: string;
+  end: string;
+  reason?: string;
+}
+
+/** The closure whose window contains `now` (start <= now < end), or null. */
+export function activeClosure(closures: ShopClosure[] | undefined, now: Date = new Date()): ShopClosure | null {
+  if (!closures?.length) return null;
+  const t = now.getTime();
+  for (const c of closures) {
+    const s = Date.parse(c.start);
+    const e = Date.parse(c.end);
+    if (Number.isFinite(s) && Number.isFinite(e) && s <= t && t < e) return c;
+  }
+  return null;
+}

@@ -194,6 +194,7 @@ export interface OrderCopy {
   noticeOfflineTitle: string;
   noticeOfflineText: string;
   noticeClosedTitle: string;
+  noticeClosedToday: string;
   noticeOpensAt: (inDays: number, day: string, time: string) => string;
   noticeClosedText: string;
   weekdayLong: Record<'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun', string>;
@@ -519,6 +520,7 @@ const en: OrderCopy = {
   noticeOfflineTitle: 'This restaurant is offline',
   noticeOfflineText: "It isn't taking orders online at the moment.",
   noticeClosedTitle: 'Closed right now',
+  noticeClosedToday: 'We are closed today.',
   noticeOpensAt: (n, d, t) =>
     n === 0 ? `We open again today at ${t}.` : n === 1 ? `We open again tomorrow at ${t}.` : `We open again on ${d} at ${t}.`,
   noticeClosedText: 'You can still look through the menu. If the restaurant takes orders for later, you can choose a time at checkout.',
@@ -821,6 +823,7 @@ const de: OrderCopy = {
   noticeOfflineTitle: 'Dieses Restaurant ist offline',
   noticeOfflineText: 'Es nimmt im Moment keine Online-Bestellungen an.',
   noticeClosedTitle: 'Gerade geschlossen',
+  noticeClosedToday: 'Wir haben heute geschlossen.',
   noticeOpensAt: (n, d, t) =>
     n === 0 ? `Wir öffnen heute wieder um ${t} Uhr.` : n === 1 ? `Wir öffnen morgen wieder um ${t} Uhr.` : `Wir öffnen wieder am ${d} um ${t} Uhr.`,
   noticeClosedText: 'Sie können sich die Speisekarte trotzdem ansehen. Nimmt das Restaurant Bestellungen für später an, wählen Sie an der Kasse eine Zeit.',
