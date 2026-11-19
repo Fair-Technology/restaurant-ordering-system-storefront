@@ -251,6 +251,10 @@ const CheckoutPage: React.FC = () => {
   }
 
   async function handleInfoSubmit(data: CustomerFormData) {
+    if (codeOpen && appliedCode === null && codeInput.trim() !== '') {
+      setPlaceError(copy.codeNotApplied);
+      return;
+    }
     if (cartItems.length === 0 || method === null) return;
     if (mode === 'dine_in' && !(slug && readTableSession(slug, Date.now()))) {
       unbind();
@@ -762,6 +766,12 @@ const CheckoutPage: React.FC = () => {
                               onChange={(e) => setCodeInput(e.target.value)}
                               disabled={appliedCode !== null}
                               aria-label={copy.codeLabel}
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') {
+                                  e.preventDefault();
+                                  if (codeInput.trim() !== '') applyCode();
+                                }
+                              }}
                             />
                           </label>
                           {appliedCode === null ? (

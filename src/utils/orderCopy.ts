@@ -224,6 +224,7 @@ export interface OrderCopy {
   codeRemove: string;
   discountLine: (code: string) => string;
   codeUnknown: string;
+  codeNotApplied: string;
   codeNotStarted: string;
   codeExpired: string;
   codeUsedUp: string;
@@ -506,6 +507,7 @@ const en: OrderCopy = {
   codeRemove: 'Remove',
   discountLine: (code) => `Discount (${code})`,
   codeUnknown: 'This code is not valid.',
+  codeNotApplied: 'Please apply your discount code first.',
   codeNotStarted: 'This code is not valid yet.',
   codeExpired: 'This code has expired.',
   codeUsedUp: 'This code has been used up.',
@@ -809,6 +811,7 @@ const de: OrderCopy = {
   codeRemove: 'Entfernen',
   discountLine: (code) => `Rabatt (${code})`,
   codeUnknown: 'Dieser Code ist ungültig.',
+  codeNotApplied: 'Bitte lösen Sie Ihren Rabattcode zuerst ein.',
   codeNotStarted: 'Dieser Code gilt noch nicht.',
   codeExpired: 'Dieser Code ist abgelaufen.',
   codeUsedUp: 'Dieser Code ist aufgebraucht.',
