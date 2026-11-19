@@ -52,13 +52,20 @@ function textBlocks(text: string): Array<{ kind: 'h' | 'p'; text: string }> {
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE = /^\+?[\d\s/()-]{6,}$/;
 
+/** Labels of the Impressum's contact-detail lines (rs-backend legal impressum LABELS, de + en).
+ *  Only these are auto-linked — register/VAT/supervisory values stay plain text even when all digits. */
+const PHONE_LABELS = new Set(['Telefon', 'Phone']);
+const EMAIL_LABELS = new Set(['E-Mail', 'Email']);
+
 const linkClass = 'font-semibold text-gray-900 underline underline-offset-[3px] hover:decoration-2';
 
-/** A value from the Impressum: email and phone numbers become links. */
-const ImpressumValue: React.FC<{ value: string }> = ({ value }) => {
+/** A value from the Impressum: only the phone and email lines become links. */
+const ImpressumValue: React.FC<{ label: string; value: string }> = ({ label, value }) => {
   const v = value.trim();
-  if (EMAIL.test(v)) return <a href={`mailto:${v}`} className={linkClass}>{v}</a>;
-  if (PHONE.test(v) && /\d{5,}/.test(v.replace(/\D/g, ''))) return <a href={telHref(v)} className={linkClass}>{v}</a>;
+  const key = label.trim();
+  if (EMAIL_LABELS.has(key) && EMAIL.test(v)) return <a href={`mailto:${v}`} className={linkClass}>{v}</a>;
+  if (PHONE_LABELS.has(key) && PHONE.test(v) && /\d{5,}/.test(v.replace(/\D/g, '')))
+    return <a href={telHref(v)} className={linkClass}>{v}</a>;
   return <span className="whitespace-pre-line">{value}</span>;
 };
 
@@ -98,7 +105,7 @@ const DocumentBody: React.FC<{ doc: LegalDoc; data: PublicLegalPackDto; copy: Le
               {line.label}
             </dt>
             <dd className="border-b border-[#efe7de] pb-3.5 pt-0.5 text-gray-900 sm:py-3.5">
-              <ImpressumValue value={line.value} />
+              <ImpressumValue label={line.label} value={line.value} />
             </dd>
           </div>
         ))}
