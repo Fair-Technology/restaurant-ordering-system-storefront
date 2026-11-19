@@ -94,6 +94,7 @@ export interface OrderCopy {
   introOpen: string;
   introOpenUntil: (time: string) => string;
   introClosedNow: string;
+  introOffline: string;
   introPickupIn: (minutes: number) => string;
   introInfo: string;
   cartLabel: string;
@@ -385,6 +386,7 @@ const en: OrderCopy = {
   introOpen: 'Open now',
   introOpenUntil: (t) => `Open until ${t}`,
   introClosedNow: 'Closed right now',
+  introOffline: 'Offline',
   introPickupIn: (m) => `Pickup in about ${m} min`,
   introInfo: 'Info',
   cartLabel: 'Cart',
@@ -686,6 +688,7 @@ const de: OrderCopy = {
   introOpen: 'Jetzt geöffnet',
   introOpenUntil: (t) => `Geöffnet bis ${t}`,
   introClosedNow: 'Gerade geschlossen',
+  introOffline: 'Offline',
   introPickupIn: (m) => `Abholung in ca. ${m} Min.`,
   introInfo: 'Infos',
   cartLabel: 'Warenkorb',

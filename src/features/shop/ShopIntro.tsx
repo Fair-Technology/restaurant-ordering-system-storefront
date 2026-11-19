@@ -17,6 +17,8 @@ interface ShopIntroProps {
   /** Shown here on phones only; from sm up the switcher lives in the nav bar */
   languageSwitcher?: React.ReactNode;
   copy: OrderCopy;
+  /** Offline shops never read as open, whatever their opening hours say */
+  offline?: boolean;
 }
 
 /**
@@ -34,6 +36,7 @@ const ShopIntro: React.FC<ShopIntroProps> = ({
   overlapsHero,
   languageSwitcher,
   copy,
+  offline,
 }) => {
   const place = [address?.street, address?.city].map((p) => p?.trim()).filter(Boolean).join(', ');
   const status = openingHours ? openState(openingHours, new Date(), timeZone) : null;
@@ -77,7 +80,13 @@ const ShopIntro: React.FC<ShopIntroProps> = ({
               overlapsHero ? 'lg:self-start lg:pt-6' : ''
             }`}
           >
-            {status &&
+            {offline ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1 font-semibold text-gray-700">
+                <span className="h-2 w-2 rounded-full bg-gray-400" aria-hidden="true" />
+                {copy.introOffline}
+              </span>
+            ) : (
+              status &&
               (status.open ? (
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-[#e6f3ea] px-3 py-1 font-semibold text-[#1d5a32]">
                   <span className="h-2 w-2 rounded-full bg-[#2f8a4c]" aria-hidden="true" />
@@ -88,7 +97,8 @@ const ShopIntro: React.FC<ShopIntroProps> = ({
                   <span className="h-2 w-2 rounded-full bg-gray-400" aria-hidden="true" />
                   {copy.introClosedNow}
                 </span>
-              ))}
+              ))
+            )}
             {(pickupMinutes ?? 0) > 0 && (
               <span className="rounded-full bg-[#f6f1eb] px-3 py-1 text-[#4a413b]">
                 {copy.introPickupIn(pickupMinutes as number)}
