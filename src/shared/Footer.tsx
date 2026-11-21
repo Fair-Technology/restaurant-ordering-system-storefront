@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { useGetPublicLegalPackQuery } from '../api/legalEndpoints';
+import { useGetPlatformLegalQuery } from '../api/legalEndpoints';
 import { useAppSelector } from '../store/hooks';
 import { currentChoice, pageLanguageOf } from '../utils/pageLanguage';
 import { legalCopy, type LegalDoc } from '../utils/legalCopy';
@@ -26,7 +26,7 @@ const Footer = ({
 }) => {
   const storedLanguage = useAppSelector((state) => state.shop.menuLanguage);
   const lang = language ?? currentChoice(storedLanguage, navigator.language);
-  const { data } = useGetPublicLegalPackQuery({ slug: slug ?? '', lang }, { skip: !slug });
+  const { data } = useGetPlatformLegalQuery();
   const copy = legalCopy(pageLanguageOf(lang));
 
   const links: { doc: LegalDoc; label: string }[] = [
@@ -42,7 +42,7 @@ const Footer = ({
       aria-hidden="true"
       className="flex h-[18px] w-[18px] items-center justify-center rounded-md bg-gray-900 text-[10px] font-bold text-white"
     >
-      {data.platform.name.charAt(0)}
+      {data.platformName.charAt(0)}
     </span>
   );
 
@@ -80,15 +80,15 @@ const Footer = ({
         )}
         {data && (
           <p className="flex items-center gap-2 text-[13px] text-[#8a7f77]">
-            {data.platform.salesSiteUrl ? (
-              <a href={data.platform.salesSiteUrl} className="inline-flex items-center gap-2 hover:text-gray-700">
+            {data.salesSiteUrl ? (
+              <a href={data.salesSiteUrl} className="inline-flex items-center gap-2 hover:text-gray-700">
                 {platformLine}
-                {copy.orderingBy(data.platform.name)}
+                {copy.orderingBy(data.platformName)}
               </a>
             ) : (
               <>
                 {platformLine}
-                {copy.orderingBy(data.platform.name)}
+                {copy.orderingBy(data.platformName)}
               </>
             )}
           </p>
