@@ -51,6 +51,22 @@ async function mockLegal(page: Page, overrides: Record<string, unknown> = {}) {
   });
 }
 
+const PLATFORM_LEGAL = {
+  platformName: 'Fair Technology',
+  salesSiteUrl: null,
+  operator: { legalName: '', address: '', email: '' },
+  euRepresentative: null,
+  subProcessors: [],
+  currentDpaVersion: '2026-10-01-draft',
+  currentDpaIsDraft: true,
+};
+
+async function mockPlatform(page: Page) {
+  await page.route('**/api/legal/platform', async (route) => {
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(PLATFORM_LEGAL) });
+  });
+}
+
 async function seedCart(page: Page) {
   await page.addInitScript(() =>
     localStorage.setItem(
@@ -65,7 +81,7 @@ test.use({ locale: 'en-US' });
 test.describe('Legal pages', () => {
   test("footer shows the restaurant's legal links and the platform line", async ({ page }) => {
     await mockShop(page);
-    await mockLegal(page);
+    await mockPlatform(page);
     await page.goto('/shops/test-shop');
 
     await expect(page.getByRole('link', { name: 'Legal notice' })).toBeVisible();
@@ -133,6 +149,72 @@ test.describe('Legal pages', () => {
     await page.goto('/legal/sub-processors');
 
     await expect(page.getByText('Microsoft Ireland Operations Ltd. — Microsoft Azure')).toBeVisible();
+  });
+});
+
+test.describe('Legal pages – failures and console noise', () => {
+  for (const status of [404, 500]) {
+    test(`a failing legal fetch (${status}) shows the inline error, not "restaurant not found"`, async ({ page }) => {
+      await mockShop(page);
+      await mockPlatform(page);
+      await page.route('**/api/shops/slug/test-shop/legal**', (route) =>
+        route.fulfill({ status, contentType: 'application/json', body: JSON.stringify({ error: 'nope' }) }),
+      );
+      for (const doc of ['impressum', 'terms']) {
+        await page.goto(`/shops/test-shop/legal/${doc}`);
+        await expect(page.getByText('This page could not be loaded.')).toBeVisible();
+        await expect(page.getByText('We can’t find this restaurant')).toHaveCount(0);
+      }
+    });
+  }
+
+  test('normal page loads produce no console errors or failed responses', async ({ page }) => {
+    await mockShop(page);
+    await mockLegal(page);
+    await mockPlatform(page);
+    await seedCart(page);
+    await page.route('**/api/orders/quote', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          currency: 'EUR',
+          fulfilmentMode: 'collection',
+          lines: [
+            {
+              index: 0,
+              productId: 'p1',
+              name: 'Carbonara',
+              quantity: 1,
+              status: 'ok',
+              unitPriceCents: 1050,
+              expectedUnitPriceCents: 1050,
+              lineTotalCents: 1050,
+            },
+          ],
+          subtotalCents: 1050,
+          taxCents: 69,
+          minOrderAmountCents: 0,
+          belowMinimum: false,
+          openNow: true,
+          paymentMethods: ['card'],
+          addressRequired: false,
+          prepMinutes: 20,
+        }),
+      }),
+    );
+    const problems: string[] = [];
+    page.on('console', (msg) => {
+      if (msg.type() === 'error') problems.push(`console: ${msg.text()}`);
+    });
+    page.on('response', (res) => {
+      if (res.status() >= 400) problems.push(`${res.status()} ${res.url()}`);
+    });
+    for (const path of ['/shops/test-shop', '/shops/test-shop/checkout', '/shops/test-shop/legal/impressum']) {
+      await page.goto(path);
+      await page.waitForLoadState('networkidle');
+    }
+    expect(problems).toEqual([]);
   });
 });
 

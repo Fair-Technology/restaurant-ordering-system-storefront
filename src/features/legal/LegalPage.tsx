@@ -168,7 +168,7 @@ const LegalPage: React.FC = () => {
   const storedLanguage = useAppSelector((state) => state.shop.menuLanguage);
   const lang = currentChoice(storedLanguage, navigator.language);
   const pageLang = pageLanguageOf(lang);
-  const { data, isLoading, isError, error } = useGetPublicLegalPackQuery(
+  const { data, isLoading, isError } = useGetPublicLegalPackQuery(
     { slug: slug ?? '', lang },
     { skip: !slug || !isLegalDoc(doc) },
   );
@@ -177,10 +177,7 @@ const LegalPage: React.FC = () => {
   const brandStyle = useBrandingStyle(branding);
 
   if (!isLegalDoc(doc)) return <NotFound />;
-  if (
-    (isError && error && 'status' in error && error.status === 404) ||
-    (isShopError && shopError && 'status' in shopError && shopError.status === 404)
-  ) {
+  if (isShopError && shopError && 'status' in shopError && shopError.status === 404) {
     return <NotFound kind="shop" />;
   }
   const copy = legalCopy(pageLang);
