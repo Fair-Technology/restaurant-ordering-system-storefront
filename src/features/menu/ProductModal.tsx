@@ -4,6 +4,7 @@ import { Check, Minus, Plus, UtensilsCrossed, X } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { addItem, removeItem } from '../../store/slices/cartSlice';
 import { useModalFocus } from '../../hooks/useModalFocus';
+import { toCents } from '../../utils/money';
 import { useMoney } from '../../hooks/useMoney';
 import { useDismissClickGuard } from '../../hooks/useDismissClickGuard';
 import { menuLabels } from '../../utils/menuLabels';
@@ -214,7 +215,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
           id: product.id,
           name: product.label,
           imageUrl: product.imageURL,
-          price: unitPrice,
+          price: toCents(unitPrice),
           quantity,
           variantId: selectedVariantId,
           addonOptionIds: Array.from(selectedAddonIds),

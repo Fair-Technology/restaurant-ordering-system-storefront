@@ -96,13 +96,13 @@ const CartSummary: React.FC<CartSummaryProps> = ({ slug, products, copy, limited
                     <div className="flex items-baseline justify-between gap-3">
                       <span className="text-[15px] font-bold text-gray-900 sm:text-base">{item.name}</span>
                       <span className="whitespace-nowrap text-[15px] font-bold text-gray-900 sm:text-base">
-                        {money.major(item.quantity * item.price)}
+                        {money.cents(item.quantity * item.price)}
                       </span>
                     </div>
                     {detail && <span className="text-[13px] leading-relaxed text-[#5c524b]">{detail}</span>}
                     {timeText && <DishTimeLine text={timeText} clash={clashIndexes.includes(index)} />}
                     {item.quantity > 1 && (
-                      <span className="text-xs text-[#6b6058]">{copy.basketEach(money.major(item.price))}</span>
+                      <span className="text-xs text-[#6b6058]">{copy.basketEach(money.cents(item.price))}</span>
                     )}
 
                     <div className="flex items-center justify-between gap-3 pt-1.5">

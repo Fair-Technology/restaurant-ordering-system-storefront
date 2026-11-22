@@ -177,7 +177,7 @@ const CheckoutPage: React.FC = () => {
       quantity: i.quantity,
       selectedVariantOptionId: i.variantId,
       selectedAddonOptionIds: i.addonOptionIds,
-      expectedUnitPriceCents: Math.round(i.price * 100),
+      expectedUnitPriceCents: i.price,
       ...(i.comboChoices ? { comboChoices: toComboChoiceDtos(i.comboChoices) } : {}),
     })),
   };
@@ -246,7 +246,7 @@ const CheckoutPage: React.FC = () => {
       if (l.status === 'unavailable' || l.status === 'invalid_options') {
         dispatch(removeItem({ key: item.key }));
       } else if (l.status === 'price_changed' && l.unitPriceCents !== null) {
-        dispatch(setItemPrice({ key: item.key, price: l.unitPriceCents / 100 }));
+        dispatch(setItemPrice({ key: item.key, price: l.unitPriceCents }));
       }
     });
     setPlaceError(undefined);
@@ -911,7 +911,7 @@ const CheckoutPage: React.FC = () => {
                             {detail && <div className="text-[13px] text-[#5c524b]">{detail}</div>}
                           </div>
                           <span className="text-[15px] font-semibold text-gray-900">
-                            {money.major(item.quantity * item.price)}
+                            {money.cents(item.quantity * item.price)}
                           </span>
                         </li>
                       );
