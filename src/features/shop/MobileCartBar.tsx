@@ -31,7 +31,7 @@ const MobileCartBar: React.FC<MobileCartBarProps> = ({ onCheckout, copy }) => {
         <span className="flex h-10 shrink-0 items-center gap-2 rounded-full bg-[var(--brand-accent)] px-4 text-[var(--brand-on-accent)]">
           <span>{copy.cartItems(count)}</span>
           <span aria-hidden="true">·</span>
-          <span>{money.major(total)}</span>
+          <span>{money.cents(total)}</span>
         </span>
       </button>
     </div>

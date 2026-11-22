@@ -16,7 +16,7 @@ export type CartItem = {
   id: string;
   name: string;
   imageUrl?: string;
-  price: number; // unit price
+  price: number; // unit price in integer cents (same unit as the API)
   quantity: number;
   variantId?: string;
   addonOptionIds?: string[];

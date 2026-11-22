@@ -176,8 +176,8 @@ const ShopView = () => {
     mode,
     postcode: deliveryPostcode,
     table,
-    minOrder: deliveryZone ? deliveryZone.minOrderCents / 100 : null,
-    fee: deliveryZone ? deliveryZone.feeCents / 100 : null,
+    minOrder: deliveryZone ? deliveryZone.minOrderCents : null,
+    fee: deliveryZone ? deliveryZone.feeCents : null,
     minutes: fulfilment?.prepMinutes?.[mode] ?? null,
   };
   const [tableInvalid, setTableInvalid] = useState(false);

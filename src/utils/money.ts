@@ -21,3 +21,9 @@ export const formatMoney = (value: number | undefined, currency: string, languag
 /** Same as formatMoney, for integer cents as the API sends them. */
 export const formatCents = (cents: number | undefined, currency: string, language: string): string =>
   formatMoney(centsToDollars(cents), currency, language);
+
+/** Rounds a major-unit amount (e.g. 4.35) to its integer minor-unit cents (435). */
+export const toCents = (value: number): number => {
+  if (typeof value !== 'number' || !Number.isFinite(value)) return 0;
+  return Math.round(value * 100);
+};
