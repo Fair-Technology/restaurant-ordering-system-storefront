@@ -459,7 +459,6 @@ const ShopView = () => {
         address={(resolvedShopData as { address?: { street?: string; postcode?: string; city?: string } } | undefined)?.address}
         openingHours={(resolvedShopData as { openingHours?: WeeklyHours } | undefined)?.openingHours}
         timeZone={shopTimeZone}
-        pickupMinutes={visibleModes.includes('collection') ? fulfilment?.prepMinutes?.collection : null}
         overlapsHero={resolvedBranding.showHero}
         languageSwitcher={languageSwitcher}
         copy={copy}
