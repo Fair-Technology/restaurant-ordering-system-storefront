@@ -10,8 +10,6 @@ interface ShopIntroProps {
   address?: { street?: string; postcode?: string; city?: string };
   openingHours?: WeeklyHours;
   timeZone?: string;
-  /** Minutes until a collection order is ready; no chip when unknown */
-  pickupMinutes?: number | null;
   /** True when the cover banner is shown above: the logo badge then overlaps its bottom edge */
   overlapsHero: boolean;
   /** Shown here on phones only; from sm up the switcher lives in the nav bar */
@@ -32,7 +30,6 @@ const ShopIntro: React.FC<ShopIntroProps> = ({
   address,
   openingHours,
   timeZone,
-  pickupMinutes,
   overlapsHero,
   languageSwitcher,
   copy,
@@ -98,11 +95,6 @@ const ShopIntro: React.FC<ShopIntroProps> = ({
                   {copy.introClosedNow}
                 </span>
               ))
-            )}
-            {!offline && (pickupMinutes ?? 0) > 0 && (
-              <span className="rounded-full bg-[#f6f1eb] px-3 py-1 text-[#4a413b]">
-                {copy.introPickupIn(pickupMinutes as number)}
-              </span>
             )}
             <a
               href="#shop-info"
