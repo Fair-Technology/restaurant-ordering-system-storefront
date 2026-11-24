@@ -64,7 +64,7 @@ interface CustomerDetailsFormProps {
 }
 
 export const inputClass =
-  'h-12 w-full rounded-xl border-[1.5px] border-[#e3d9ce] bg-white px-3.5 text-base text-gray-900 placeholder:text-[#9a8f86] focus:border-gray-900 focus:outline-hidden focus:ring-2 focus:ring-[var(--brand-accent)] focus:ring-offset-1 sm:text-[15px]';
+  'h-12 w-full rounded-xl border-[1.5px] border-[#e3d9ce] bg-white px-3.5 text-[16px] text-gray-900 placeholder:text-[#9a8f86] focus:border-gray-900 focus:outline-hidden focus:ring-2 focus:ring-[var(--brand-accent)] focus:ring-offset-1 sm:text-[15px]';
 const labelClass = 'mb-1.5 block text-[13px] font-semibold text-[#4a413b]';
 const fieldErrorClass = 'mt-1.5 rounded-xl bg-[#fdecea] px-3.5 py-2.5 text-sm text-[#8a1f12]';
 const hintClass = 'font-normal text-[#6b6058]';
