@@ -5,6 +5,10 @@ import { store } from './store';
 import '@fontsource-variable/fraunces';
 import './main.css';
 import App from './App.tsx';
+import { migrateLegacyCartKeys } from './utils/cartKeyMigration';
+
+// Must run before any component dispatches loadCart.
+migrateLegacyCartKeys();
 
 const rootEl = document.getElementById('root');
 if (rootEl) {

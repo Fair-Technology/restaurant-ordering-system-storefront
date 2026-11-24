@@ -86,7 +86,7 @@ async function setup(page: Page) {
   await fakeStripe(page);
   await page.addInitScript(() =>
     localStorage.setItem(
-      'mewmew_cart_v1:test-shop',
+      'cart_v1:test-shop',
       JSON.stringify([{ key: 'p1::::', id: 'p1', name: 'Carbonara', price: 10.5, quantity: 1 }]),
     ),
   );
