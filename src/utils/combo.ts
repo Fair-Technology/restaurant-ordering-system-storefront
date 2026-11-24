@@ -2,6 +2,7 @@ import type { ComboChoiceDto } from '../api/orderEndpoints';
 import type { CartComboChoice } from '../store/slices/cartSlice';
 import type { Product } from '../types/Product';
 import { unmetAddonGroups } from './addonSelection';
+import { chosenOptions, combinedDeclaration, type Declaration } from './declaration';
 
 export interface ComboPick {
   productId: string;
@@ -13,6 +14,16 @@ export type ComboPicks = Record<string, ComboPick>;
 
 export function optionOf(product: Product, groupId: string, productId: string): Product | undefined {
   return product.combo?.find((g) => g.id === groupId)?.options.find((o) => o.id === productId);
+}
+
+/** Allergens and additives of what the diner has actually picked: each picked dish, plus its picked size and extras. */
+export function comboDeclaration(product: Product, picks: ComboPicks): Declaration {
+  const dishes = (product.combo ?? []).flatMap((g) => {
+    const pick = picks[g.id];
+    const o = pick && optionOf(product, g.id, pick.productId);
+    return o ? [o, ...chosenOptions(o, pick.variantId, pick.addonIds)] : [];
+  });
+  return combinedDeclaration(product, dishes);
 }
 
 /** One combo's price in major units: the combo price plus every size and extra surcharge picked. */
