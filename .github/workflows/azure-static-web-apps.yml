@@ -129,7 +129,7 @@ jobs:
           attempts=10
           for i in $(seq 1 "$attempts"); do
             api_status=$(curl -sS -o /dev/null -w '%{http_code}' "$ORIGIN/api/shopShell?slug=mapasta" || true)
-            shop_body=$(curl -sS "$ORIGIN/shops/mapasta" || true)
+            shop_body=$(curl -sSL "$ORIGIN/shops/mapasta" || true)
             if [ "$api_status" = "200" ] && printf '%s' "$shop_body" | grep -q '/assets/'; then
               echo "OK (attempt $i): /api/shopShell -> 200 and /shops/mapasta serves the SPA shell."
               exit 0
