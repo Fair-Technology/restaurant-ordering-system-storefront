@@ -195,7 +195,7 @@ const ComboModal: React.FC<ComboModalProps> = ({ product, isOpen, onClose, shopI
           className={`h-[5px] w-8 rounded-full ${groupDone(g) ? 'bg-[#2f8a4c]' : 'bg-[#ebe2d8]'}`}
         />
       ))}
-      <span className="ml-1.5 whitespace-nowrap text-xs text-gray-500">
+      <span className="ml-1.5 whitespace-nowrap text-xs text-gray-600">
         {copy.comboProgress(doneCount, groups.length)}
       </span>
     </div>
@@ -216,7 +216,7 @@ const ComboModal: React.FC<ComboModalProps> = ({ product, isOpen, onClose, shopI
         </span>
       </p>
       {declarationVaries && (
-        <p data-testid="combo-declaration-varies" className="text-gray-500">
+        <p data-testid="combo-declaration-varies" className="text-gray-600">
           {labels.variesWithOptions}
         </p>
       )}
@@ -260,7 +260,7 @@ const ComboModal: React.FC<ComboModalProps> = ({ product, isOpen, onClose, shopI
                 />
               ) : (
                 <div
-                  className="flex aspect-[var(--dish-ratio)] w-full items-center justify-center bg-[#f6f1eb] text-gray-400"
+                  className="flex aspect-[var(--dish-ratio)] w-full items-center justify-center bg-[#f6f1eb] text-gray-600"
                   style={dishRatioStyle}
                 >
                   <UtensilsCrossed className="h-10 w-10" aria-hidden="true" />
@@ -291,7 +291,7 @@ const ComboModal: React.FC<ComboModalProps> = ({ product, isOpen, onClose, shopI
 
               {/* Live recap of the picks (md+) */}
               <div className="hidden flex-col border-t border-[#ebe2d8] pt-4 md:flex">
-                <div className="pb-1.5 text-xs font-semibold uppercase tracking-wider text-gray-500">{copy.comboYours}</div>
+                <div className="pb-1.5 text-xs font-semibold uppercase tracking-wider text-gray-600">{copy.comboYours}</div>
                 {groups.map((g) => {
                   const pick = picks[g.id];
                   const o = pick && optionOf(product, g.id, pick.productId);
@@ -307,8 +307,8 @@ const ComboModal: React.FC<ComboModalProps> = ({ product, isOpen, onClose, shopI
                         {done && <Check className="h-3 w-3" strokeWidth={3.5} />}
                       </span>
                       <span className="flex min-w-0 flex-col">
-                        <span className="text-[13px] text-gray-500">{g.label}</span>
-                        <span className={`text-sm leading-snug ${o ? 'font-semibold text-gray-900' : 'italic text-gray-400'}`}>
+                        <span className="text-[13px] text-gray-600">{g.label}</span>
+                        <span className={`text-sm leading-snug ${o ? 'font-semibold text-gray-900' : 'italic text-gray-600'}`}>
                           {o ? pickLine(o, pick) : copy.comboNotChosen}
                         </span>
                       </span>
@@ -393,7 +393,7 @@ const ComboModal: React.FC<ComboModalProps> = ({ product, isOpen, onClose, shopI
                             )}
                             <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                               <span className="text-sm font-semibold">{o.label}</span>
-                              {o.description && <span className="truncate text-xs text-gray-500">{o.description}</span>}
+                              {o.description && <span className="truncate text-xs text-gray-600">{o.description}</span>}
                             </span>
                             <span
                               aria-hidden="true"
@@ -435,7 +435,7 @@ const ComboModal: React.FC<ComboModalProps> = ({ product, isOpen, onClose, shopI
                         .filter((vt) => vt.variants.length > 1)
                         .map((vt) => (
                           <div key={vt.id} className="flex flex-col gap-2">
-                            <div className="text-xs font-semibold uppercase tracking-wider text-gray-500">{vt.label}</div>
+                            <div className="text-xs font-semibold uppercase tracking-wider text-gray-600">{vt.label}</div>
                             <div className="flex flex-wrap gap-2">
                               {vt.variants.map((variant) => {
                                 const on = pick.variantId === variant.id;
@@ -461,7 +461,7 @@ const ComboModal: React.FC<ComboModalProps> = ({ product, isOpen, onClose, shopI
                         ))}
                       {chosen.addons.map((ag) => (
                         <div key={ag.id} className="flex flex-col gap-2">
-                          <div className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+                          <div className="text-xs font-semibold uppercase tracking-wider text-gray-600">
                             {ag.label}
                             <span className="ml-1 font-medium normal-case tracking-normal">
                               ·{' '}
@@ -502,7 +502,7 @@ const ComboModal: React.FC<ComboModalProps> = ({ product, isOpen, onClose, shopI
                                   </span>
                                   <span className="flex min-w-0 flex-1 flex-col">
                                     <span className="text-[13px] font-semibold">{option.label}</span>
-                                    <span className="text-xs text-gray-500">
+                                    <span className="text-xs text-gray-600">
                                       {option.priceDelta ? `+ ${money.major(option.priceDelta)}` : copy.productIncluded}
                                     </span>
                                   </span>
