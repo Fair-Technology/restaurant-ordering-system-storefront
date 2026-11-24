@@ -98,6 +98,7 @@ export const mapApiProductToProduct = (
   description: product.description ?? '',
   isAvailable: product.isAvailable ?? true,
   soldOut: product.soldOut ?? false,
+  ageRestricted: product.ageRestricted ?? false,
   ...(activeOfferCents(product) !== null
     ? {
         price: centsToDollars(activeOfferCents(product) ?? 0),

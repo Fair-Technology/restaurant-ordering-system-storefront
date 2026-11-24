@@ -240,6 +240,7 @@ export interface OrderCopy {
   codeTooSmall: string;
   discountChanged: string;
   loyaltyOptIn: (amount: string, everyOrders: number, shop: string) => string;
+  ageConfirmation: string;
   comboBadge: string;
   comboPickOne: string;
   comboAdd: string;
@@ -530,6 +531,7 @@ const en: OrderCopy = {
   codeTooSmall: 'This order is too small for this code.',
   discountChanged: 'Your discount has changed. Please check the total and try again.',
   loyaltyOptIn: (amount, n, shop) => `Email me a voucher worth ${amount} after every ${n}th order at ${shop}.`,
+  ageConfirmation: 'I confirm I am 18 or older and understand this order contains alcohol.',
   noticeOk: 'OK',
   noticePausedTitle: 'Online ordering is paused',
   noticePausedText: "We can't take orders right now. Please try again later.",
@@ -842,6 +844,7 @@ const de: OrderCopy = {
   discountChanged: 'Ihr Rabatt hat sich geändert. Bitte prüfen Sie die Summe und versuchen Sie es erneut.',
   loyaltyOptIn: (amount, n, shop) =>
     `Schicken Sie mir nach jeder ${n}. Bestellung bei ${shop} einen Gutschein über ${amount} per E-Mail.`,
+  ageConfirmation: 'Ich bestätige, dass ich mindestens 18 Jahre alt bin und dass diese Bestellung Alkohol enthält.',
   noticeOk: 'OK',
   noticePausedTitle: 'Online-Bestellungen pausiert',
   noticePausedText: 'Wir können gerade keine Bestellungen annehmen. Bitte versuchen Sie es später noch einmal.',
