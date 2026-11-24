@@ -1,5 +1,5 @@
 import SkipLink from '../../shared/SkipLink';
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { toComboChoiceDtos } from '../../utils/combo';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Check, ChevronLeft, Lock } from 'lucide-react';
@@ -163,6 +163,7 @@ const CheckoutPage: React.FC = () => {
   const [dayChoice, setDayChoice] = useState<string | null>(null);
   const [codeOpen, setCodeOpen] = useState(false);
   const [codeInput, setCodeInput] = useState('');
+  const codeInputRef = useRef<HTMLInputElement>(null);
   const [appliedCode, setAppliedCode] = useState<string | null>(null); // what the quote is asked about
   const [loyaltyTick, setLoyaltyTick] = useState(false);
   const quoteArg = {
@@ -401,6 +402,10 @@ const CheckoutPage: React.FC = () => {
   useEffect(() => {
     window.scrollTo({ top: 0 });
   }, [step]);
+  // Opening the discount code box puts the cursor straight into the field
+  useEffect(() => {
+    if (codeOpen) codeInputRef.current?.focus();
+  }, [codeOpen]);
 
   if (isShopLoading || !cartLoaded) return <CheckoutPageSkeleton />;
 
@@ -678,6 +683,9 @@ const CheckoutPage: React.FC = () => {
                           )}
                         </p>
                       )}
+                      {when === 'later' && !chosenSlot && !quoting && (
+                        <p className={warnBox}>{copy.slotRequired}</p>
+                      )}
                       {when === 'later' && chosenSlot && quote.slotAvailable === false && !quoting && (
                         <p className={errorBox}>{copy.slotGone}</p>
                       )}
@@ -804,6 +812,7 @@ const CheckoutPage: React.FC = () => {
                           <label className="flex-1">
                             <span className="mb-1.5 block text-[13px] font-semibold text-[#4a413b]">{copy.codeLabel}</span>
                             <input
+                              ref={codeInputRef}
                               className={`${inputClass} h-11 uppercase`}
                               value={codeInput}
                               onChange={(e) => setCodeInput(e.target.value)}

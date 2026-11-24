@@ -132,6 +132,8 @@ export interface OrderCopy {
   emailRequiredError: string;
   phoneRequiredError: string;
   phoneInvalidError: string;
+  emailInvalidError: string;
+  slotRequired: string;
   billingToggle: string;
   summaryTitle: string;
   inclVat: string;
@@ -425,11 +427,13 @@ const en: OrderCopy = {
   emailPlaceholder: 'your@email.com',
   phoneLabel: 'Phone',
   phoneHint: 'in case the restaurant has a question',
-  phonePlaceholder: '+1 (555) 000-0000',
+  phonePlaceholder: '0151 2345678',
   nameRequiredError: 'Please enter your name.',
   emailRequiredError: 'Please enter your email address.',
   phoneRequiredError: 'Please enter your phone number.',
   phoneInvalidError: 'Please enter a valid phone number (digits, spaces, and + - ( ) . only, 6 to 15 digits).',
+  emailInvalidError: 'Please enter a valid email address.',
+  slotRequired: 'Please choose a time to continue.',
   billingToggle: 'Add a billing address (optional)',
   summaryTitle: 'Summary',
   inclVat: 'incl. VAT',
@@ -738,6 +742,8 @@ const de: OrderCopy = {
   emailRequiredError: 'Bitte geben Sie Ihre E-Mail-Adresse ein.',
   phoneRequiredError: 'Bitte geben Sie Ihre Telefonnummer ein.',
   phoneInvalidError: 'Bitte geben Sie eine gültige Telefonnummer ein (Ziffern, Leerzeichen und + - ( ) ., 6 bis 15 Ziffern).',
+  emailInvalidError: 'Bitte geben Sie eine gültige E-Mail-Adresse ein.',
+  slotRequired: 'Bitte wählen Sie eine Uhrzeit, um fortzufahren.',
   billingToggle: 'Rechnungsadresse hinzufügen (optional)',
   summaryTitle: 'Übersicht',
   inclVat: 'inkl. MwSt.',

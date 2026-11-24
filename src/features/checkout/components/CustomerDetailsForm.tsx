@@ -5,7 +5,7 @@ import type { LegalCopy } from '../../../utils/legalCopy';
 import type { CustomerAddress, DeliveryAddress } from '../../../api/orderEndpoints';
 import type { OrderCopy } from '../../../utils/orderCopy';
 import { addressFromForm } from '../../../utils/address';
-import { isBlank, isPlausiblePhone } from '../../../utils/formValidation';
+import { isBlank, isPlausiblePhone, isValidEmail } from '../../../utils/formValidation';
 import { readCheckoutDetails, writeCheckoutDetails } from '../../../utils/checkoutDetails';
 
 export interface CustomerFormData {
@@ -30,6 +30,7 @@ type FormCopy = Pick<
   | 'phonePlaceholder'
   | 'nameRequiredError'
   | 'emailRequiredError'
+  | 'emailInvalidError'
   | 'phoneRequiredError'
   | 'phoneInvalidError'
   | 'billingToggle'
@@ -67,6 +68,7 @@ export const inputClass =
 const labelClass = 'mb-1.5 block text-[13px] font-semibold text-[#4a413b]';
 const fieldErrorClass = 'mt-1.5 rounded-xl bg-[#fdecea] px-3.5 py-2.5 text-sm text-[#8a1f12]';
 const hintClass = 'font-normal text-[#6b6058]';
+const counterClass = 'mt-1 text-right text-xs text-[#9a8f86]';
 
 /** "Postcode 10115 – change it on the menu": the part after the dash links back to the menu. */
 const PostcodeFixedNote: React.FC<{ text: string; slug: string }> = ({ text, slug }) => {
@@ -124,10 +126,10 @@ const CustomerDetailsForm: React.FC<CustomerDetailsFormProps> = ({
   const [deliveryCity, setDeliveryCity] = useState(saved?.deliveryCity ?? '');
   const [addressError, setAddressError] = useState<string | null>(null);
   const [nameError, setNameError] = useState<string | null>(null);
-  const [phoneError, setPhoneError] = useState<string | null>(null);
   const [emailError, setEmailError] = useState<string | null>(null);
-  const emailRef = useRef<HTMLInputElement>(null);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
   const nameRef = useRef<HTMLInputElement>(null);
+  const emailRef = useRef<HTMLInputElement>(null);
   const phoneRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -150,12 +152,16 @@ const CustomerDetailsForm: React.FC<CustomerDetailsFormProps> = ({
     e.preventDefault();
     // Our own checks come first (the form is noValidate), so the diner sees inline messages, not a browser bubble.
     const nextNameError = isBlank(name) ? copy.nameRequiredError : null;
+    const nextEmailError = isBlank(email)
+      ? copy.emailRequiredError
+      : !isValidEmail(email)
+        ? copy.emailInvalidError
+        : null;
     const nextPhoneError = isBlank(phone)
       ? copy.phoneRequiredError
       : !isPlausiblePhone(phone)
         ? copy.phoneInvalidError
         : null;
-    const nextEmailError = isBlank(email) ? copy.emailRequiredError : null;
     if (nextNameError || nextEmailError || nextPhoneError) {
       setNameError(nextNameError);
       setEmailError(nextEmailError);
@@ -212,6 +218,7 @@ const CustomerDetailsForm: React.FC<CustomerDetailsFormProps> = ({
           aria-invalid={!!nameError}
           aria-describedby={nameError ? `${uid}-name-error` : undefined}
           autoComplete="name"
+          maxLength={200}
           className={inputClass}
           value={name}
           onChange={(e) => {
@@ -225,6 +232,7 @@ const CustomerDetailsForm: React.FC<CustomerDetailsFormProps> = ({
             {nameError}
           </p>
         )}
+        <p className={counterClass}>{name.length}/200</p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 sm:gap-3">
@@ -396,11 +404,13 @@ const CustomerDetailsForm: React.FC<CustomerDetailsFormProps> = ({
         <textarea
           id={`${uid}-notes`}
           rows={3}
+          maxLength={500}
           className={`${inputClass} h-auto resize-y py-3`}
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           placeholder={legalCopy.notesPlaceholder}
         />
+        <p className={counterClass}>{notes.length}/500</p>
       </div>
 
       {children}

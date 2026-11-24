@@ -11,3 +11,10 @@ export function isPlausiblePhone(value: string): boolean {
   const digitCount = trimmed.replace(/\D/g, '').length;
   return digitCount >= 6 && digitCount <= 15;
 }
+
+/** Same pattern rs-backend uses for email addresses. */
+export const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+export function isValidEmail(value: string): boolean {
+  return EMAIL_PATTERN.test(value.trim());
+}
