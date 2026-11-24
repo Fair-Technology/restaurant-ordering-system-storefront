@@ -9,6 +9,7 @@ import { resolveShopBranding } from '../utils/branding';
 import { openState } from '../utils/openingHours';
 import { useAppSelector } from '../store/hooks';
 import { currentChoice, pageLanguageOf } from '../utils/pageLanguage';
+import { filterShopsByQuery } from '../utils/search';
 import { siteCopy, PLATFORM_NAME, type SiteCopy } from '../utils/siteCopy';
 
 /** Ordering paused / open / closed as a small pill. Offline shops never reach this list: the server leaves them out. */
@@ -33,13 +34,7 @@ const HomePage = () => {
   const [query, setQuery] = useState('');
 
   const shops = useMemo(() => data?.shops ?? [], [data]);
-  const shown = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return shops;
-    return shops.filter((s) =>
-      [s.name, s.address?.city, s.address?.postcode].some((v) => v?.toLowerCase().includes(q)),
-    );
-  }, [shops, query]);
+  const shown = useMemo(() => filterShopsByQuery(shops, query), [shops, query]);
 
   return (
     <div className="flex min-h-screen w-full flex-col bg-white text-gray-900">
