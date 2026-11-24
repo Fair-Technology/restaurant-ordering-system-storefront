@@ -587,6 +587,16 @@ const CheckoutPage: React.FC = () => {
                   clashIndexes={clashIndexes}
                 />
 
+                {!quote && !quoteFailed && cartItems.length > 0 && mode !== 'dine_in' && (
+                  <section className={card} aria-hidden="true" data-testid="when-skeleton">
+                    <div className="mb-3 h-6 w-24 animate-pulse rounded bg-gray-200" />
+                    <div className="grid gap-2.5 sm:grid-cols-2">
+                      <div className="h-[68px] animate-pulse rounded-xl bg-gray-200" />
+                      <div className="h-[68px] animate-pulse rounded-xl bg-gray-200" />
+                    </div>
+                  </section>
+                )}
+
                 {quote && hasSlots && (
                   <section className={card}>
                     <fieldset className="flex flex-col gap-3" data-testid="when">
@@ -735,6 +745,19 @@ const CheckoutPage: React.FC = () => {
               <div className="flex flex-col gap-4">
                 <section className={`${card} flex flex-col gap-3 shadow-[0_8px_28px_rgba(31,26,23,0.06)]`}>
                   <h2 className="text-[19px] font-bold text-gray-900">{copy.summaryTitle}</h2>
+
+                  {!quote && !quoteFailed && cartItems.length > 0 && (
+                    <div className="flex flex-col gap-2" aria-hidden="true" data-testid="totals-skeleton">
+                      <div className="flex justify-between gap-3">
+                        <div className="h-5 w-16 animate-pulse rounded bg-gray-200" />
+                        <div className="h-5 w-14 animate-pulse rounded bg-gray-200" />
+                      </div>
+                      <div className="mt-1 flex items-baseline justify-between gap-3 border-t border-[#f1ebe4] pt-3">
+                        <div className="h-6 w-28 animate-pulse rounded bg-gray-200" />
+                        <div className="h-8 w-20 animate-pulse rounded bg-gray-200" />
+                      </div>
+                    </div>
+                  )}
 
                   {quote && (
                     <dl
@@ -886,7 +909,7 @@ const CheckoutPage: React.FC = () => {
                       </Link>
                       {legalWords.acceptAnd}
                       <Link to={`/shops/${slug}/legal/privacy`} className="underline">
-                        {legalWords.footerPrivacy}
+                        {legalWords.legalPrivacyNoun}
                       </Link>
                       {legalWords.acceptEnd}
                     </p>
