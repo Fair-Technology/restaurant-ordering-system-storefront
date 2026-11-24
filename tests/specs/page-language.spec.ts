@@ -166,6 +166,8 @@ async function goInApp(page: Page, path: string) {
   }, path);
 }
 
+const htmlLang = (page: Page) => page.evaluate(() => document.documentElement.lang);
+
 const GERMAN_ONLY = { de: 'Spaghetti Carbonara' };
 
 test.describe('Page language', () => {
@@ -177,6 +179,7 @@ test.describe('Page language', () => {
 
     const group = page.getByRole('group', { name: 'Menüsprache' });
     await expect(group.getByRole('button')).toHaveText(['DE', 'EN']);
+    await expect.poll(() => htmlLang(page)).toBe('de');
     await expect(page.getByText(/only in German|nur auf Deutsch/i)).toHaveCount(0);
   });
 
@@ -228,6 +231,7 @@ test.describe('Page language', () => {
     const group = page.getByRole('group', { name: 'Menu language' });
     await expect(group.getByRole('button', { name: 'EN', exact: true })).toHaveAttribute('aria-pressed', 'true');
     await expect(page.getByRole('group', { name: 'Menüsprache' })).toHaveCount(0);
+    await expect.poll(() => htmlLang(page)).toBe('en');
     await expect(page.getByRole('heading', { name: 'Spaghetti Carbonara' })).toBeVisible();
   });
 
@@ -286,7 +290,31 @@ test.describe('Page language', () => {
       await expect(page.getByRole('heading', { name: 'Spaghetti Carbonara' })).toBeVisible();
       const group = page.getByRole('group', { name: 'Menu language' });
       await expect(group.getByRole('button', { name: 'EN', exact: true })).toHaveAttribute('aria-pressed', 'true');
+      await expect.poll(() => htmlLang(page)).toBe('en');
     });
+  });
+
+  test('a picked language survives a real reload and sets <html lang>', async ({ page }) => {
+    await mockShop(page, ['de'], GERMAN_ONLY);
+    await page.goto('/shops/test-shop');
+    await page.getByRole('button', { name: 'EN', exact: true }).click();
+    await expect.poll(() => htmlLang(page)).toBe('en');
+
+    await page.reload();
+    await expect(page.getByRole('heading', { name: 'Spaghetti Carbonara' })).toBeVisible();
+    const english = page.getByRole('group', { name: 'Menu language' });
+    await expect(english.getByRole('button', { name: 'EN', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await expect.poll(() => htmlLang(page)).toBe('en');
+
+    await english.getByRole('button', { name: 'DE', exact: true }).click();
+    await expect(page.getByRole('group', { name: 'Menüsprache' })).toBeVisible();
+    await expect.poll(() => htmlLang(page)).toBe('de');
+    expect(await page.evaluate(() => localStorage.getItem('mewmew_lang_v1'))).toBe('de');
+
+    await page.reload();
+    const german = page.getByRole('group', { name: 'Menüsprache' });
+    await expect(german.getByRole('button', { name: 'DE', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    await expect.poll(() => htmlLang(page)).toBe('de');
   });
 
   test('a third menu language shows, and choosing it gives that menu with English page text', async ({ page }) => {

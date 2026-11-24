@@ -10,9 +10,26 @@ export interface ShopState {
   currency: string | null;
 }
 
+/** One global key (not shop-scoped): the diner's page-language choice follows them across shops. */
+const LANG_KEY = 'mewmew_lang_v1';
+
+function persistLanguage(lang: string) {
+  try {
+    localStorage.setItem(LANG_KEY, lang);
+  } catch {}
+}
+
+function loadStoredLanguage(): string | null {
+  try {
+    return localStorage.getItem(LANG_KEY) || null;
+  } catch {
+    return null;
+  }
+}
+
 const initialState: ShopState = {
   activeShopId: null,
-  menuLanguage: null,
+  menuLanguage: loadStoredLanguage(),
   resolvedMenuLanguage: null,
   currency: null,
 };
@@ -31,6 +48,7 @@ const shopSlice = createSlice({
     },
     setMenuLanguage(state, action: PayloadAction<string>) {
       state.menuLanguage = action.payload;
+      persistLanguage(action.payload);
     },
     setResolvedMenuLanguage(state, action: PayloadAction<string>) {
       state.resolvedMenuLanguage = action.payload;
