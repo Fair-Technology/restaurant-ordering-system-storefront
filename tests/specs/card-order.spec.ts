@@ -173,7 +173,7 @@ async function seedCart(page: Page) {
   await page.addInitScript(() =>
     localStorage.setItem(
       'cart_v1:test-shop',
-      JSON.stringify([{ key: 'p1::::', id: 'p1', name: 'Carbonara', price: 10.5, quantity: 1 }]),
+      JSON.stringify([{ key: 'p1::::', id: 'p1', name: 'Carbonara', price: 1050, quantity: 1 }]),
     ),
   );
 }
@@ -181,7 +181,7 @@ async function seedCart(page: Page) {
 async function fillDetails(page: Page) {
   await page.getByPlaceholder('Your full name').fill('Test Diner');
   await page.getByPlaceholder('your@email.com').fill('diner@example.com');
-  await page.getByPlaceholder('+1 (555) 000-0000').fill('0301234567');
+  await page.getByTestId('checkout-phone-input').fill('0301234567');
 }
 
 async function fillAddress(page: Page, address: Record<string, string>) {
@@ -260,7 +260,7 @@ test.describe('Card order', () => {
 
     await expect(page.getByPlaceholder('Your full name')).toHaveValue('Test Diner');
     await expect(page.getByPlaceholder('your@email.com')).toHaveValue('diner@example.com');
-    await expect(page.getByPlaceholder('+1 (555) 000-0000')).toHaveValue('0301234567');
+    await expect(page.getByTestId('checkout-phone-input')).toHaveValue('0301234567');
     await expect(page.getByLabel('Street and number')).toHaveValue('Musterstraße 1');
     await expect(page.getByLabel('Postcode')).toHaveValue('10115');
     await expect(page.getByLabel('City')).toHaveValue('Berlin');
@@ -1541,7 +1541,7 @@ async function seedComboCart(page: Page) {
             key: 'm1::::::g-main=p1//;g-drink=p2//',
             id: 'm1',
             name: 'Pasta Menu',
-            price: 12,
+            price: 1200,
             quantity: 1,
             comboChoices: choices,
             detail: 'Carbonara · Cola',
@@ -1790,7 +1790,7 @@ test.describe('Cart in the top bar', () => {
     await page.addInitScript(() =>
       localStorage.setItem(
         'cart_v1:test-shop',
-        JSON.stringify([{ key: 'p1::::', id: 'p1', name: 'Carbonara', price: 7.5, quantity: 1 }]),
+        JSON.stringify([{ key: 'p1::::', id: 'p1', name: 'Carbonara', price: 750, quantity: 1 }]),
       ),
     );
     await page.goto('/shops/test-shop');

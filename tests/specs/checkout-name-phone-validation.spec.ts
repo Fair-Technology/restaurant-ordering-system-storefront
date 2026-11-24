@@ -127,7 +127,7 @@ async function setup(page: Page) {
 async function fill(page: Page, name: string, phone: string) {
   await page.getByPlaceholder('Your full name').fill(name);
   await page.getByPlaceholder('your@email.com').fill('diner@example.com');
-  await page.getByPlaceholder('+1 (555) 000-0000').fill(phone);
+  await page.getByTestId('checkout-phone-input').fill(phone);
 }
 
 const submit = (page: Page) => page.getByRole('button', { name: 'Continue to payment' });
@@ -159,7 +159,7 @@ test.describe('Checkout name and phone validation', () => {
     await submit(page).click();
 
     await expect(page.getByRole('alert').filter({ hasText: PHONE_INVALID })).toBeVisible();
-    await expect(page.getByPlaceholder('+1 (555) 000-0000')).toBeFocused();
+    await expect(page.getByTestId('checkout-phone-input')).toBeFocused();
     expect(orderPosts).toHaveLength(0);
     await expect(page.getByTestId('fake-card')).toHaveCount(0);
   });
@@ -171,7 +171,7 @@ test.describe('Checkout name and phone validation', () => {
     await submit(page).click();
 
     await expect(page.getByRole('alert').filter({ hasText: PHONE_REQUIRED })).toBeVisible();
-    await expect(page.getByPlaceholder('+1 (555) 000-0000')).toBeFocused();
+    await expect(page.getByTestId('checkout-phone-input')).toBeFocused();
     expect(orderPosts).toHaveLength(0);
     await expect(page.getByTestId('fake-card')).toHaveCount(0);
   });

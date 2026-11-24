@@ -270,6 +270,7 @@ const CustomerDetailsForm: React.FC<CustomerDetailsFormProps> = ({
           <input
             id={`${uid}-phone`}
             ref={phoneRef}
+            data-testid="checkout-phone-input"
             type="tel"
             required
             aria-required="true"
