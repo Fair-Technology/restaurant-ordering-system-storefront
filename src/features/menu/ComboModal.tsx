@@ -13,6 +13,7 @@ import { currentChoice, pageLanguageOf } from '../../utils/pageLanguage';
 import { toggleAddonSelection, unmetAddonGroups } from '../../utils/addonSelection';
 import {
   comboCartChoices,
+  comboDeclaration,
   comboDetail,
   comboReady,
   comboUnitPrice,
@@ -20,7 +21,7 @@ import {
   type ComboPick,
   type ComboPicks,
 } from '../../utils/combo';
-import { chosenOptions, combinedDeclaration, optionsDeclareAnything } from '../../utils/declaration';
+import { optionsDeclareAnything } from '../../utils/declaration';
 import { DISH_IMAGE } from '../../constants/image-shapes';
 import type { ComboChoiceGroup, Product } from '../../types/Product';
 
@@ -106,16 +107,8 @@ const ComboModal: React.FC<ComboModalProps> = ({ product, isOpen, onClose, shopI
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
 
-  // Allergens and additives of every dish on offer in the combo, plus the sizes and extras picked inside it
-  const { allergens, additives } = useMemo(() => {
-    const dishes = (product.combo ?? []).flatMap((g) => g.options);
-    const chosen = (product.combo ?? []).flatMap((g) => {
-      const pick = picks[g.id];
-      const o = pick && optionOf(product, g.id, pick.productId);
-      return o ? chosenOptions(o, pick.variantId, pick.addonIds) : [];
-    });
-    return combinedDeclaration(product, [...dishes, ...chosen]);
-  }, [product, picks]);
+  // Allergens and additives of the dishes picked so far, plus the sizes and extras picked inside them
+  const { allergens, additives } = useMemo(() => comboDeclaration(product, picks), [product, picks]);
   const declarationVaries = useMemo(
     () => (product.combo ?? []).some((g) => g.options.some(optionsDeclareAnything)),
     [product],
