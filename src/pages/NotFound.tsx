@@ -63,7 +63,7 @@ const NotFound: React.FC<{ kind?: 'page' | 'shop' }> = ({ kind = 'page' }) => {
             )}
           </div>
           {shop && (
-            <code className="mt-5 max-w-full truncate rounded-lg bg-[#faf6f1] px-2.5 py-1 text-[13px] text-[#8a7f77]">
+            <code className="mt-5 max-w-full truncate rounded-lg bg-[#faf6f1] px-2.5 py-1 text-[13px] text-[#6b6058]">
               {location.pathname}
             </code>
           )}

@@ -79,7 +79,7 @@ const Footer = ({
           </nav>
         )}
         {data && (
-          <p className="flex items-center gap-2 text-[13px] text-[#8a7f77]">
+          <p className="flex items-center gap-2 text-[13px] text-[#6b6058]">
             {data.salesSiteUrl ? (
               <a href={data.salesSiteUrl} className="inline-flex items-center gap-2 hover:text-gray-700">
                 {platformLine}

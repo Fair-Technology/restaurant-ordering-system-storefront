@@ -109,7 +109,7 @@ const CartDropdown: React.FC<CartDropdownProps> = ({ dropdownRef, style, onClose
     <div className={`flex items-center justify-between ${phone ? 'px-5 pb-2.5 pt-2' : 'px-5 pb-3 pt-4'}`}>
       <div className="flex items-baseline gap-2">
         <h2 className="font-display text-[22px] font-semibold">{copy.cartTitle}</h2>
-        {!empty && <span className="text-[13px] text-gray-500">{copy.cartItems(count)}</span>}
+        {!empty && <span className="text-[13px] text-gray-600">{copy.cartItems(count)}</span>}
       </div>
       <button
         type="button"
@@ -147,7 +147,7 @@ const CartDropdown: React.FC<CartDropdownProps> = ({ dropdownRef, style, onClose
     <button
       type="button"
       onClick={() => setAskClear(true)}
-      className={`self-center text-[13px] font-semibold text-gray-500 underline underline-offset-[3px] hover:text-gray-800 ${phone ? 'min-h-11' : 'min-h-9'}`}
+      className={`self-center text-[13px] font-semibold text-gray-600 underline underline-offset-[3px] hover:text-gray-800 ${phone ? 'min-h-11' : 'min-h-9'}`}
     >
       {copy.cartClear}
     </button>
@@ -177,7 +177,7 @@ const CartDropdown: React.FC<CartDropdownProps> = ({ dropdownRef, style, onClose
                       </span>
                     ) : null}
                   </div>
-                  {item.detail && <span className="line-clamp-2 text-[13px] leading-snug text-gray-500">{item.detail}</span>}
+                  {item.detail && <span className="line-clamp-2 text-[13px] leading-snug text-gray-600">{item.detail}</span>}
                   {dishTimes(item.id) && <DishTimeLine text={dishTimes(item.id)!} />}
                 </div>
                 <span className="whitespace-nowrap text-[15px] font-bold">{money.cents(item.quantity * item.price)}</span>
@@ -210,7 +210,7 @@ const CartDropdown: React.FC<CartDropdownProps> = ({ dropdownRef, style, onClose
                     <Plus className="h-3.5 w-3.5" strokeWidth={2.5} aria-hidden="true" />
                   </button>
                 </div>
-                {!isOne && <span className="text-xs text-gray-400">{copy.basketEach(money.cents(item.price))}</span>}
+                {!isOne && <span className="text-xs text-gray-600">{copy.basketEach(money.cents(item.price))}</span>}
               </div>
             </div>
           </li>
@@ -246,7 +246,7 @@ const CartDropdown: React.FC<CartDropdownProps> = ({ dropdownRef, style, onClose
         </div>
       )}
       {delivery && !belowMin && (context?.fee ?? 0) > 0 && (
-        <span className="text-xs text-gray-500">{copy.cartFeeNote(money.cents(context!.fee!))}</span>
+        <span className="text-xs text-gray-600">{copy.cartFeeNote(money.cents(context!.fee!))}</span>
       )}
       <button
         type="button"
@@ -272,7 +272,7 @@ const CartDropdown: React.FC<CartDropdownProps> = ({ dropdownRef, style, onClose
         <ShoppingBag className="h-[30px] w-[30px]" strokeWidth={1.8} aria-hidden="true" />
       </span>
       <div className="pt-1 text-[17px] font-bold">{copy.cartEmptyTitle}</div>
-      <p className="max-w-[280px] text-sm leading-relaxed text-gray-500">{copy.cartEmptyText}</p>
+      <p className="max-w-[280px] text-sm leading-relaxed text-gray-600">{copy.cartEmptyText}</p>
       <button
         type="button"
         onClick={onClose}
