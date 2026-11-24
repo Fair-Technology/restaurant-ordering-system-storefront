@@ -10,6 +10,8 @@ export interface Product {
   imageURL: string;
   description: string;
   isAvailable: boolean;
+  /** True while the dish is inside its sold-out window (server-computed). */
+  soldOut: boolean;
   /** Unit price the server charges right now: the offer price while an offer is on, else the normal price. */
   price: number;
   /** Normal price, set only while an offer is on (shown struck through next to `price`). */

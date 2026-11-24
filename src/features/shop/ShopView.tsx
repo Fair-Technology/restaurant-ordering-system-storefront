@@ -250,6 +250,7 @@ const ShopView = () => {
               (p) =>
                 !(p as CatalogProductWithOffer).combo &&
                 p.isAvailable !== false &&
+                !(p as CatalogProductWithOffer).soldOut &&
                 !(p.unavailableModes ?? []).includes(mode),
             )
             .map((p) => [p.id!, mapApiProductToProduct(p, cat, resolvedLanguage)] as const),
@@ -330,7 +331,7 @@ const ShopView = () => {
         // In the admin's preview, the dish being edited follows its unsaved availability too
         .filter((p) => {
           const edited = previewState.dish;
-          return edited && edited.id === p.id ? edited.isAvailable : p.isAvailable !== false;
+          return edited && edited.id === p.id ? edited.isAvailable : p.isAvailable !== false && !(p as CatalogProductWithOffer).soldOut;
         })
         .map((p) =>
           withPreviewEdits(

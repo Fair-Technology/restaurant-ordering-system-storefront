@@ -51,6 +51,8 @@ export type CatalogCategoryWithTimes = CatalogCategoryDto & {
 
 export type CatalogProductWithOffer = CatalogProductDto & {
   availableNow?: boolean;
+  soldOut?: boolean;
+  unavailableUntil?: string | null;
   offerPrice?: number | null;
   offerLabel?: string | null;
   combo?: CatalogComboDto | null;
@@ -95,6 +97,7 @@ export const mapApiProductToProduct = (
       ?.url ?? '',
   description: product.description ?? '',
   isAvailable: product.isAvailable ?? true,
+  soldOut: product.soldOut ?? false,
   ...(activeOfferCents(product) !== null
     ? {
         price: centsToDollars(activeOfferCents(product) ?? 0),
