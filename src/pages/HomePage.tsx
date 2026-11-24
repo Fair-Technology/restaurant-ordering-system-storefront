@@ -5,6 +5,7 @@ import { Search } from 'lucide-react';
 import { useListPublicShopsQuery, type PublicShopSummary } from '../api/publicShopEndpoints';
 import ShopLogo from '../shared/ShopLogo';
 import PlatformHeader from '../shared/PlatformHeader';
+import { shopCoverSrcSet, shopLogoSrcSet } from '../utils/imageVariants';
 import { resolveShopBranding } from '../utils/branding';
 import { openState } from '../utils/openingHours';
 import { useAppSelector } from '../store/hooks';
@@ -106,7 +107,7 @@ const HomePage = () => {
                   {/* Cover (sm+) */}
                   <div className="relative hidden aspect-[3/1] overflow-hidden bg-[#f6f1eb] sm:block">
                     {branding.showHero && (
-                      <img src={branding.heroImageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
+                      <img src={branding.heroImageUrl} srcSet={shopCoverSrcSet(branding.heroImageUrl)} sizes="(min-width: 1024px) 420px, (min-width: 640px) 380px, 100vw" alt="" className="absolute inset-0 h-full w-full object-cover" loading="lazy" />
                     )}
                   </div>
                   <div className="flex min-w-0 flex-1 items-center gap-3.5 sm:flex-col sm:items-stretch sm:gap-2.5 sm:px-[18px] sm:pb-[18px]">
@@ -115,6 +116,8 @@ const HomePage = () => {
                       <ShopLogo
                         name={shop.name ?? ''}
                         logoUrl={branding.logoUrl}
+                        srcSet={branding.logoUrl ? shopLogoSrcSet(branding.logoUrl) : undefined}
+                        sizes="64px"
                         accentColor={branding.accentColor}
                         className="h-full w-full rounded-full"
                         logoClassName="h-[80%] w-[80%] object-contain"

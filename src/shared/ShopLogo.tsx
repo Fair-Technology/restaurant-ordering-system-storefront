@@ -19,6 +19,9 @@ interface ShopLogoProps {
   textClassName: string;
   // Pages without a shop's branding variables (the home list) pass it directly
   accentColor?: string;
+  // Optional responsive candidates for an uploaded logo (canonical url stays the src fallback)
+  srcSet?: string;
+  sizes?: string;
 }
 
 // Within 5% of square counts as square, so those logos look exactly as before.
@@ -32,6 +35,8 @@ const ShopLogo: React.FC<ShopLogoProps> = ({
   wideClassName,
   textClassName,
   accentColor,
+  srcSet,
+  sizes,
 }) => {
   const [square, setSquare] = useState(true);
   // Natural pixel size, exposed as CSS variables so callers can stop a small
@@ -40,6 +45,8 @@ const ShopLogo: React.FC<ShopLogoProps> = ({
   return logoUrl ? (
     <img
       src={logoUrl}
+      srcSet={srcSet}
+      sizes={sizes}
       alt={name}
       onLoad={(e) => {
         const { naturalWidth, naturalHeight } = e.currentTarget;
