@@ -9,6 +9,7 @@ import CustomerOrderPage from './features/order/CustomerOrderPage';
 import NotFound from './pages/NotFound';
 import { CheckoutPageSkeleton } from './shared/Skeletons';
 import { useDocumentTitle } from './hooks/useDocumentTitle';
+import { useDocumentLanguage } from './hooks/useDocumentLanguage';
 
 const CheckoutPage = lazy(() => import('./features/checkout/CheckoutPage'));
 
@@ -17,10 +18,16 @@ const DocumentTitleSync: React.FC = () => {
   return null;
 };
 
+const DocumentLanguageSync: React.FC = () => {
+  useDocumentLanguage();
+  return null;
+};
+
 const App: React.FC = () => {
   return (
     <Router>
       <DocumentTitleSync />
+      <DocumentLanguageSync />
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/shops/:slug" element={<ShopView />} />
