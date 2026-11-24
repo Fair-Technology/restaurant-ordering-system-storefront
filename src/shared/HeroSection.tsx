@@ -25,6 +25,8 @@ const HeroSection: React.FC<HeroSectionProps> = ({ heroImageUrl }) => (
         data-testid="shop-hero-image"
         src={heroImageUrl}
         alt=""
+        fetchPriority="high"
+        decoding="async"
         className="h-full w-full object-cover object-center"
       />
       <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-transparent" />

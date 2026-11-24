@@ -119,6 +119,8 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart, disable
               <img
                 src={product.imageURL}
                 alt={product.label}
+                loading="lazy"
+                decoding="async"
                 className="pointer-events-none absolute inset-0 h-full w-full select-none object-cover transition-transform duration-500 group-hover/card:scale-105"
                 draggable={false}
               />

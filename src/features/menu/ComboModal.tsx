@@ -266,6 +266,8 @@ const ComboModal: React.FC<ComboModalProps> = ({
                 <img
                   src={product.imageURL}
                   alt={product.label}
+                  loading="lazy"
+                  decoding="async"
                   className="block aspect-[var(--dish-ratio)] w-full object-cover"
                   style={dishRatioStyle}
                 />
@@ -396,7 +398,7 @@ const ComboModal: React.FC<ComboModalProps> = ({
                           >
                             {radioInput(group, o, checked)}
                             {o.imageURL ? (
-                              <img src={o.imageURL} alt="" className="h-[42px] w-14 shrink-0 rounded-lg object-cover" />
+                              <img src={o.imageURL} alt="" loading="lazy" decoding="async" className="h-[42px] w-14 shrink-0 rounded-lg object-cover" />
                             ) : (
                               <span className="flex h-[42px] w-14 shrink-0 items-center justify-center rounded-lg bg-[#f6f1eb] text-[#b9ada2]">
                                 <UtensilsCrossed className="h-[18px] w-[18px]" aria-hidden="true" />

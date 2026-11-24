@@ -298,6 +298,8 @@ const ProductModal: React.FC<ProductModalProps> = ({
                 <img
                   src={product.imageURL}
                   alt={product.label}
+                  loading="lazy"
+                  decoding="async"
                   className="block aspect-[var(--dish-ratio)] w-full object-cover"
                   style={dishRatioStyle}
                 />

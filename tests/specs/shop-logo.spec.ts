@@ -191,3 +191,50 @@ test.describe('Shop logo shows whole', () => {
     await expect(page.locator('header').getByText('Test Shop', { exact: true })).toBeVisible();
   });
 });
+
+test.describe('Home list card logo badge', () => {
+  test('desktop: the badge overlaps the cover and is painted on top, whole', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await mockLogo(page, 100, 100);
+    await page.route('https://cover.test/**', (r) =>
+      r.fulfill({ status: 200, contentType: 'image/svg+xml', body: svg(900, 300).replace('teal', 'crimson') }),
+    );
+    await page.route('**/api/shops/public', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          shops: [
+            {
+              id: 'shop-t',
+              name: 'Test Shop',
+              slug: 'test-shop',
+              branding: { logoUrl: 'https://logo.test/logo.svg', heroImageUrl: 'https://cover.test/cover.svg' },
+            },
+          ],
+        }),
+      }),
+    );
+    await page.goto('/');
+    const card = page.locator('[data-testid="shop-card"]').first();
+    const logo = card.locator('img[alt="Test Shop"]');
+    await expect(logo).toHaveJSProperty('complete', true);
+    await expect(card.locator('img[alt=""]')).toHaveJSProperty('complete', true);
+    await page.screenshot({ path: '/tmp/home-card-logo.png' });
+
+    const badge = logo.locator('xpath=..');
+    const cover = card.locator('div.aspect-\\[3\\/1\\]');
+    const b = (await badge.boundingBox())!;
+    const c = (await cover.boundingBox())!;
+    expect(b.height).toBeCloseTo(64, 0);
+    // The badge overlaps the cover's bottom edge...
+    expect(b.y).toBeLessThan(c.y + c.height);
+    // ...and the topmost element at every point of the overlap is the badge, not the cover.
+    const covered = await badge.evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      const pts = [0.5, 0.25, 0.75].flatMap((fx) => [0.1, 0.2, 0.3].map((fy) => [r.x + r.width * fx, r.y + r.height * fy]));
+      return pts.filter(([x, y]) => !el.contains(document.elementFromPoint(x, y))).length;
+    });
+    expect(covered).toBe(0);
+  });
+});

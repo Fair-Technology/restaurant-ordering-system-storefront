@@ -111,7 +111,7 @@ const HomePage = () => {
                   </div>
                   <div className="flex min-w-0 flex-1 items-center gap-3.5 sm:flex-col sm:items-stretch sm:gap-2.5 sm:px-[18px] sm:pb-[18px]">
                     {/* Logo badge: overlaps the cover from sm */}
-                    <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#efe7de] bg-white sm:-mt-8 sm:border-[3px] sm:border-white sm:shadow-[0_3px_12px_rgba(31,26,23,0.14)]">
+                    <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full border border-[#efe7de] bg-white sm:-mt-8 sm:border-[3px] sm:border-white sm:shadow-[0_3px_12px_rgba(31,26,23,0.14)]">
                       <ShopLogo
                         name={shop.name ?? ''}
                         logoUrl={branding.logoUrl}

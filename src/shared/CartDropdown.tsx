@@ -162,7 +162,7 @@ const CartDropdown: React.FC<CartDropdownProps> = ({ dropdownRef, style, onClose
           <li key={item.key} className="flex gap-3 border-b border-[#f1ebe4] py-3.5">
             <div className="flex h-[45px] w-[60px] shrink-0 items-center justify-center overflow-hidden rounded-[10px] bg-[#f6f1eb]">
               {item.imageUrl ? (
-                <img src={item.imageUrl} alt="" className="h-full w-full object-cover" />
+                <img src={item.imageUrl} alt="" loading="lazy" decoding="async" className="h-full w-full object-cover" />
               ) : (
                 <UtensilsCrossed className="h-5 w-5 text-[#b9ada2]" aria-hidden="true" />
               )}
