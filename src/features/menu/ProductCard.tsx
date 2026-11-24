@@ -21,6 +21,8 @@ type AddToCartPayload = {
 type ProductCardProps = {
   product: Product;
   onAddToCart?: (payload: AddToCartPayload) => void;
+  /** Orders are paused: the dish can still be opened to look at, but not added */
+  disabled?: boolean;
 };
 
 /**
@@ -42,7 +44,7 @@ type ProductCardProps = {
  * modalId (shopId:productId) uniquely identifies each modal so a card only
  * closes if a *different* card triggered the event.
  */
-const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }) => {
+const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart, disabled }) => {
   const money = useMoney();
   const storedLanguage = useAppSelector((state) => state.shop.menuLanguage);
   const copy = orderCopy(pageLanguageOf(currentChoice(storedLanguage, navigator.language)));
@@ -130,10 +132,13 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }) => {
             type="button"
             onClick={(e) => {
               e.stopPropagation();
+              if (disabled) return;
               openModal();
             }}
+            disabled={disabled}
+            aria-disabled={disabled}
             aria-label={copy.addDish(product.label)}
-            className="absolute -bottom-1.5 -right-1.5 flex h-11 w-11 items-center justify-center rounded-full border-[3px] border-white bg-[var(--brand-accent)] text-[var(--brand-on-accent)] shadow-[0_2px_8px_rgba(31,26,23,0.18)] transition-transform active:scale-95 sm:bottom-3 sm:right-3"
+            className="disabled:cursor-not-allowed disabled:opacity-50 absolute -bottom-1.5 -right-1.5 flex h-11 w-11 items-center justify-center rounded-full border-[3px] border-white bg-[var(--brand-accent)] text-[var(--brand-on-accent)] shadow-[0_2px_8px_rgba(31,26,23,0.18)] transition-transform active:scale-95 sm:bottom-3 sm:right-3"
           >
             <Plus className="h-4 w-4" strokeWidth={2.8} aria-hidden="true" />
           </button>
@@ -201,6 +206,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }) => {
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           shopId={shopId}
+          disabled={disabled}
         />
       ) : (
         <ProductModal
@@ -208,6 +214,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart }) => {
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
           shopId={shopId}
+          disabled={disabled}
           onAddToCart={(payload) => onAddToCart?.(payload)}
         />
       )}

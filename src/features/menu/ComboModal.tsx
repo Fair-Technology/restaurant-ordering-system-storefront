@@ -34,6 +34,8 @@ interface ComboModalProps {
   editItemKey?: string;
   initialPicks?: ComboPicks;
   initialQuantity?: number;
+  /** Orders are paused: the combo can be looked at, not added */
+  disabled?: boolean;
 }
 
 /** A group with exactly one dish starts picked; the others start empty. */
@@ -82,6 +84,7 @@ const ComboModal: React.FC<ComboModalProps> = ({
   editItemKey,
   initialPicks,
   initialQuantity,
+  disabled,
 }) => {
   const dispatch = useAppDispatch();
   const money = useMoney();
@@ -152,6 +155,7 @@ const ComboModal: React.FC<ComboModalProps> = ({
   }
 
   function handleAdd() {
+    if (disabled) return;
     if (!ready) {
       // Show where the gap is instead of doing nothing
       setNudge(true);
@@ -567,9 +571,9 @@ const ComboModal: React.FC<ComboModalProps> = ({
             <button
               type="button"
               onClick={handleAdd}
-              aria-disabled={!ready}
+              aria-disabled={!ready || disabled}
               className={`flex h-auto min-h-[52px] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-full px-4 py-1.5 text-center text-[15px] font-bold transition-transform md:px-6 md:text-base ${
-                ready
+                ready && !disabled
                   ? 'bg-[var(--brand-accent)] text-[var(--brand-on-accent)] shadow-xs active:scale-[0.98]'
                   : 'bg-[#efe9e2] text-[#6b6058]'
               }`}
