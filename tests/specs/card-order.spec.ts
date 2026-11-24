@@ -1930,6 +1930,32 @@ test.describe('Closed or paused popup', () => {
     await expect(page.getByText('Back at 6 pm')).toBeVisible();
   });
 
+  test('checkout: an unrecognised order error never shows raw server text', async ({ page }) => {
+    await mockBackend(page);
+    await seedCart(page);
+    await page.route('**/api/orders', (route) =>
+      route.fulfill(fulfil({ error: 'Internal server error' }, 500)),
+    );
+    await page.goto('/shops/test-shop/checkout');
+    await fillDetails(page);
+    await page.getByRole('button', { name: 'Continue to payment' }).click();
+    await expect(page.getByText('Your order could not be sent. Please try again.')).toBeVisible();
+    await expect(page.getByText('Internal server error')).toHaveCount(0);
+  });
+
+  test('checkout: an unmapped 400 error never shows raw server text', async ({ page }) => {
+    await mockBackend(page);
+    await seedCart(page);
+    await page.route('**/api/orders', (route) =>
+      route.fulfill(fulfil({ error: 'This shop is not currently accepting orders' }, 400)),
+    );
+    await page.goto('/shops/test-shop/checkout');
+    await fillDetails(page);
+    await page.getByRole('button', { name: 'Continue to payment' }).click();
+    await expect(page.getByText('Your order could not be sent. Please try again.')).toBeVisible();
+    await expect(page.getByText('This shop is not currently accepting orders')).toHaveCount(0);
+  });
+
   test('closed: says when the shop opens again', async ({ page }) => {
     await page.clock.setFixedTime(new Date('2026-10-12T08:00:00+02:00')); // Monday 08:00
     await mockBackend(page, { shop: { openingHours: week('11:30', '21:00') } });
