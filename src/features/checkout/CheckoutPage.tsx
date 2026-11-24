@@ -493,7 +493,7 @@ const CheckoutPage: React.FC = () => {
     'inline-flex min-h-11 items-center gap-1.5 self-start text-sm font-semibold text-[#5c524b] hover:text-gray-900';
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#faf6f1] pb-24 lg:pb-0" style={brandStyle}>
+    <div className={`flex min-h-screen flex-col bg-[#faf6f1] ${step === 'payment' ? 'pb-48' : 'pb-24'} lg:pb-0`} style={brandStyle}>
       <SkipLink />
       <div className="sticky top-0 z-50">
         <NavBar shopName={shopName} shopId={slug ?? ''} logoUrl={resolvedBranding.logoUrl} />

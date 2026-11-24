@@ -117,7 +117,7 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
       </dl>
 
       {/* Phones: pinned to the bottom of the screen; from lg: in place */}
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[#efe7de] bg-white px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-6px_18px_rgba(31,26,23,0.06)] lg:static lg:z-auto lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none">
+      <div className="fixed inset-x-0 bottom-20 z-40 border-t border-[#efe7de] bg-white px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-6px_18px_rgba(31,26,23,0.06)] lg:static lg:z-auto lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none">
         <button
           type="button"
           className="flex h-14 w-full items-center justify-between gap-3 rounded-full bg-[var(--brand-accent)] px-6 text-base font-bold text-[var(--brand-on-accent)] transition-transform active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-50"
