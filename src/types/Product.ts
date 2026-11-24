@@ -12,6 +12,8 @@ export interface Product {
   isAvailable: boolean;
   /** True while the dish is inside its sold-out window (server-computed). */
   soldOut: boolean;
+  /** True for dishes (e.g. alcohol) the diner must confirm they are old enough to order. */
+  ageRestricted: boolean;
   /** Unit price the server charges right now: the offer price while an offer is on, else the normal price. */
   price: number;
   /** Normal price, set only while an offer is on (shown struck through next to `price`). */

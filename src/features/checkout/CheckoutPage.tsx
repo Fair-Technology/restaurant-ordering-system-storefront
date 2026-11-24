@@ -1,6 +1,7 @@
 import SkipLink from '../../shared/SkipLink';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { toComboChoiceDtos } from '../../utils/combo';
+import { cartHasAgeRestrictedItem } from '../../utils/ageRestriction';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Check, ChevronLeft, Lock } from 'lucide-react';
 import { Elements } from '@stripe/react-stripe-js';
@@ -166,6 +167,11 @@ const CheckoutPage: React.FC = () => {
   const codeInputRef = useRef<HTMLInputElement>(null);
   const [appliedCode, setAppliedCode] = useState<string | null>(null); // what the quote is asked about
   const [loyaltyTick, setLoyaltyTick] = useState(false);
+  const hasAgeRestrictedItem = useMemo(() => cartHasAgeRestrictedItem(cartItems, products), [cartItems, products]);
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
+  useEffect(() => {
+    if (!hasAgeRestrictedItem) setAgeConfirmed(false);
+  }, [hasAgeRestrictedItem]);
   const quoteArg = {
     shopId: resolvedShopId,
     fulfilmentMode: mode,
@@ -237,7 +243,8 @@ const CheckoutPage: React.FC = () => {
     (when === 'asap' ? asapPossible : chosenSlot !== null && quote.slotAvailable === true) &&
     !quote.belowMinimum && method !== null && !quoting &&
     !quote.orderLimitReached && (mode !== 'delivery' || quote.postcodeServed === true) &&
-    codeProblem === null && !(appliedCode && quoting);
+    codeProblem === null && !(appliedCode && quoting) &&
+    (!hasAgeRestrictedItem || ageConfirmed);
 
   function applyQuoteChanges() {
     if (!quote) return;
@@ -288,6 +295,10 @@ const CheckoutPage: React.FC = () => {
         legalData?.terms && legalData?.withdrawal
           ? { terms: legalData.terms.revision, withdrawal: legalData.withdrawal.revision }
           : undefined,
+      // Not yet in the generated createOrder type; sent anyway so it persists once the backend accepts it
+      ...((hasAgeRestrictedItem && ageConfirmed
+        ? { ageConfirmedAt: new Date().toISOString() }
+        : {}) as object),
     });
     if ('data' in res && res.data) {
       if (res.data.kind === 'placed') {
@@ -713,6 +724,18 @@ const CheckoutPage: React.FC = () => {
                           onChange={(e) => setLoyaltyTick(e.target.checked)}
                         />
                         <span>{copy.loyaltyOptIn(money.cents(loyalty.rewardCents), loyalty.everyOrders, shopName)}</span>
+                      </label>
+                    )}
+                    {hasAgeRestrictedItem && (
+                      <label className="flex cursor-pointer items-start gap-3 text-sm leading-relaxed text-[#3a322d]">
+                        <input
+                          type="checkbox"
+                          data-testid="age-confirmation"
+                          className="mt-0.5 h-5 w-5 shrink-0 accent-[var(--brand-accent)]"
+                          checked={ageConfirmed}
+                          onChange={(e) => setAgeConfirmed(e.target.checked)}
+                        />
+                        <span>{copy.ageConfirmation}</span>
                       </label>
                     )}
                   </CustomerDetailsForm>

@@ -232,6 +232,12 @@ export type CustomerOrderDto = {
     lineTotalCents: number;
     selectedVariantOptionName: string | null;
     selectedAddonOptionNames: string[];
+    combo?: {
+      line: number;
+      productId: string;
+      name: string;
+    } | null;
+    ageRestricted: boolean;
   }[];
   subtotalCents: number;
   totalCents: number;
@@ -427,6 +433,7 @@ export type ShopRoleKey = 'owner' | 'manager' | 'staff';
 export type ShopPermission =
   | 'view_orders'
   | 'manage_menu'
+  | 'manage_stock'
   | 'manage_shop'
   | 'manage_staff'
   | 'manage_billing'
@@ -632,11 +639,14 @@ export type CatalogProductDto = {
   variants: CatalogVariantGroupDto[];
   addons: CatalogAddonGroupDto[];
   isAvailable: boolean;
+  unavailableUntil: string | null;
+  soldOut: boolean;
   allergens: CatalogLabelDto[];
   additives: CatalogAdditiveDto[];
   dietaryTags: CatalogLabelDto[];
   spice: CatalogLabelDto | null;
   unavailableModes: FulfilmentMode[];
+  ageRestricted: boolean;
   availableNow: boolean;
   combo: CatalogComboDto | null;
   createdAt: string;
