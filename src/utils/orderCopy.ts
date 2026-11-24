@@ -96,7 +96,6 @@ export interface OrderCopy {
   introClosedNow: string;
   introOffline: string;
   introPaused: string;
-  introInfo: string;
   cartLabel: string;
   viewCart: string;
   cartItems: (n: number) => string;
@@ -397,7 +396,6 @@ const en: OrderCopy = {
   introClosedNow: 'Closed right now',
   introOffline: 'Offline',
   introPaused: 'Ordering paused',
-  introInfo: 'Info',
   cartLabel: 'Cart',
   viewCart: 'View cart',
   cartItems: (n) => (n === 1 ? '1 item' : `${n} items`),
@@ -708,7 +706,6 @@ const de: OrderCopy = {
   introClosedNow: 'Gerade geschlossen',
   introOffline: 'Offline',
   introPaused: 'Bestellungen pausiert',
-  introInfo: 'Infos',
   cartLabel: 'Warenkorb',
   viewCart: 'Warenkorb ansehen',
   cartItems: (n) => `${n} Artikel`,

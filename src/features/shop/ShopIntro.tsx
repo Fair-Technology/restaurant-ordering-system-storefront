@@ -1,5 +1,4 @@
 import React from 'react';
-import { Info } from 'lucide-react';
 import type { OrderCopy } from '../../utils/orderCopy';
 import { openState, type WeeklyHours } from '../../utils/openingHours';
 import { shopInitials } from '../../shared/ShopLogo';
@@ -23,8 +22,7 @@ interface ShopIntroProps {
 
 /**
  * ShopIntro — the shop's identity block under the cover banner: a round logo badge that
- * overlaps the banner, the shop name, address line, open/closed status and pickup time,
- * plus an Info link that jumps to the address/hours/phone block at the bottom of the page.
+ * overlaps the banner, the shop name, address line, open/closed status pill.
  */
 const ShopIntro: React.FC<ShopIntroProps> = ({
   name,
@@ -73,7 +71,7 @@ const ShopIntro: React.FC<ShopIntroProps> = ({
           {/* Phones only: the language switcher top right, beside the badge */}
           {languageSwitcher && <div className="ml-auto sm:hidden">{languageSwitcher}</div>}
 
-          {/* Status, pickup time and Info as one row of pills: under the name on phones and
+          {/* Status pill: under the name on phones and
               tablets (so a long address keeps its room), on the right beside the name from lg */}
           <div
             className={`order-4 flex w-full flex-wrap items-center gap-2 text-[13px] md:pl-[132px] md:text-sm lg:order-none lg:ml-auto lg:w-auto lg:shrink-0 lg:justify-end lg:pb-1 lg:pl-0 ${
@@ -104,13 +102,6 @@ const ShopIntro: React.FC<ShopIntroProps> = ({
                 </span>
               ))
             )}
-            <a
-              href="#shop-info"
-              className="inline-flex items-center gap-1.5 rounded-full bg-[#f6f1eb] px-3 py-1 font-semibold text-[#4a413b] transition-colors hover:bg-[#ece3d9]"
-            >
-              <Info className="h-3.5 w-3.5" aria-hidden="true" />
-              {copy.introInfo}
-            </a>
           </div>
         </div>
         <div className="pb-5" />
