@@ -18,7 +18,15 @@
       "/*.ico",
       "/*.txt",
       "/*.woff",
-      "/*.woff2"
+      "/*.woff2",
+      "/*.xml",
+      "/*.webmanifest",
+      "/*.json",
+      "/*.map",
+      "/.env",
+      "/.git/*",
+      "/swagger.json",
+      "/staticwebapp.config.json"
     ]
   }
 }

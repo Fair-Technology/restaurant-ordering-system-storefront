@@ -109,11 +109,13 @@ const CustomerOrderPage: React.FC = () => {
       setRetrying(false);
     }
   }
-  const [graceOver, setGraceOver] = useState(false);
+  // Without a ?t= token the page can never become valid, so skip the grace period.
+  const [graceOver, setGraceOver] = useState(!token);
   useEffect(() => {
+    if (!token) { setGraceOver(true); return; }
     const timer = setTimeout(() => setGraceOver(true), NOT_FOUND_GRACE_MS);
     return () => clearTimeout(timer);
-  }, []);
+  }, [token]);
   // The backend answers "payment is being confirmed" until Stripe has told it the card
   // reservation went through (the order is created only then), so keep asking quickly.
   const isConfirming =
@@ -313,9 +315,17 @@ const CustomerOrderPage: React.FC = () => {
           </div>
         )}
         {showNotFound && (
-          <p role="alert" className="rounded-2xl bg-[#fdecea] px-5 py-4 text-[15px] text-[#8a1f12]">
-            {wasConfirming ? copy.confirmFailed : copy.orderNotFound}
-          </p>
+          <div role="alert" className="flex flex-col items-start gap-3 rounded-2xl bg-[#fdecea] px-5 py-4 text-[15px] text-[#8a1f12]">
+            <p>{wasConfirming ? copy.confirmFailed : copy.orderNotFound}</p>
+            {slug && (
+              <Link
+                to={`/shops/${slug}`}
+                className="inline-flex min-h-11 items-center justify-center rounded-full border-[1.5px] border-[#8a1f12] bg-white px-5 text-sm font-bold text-[#8a1f12] hover:bg-[#faf6f1]"
+              >
+                {copy.backToMenu}
+              </Link>
+            )}
+          </div>
         )}
         {showLoadFailed && (
           <div role="alert" className="flex flex-col items-start gap-3 rounded-2xl bg-[#fdecea] px-5 py-4 text-[15px] text-[#8a1f12]">
