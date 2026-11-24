@@ -30,6 +30,8 @@ interface ComboModalProps {
   isOpen: boolean;
   onClose: () => void;
   shopId?: string;
+  /** Orders are paused: the combo can be looked at, not added */
+  disabled?: boolean;
 }
 
 /** A group with exactly one dish starts picked; the others start empty. */
@@ -70,7 +72,7 @@ const dishRatioStyle = { '--dish-ratio': DISH_IMAGE.ratio } as React.CSSProperti
  * Sizes and extras that cost extra are added on top of the combo price. The combo goes into the
  * basket as one line; the server splits it into its dishes.
  */
-const ComboModal: React.FC<ComboModalProps> = ({ product, isOpen, onClose, shopId }) => {
+const ComboModal: React.FC<ComboModalProps> = ({ product, isOpen, onClose, shopId, disabled }) => {
   const dispatch = useAppDispatch();
   const money = useMoney();
   const storedLanguage = useAppSelector((state) => state.shop.menuLanguage);
@@ -140,6 +142,7 @@ const ComboModal: React.FC<ComboModalProps> = ({ product, isOpen, onClose, shopI
   }
 
   function handleAdd() {
+    if (disabled) return;
     if (!ready) {
       // Show where the gap is instead of doing nothing
       setNudge(true);
@@ -554,9 +557,9 @@ const ComboModal: React.FC<ComboModalProps> = ({ product, isOpen, onClose, shopI
             <button
               type="button"
               onClick={handleAdd}
-              aria-disabled={!ready}
+              aria-disabled={!ready || disabled}
               className={`flex h-auto min-h-[52px] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-full px-4 py-1.5 text-center text-[15px] font-bold transition-transform md:px-6 md:text-base ${
-                ready
+                ready && !disabled
                   ? 'bg-[var(--brand-accent)] text-[var(--brand-on-accent)] shadow-xs active:scale-[0.98]'
                   : 'bg-[#efe9e2] text-[#6b6058]'
               }`}

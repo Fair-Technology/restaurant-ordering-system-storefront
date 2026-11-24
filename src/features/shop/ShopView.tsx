@@ -463,6 +463,7 @@ const ShopView = () => {
         languageSwitcher={languageSwitcher}
         copy={copy}
         offline={isOffline}
+        paused={ordersPaused}
       />
       {noticeKind && !noticeSeen && !preview && (
         <ShopNoticeModal
@@ -506,6 +507,12 @@ const ShopView = () => {
       {!isOffline && tableInvalid && (
         <p role="status" className="max-w-7xl mx-auto px-6 pt-3 text-sm text-amber-800">
           {copy.tableInvalid}
+        </p>
+      )}
+      {/* Stays for as long as orders are paused, unlike the one-time popup above */}
+      {!isOffline && ordersPaused && (
+        <p role="status" data-testid="paused-banner" className="max-w-7xl mx-auto px-6 pt-3 text-sm text-amber-800">
+          {ordersPausedMessage || copy.orderingPaused}
         </p>
       )}
       {isOffline ? null : table ? (
@@ -602,6 +609,7 @@ const ShopView = () => {
               categoryIcons={categoryIcons}
               categoryNotes={categoryNotes}
               onAddToCart={() => {}}
+              disabled={ordersPaused}
             />
           </div>
         </div>

@@ -63,6 +63,8 @@ interface ProductModalProps {
   onClose: () => void;
   onAddToCart?: (payload: any) => void;
   shopId?: string; // Used to scope cart storage to the correct shop
+  /** Orders are paused: the dish can be looked at, not added */
+  disabled?: boolean;
   // Edit mode — pre-fills selections and replaces the existing cart item on confirm
   editItemKey?: string;
   initialVariantId?: string;
@@ -97,6 +99,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
   onClose,
   onAddToCart,
   shopId,
+  disabled,
   editItemKey,
   initialVariantId: initialVariantIdProp,
   initialAddonIds: initialAddonIdsProp,
@@ -538,7 +541,7 @@ const ProductModal: React.FC<ProductModalProps> = ({
             <button
               type="button"
               onClick={handleAddToCart}
-              disabled={addonsIncomplete}
+              disabled={addonsIncomplete || disabled}
               className="flex h-auto min-h-[52px] min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-full bg-[var(--brand-accent)] px-4 py-1.5 text-center text-[15px] font-bold text-[var(--brand-on-accent)] shadow-xs transition-transform active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 md:px-6 md:text-base"
             >
               <span className="min-w-0 leading-tight">{editItemKey ? copy.productUpdateOrder : copy.productAddToOrder}</span>
