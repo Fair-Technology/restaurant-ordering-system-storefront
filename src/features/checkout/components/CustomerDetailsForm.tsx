@@ -29,6 +29,7 @@ type FormCopy = Pick<
   | 'phoneHint'
   | 'phonePlaceholder'
   | 'nameRequiredError'
+  | 'emailRequiredError'
   | 'phoneRequiredError'
   | 'phoneInvalidError'
   | 'billingToggle'
@@ -124,6 +125,8 @@ const CustomerDetailsForm: React.FC<CustomerDetailsFormProps> = ({
   const [addressError, setAddressError] = useState<string | null>(null);
   const [nameError, setNameError] = useState<string | null>(null);
   const [phoneError, setPhoneError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
+  const emailRef = useRef<HTMLInputElement>(null);
   const nameRef = useRef<HTMLInputElement>(null);
   const phoneRef = useRef<HTMLInputElement>(null);
 
@@ -152,15 +155,18 @@ const CustomerDetailsForm: React.FC<CustomerDetailsFormProps> = ({
       : !isPlausiblePhone(phone)
         ? copy.phoneInvalidError
         : null;
-    if (nextNameError || nextPhoneError) {
+    const nextEmailError = isBlank(email) ? copy.emailRequiredError : null;
+    if (nextNameError || nextEmailError || nextPhoneError) {
       setNameError(nextNameError);
+      setEmailError(nextEmailError);
       setPhoneError(nextPhoneError);
-      const first = nextNameError ? nameRef.current : phoneRef.current;
+      const first = nextNameError ? nameRef.current : nextEmailError ? emailRef.current : phoneRef.current;
       first?.focus();
       first?.scrollIntoView({ block: 'center' });
       return;
     }
     setNameError(null);
+    setEmailError(null);
     setPhoneError(null);
     // noValidate switched off the browser's checks for the other required fields too; keep them.
     if (!e.currentTarget.reportValidity()) return;
@@ -228,14 +234,26 @@ const CustomerDetailsForm: React.FC<CustomerDetailsFormProps> = ({
           </label>
           <input
             id={`${uid}-email`}
+            ref={emailRef}
             type="email"
             required
+            aria-required="true"
+            aria-invalid={!!emailError}
+            aria-describedby={emailError ? `${uid}-email-error` : undefined}
             autoComplete="email"
             className={inputClass}
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              setEmailError(null);
+            }}
             placeholder={copy.emailPlaceholder}
           />
+          {emailError && (
+            <p id={`${uid}-email-error`} role="alert" className={fieldErrorClass}>
+              {emailError}
+            </p>
+          )}
         </div>
         <div>
           <label htmlFor={`${uid}-phone`} className={labelClass}>

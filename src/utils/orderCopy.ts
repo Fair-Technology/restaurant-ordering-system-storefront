@@ -129,6 +129,7 @@ export interface OrderCopy {
   phoneHint: string;
   phonePlaceholder: string;
   nameRequiredError: string;
+  emailRequiredError: string;
   phoneRequiredError: string;
   phoneInvalidError: string;
   billingToggle: string;
@@ -426,6 +427,7 @@ const en: OrderCopy = {
   phoneHint: 'in case the restaurant has a question',
   phonePlaceholder: '+1 (555) 000-0000',
   nameRequiredError: 'Please enter your name.',
+  emailRequiredError: 'Please enter your email address.',
   phoneRequiredError: 'Please enter your phone number.',
   phoneInvalidError: 'Please enter a valid phone number (digits, spaces, and + - ( ) . only, 6 to 15 digits).',
   billingToggle: 'Add a billing address (optional)',
@@ -733,6 +735,7 @@ const de: OrderCopy = {
   phoneHint: 'für Rückfragen des Restaurants',
   phonePlaceholder: '0170 1234567',
   nameRequiredError: 'Bitte geben Sie Ihren Namen ein.',
+  emailRequiredError: 'Bitte geben Sie Ihre E-Mail-Adresse ein.',
   phoneRequiredError: 'Bitte geben Sie Ihre Telefonnummer ein.',
   phoneInvalidError: 'Bitte geben Sie eine gültige Telefonnummer ein (Ziffern, Leerzeichen und + - ( ) ., 6 bis 15 Ziffern).',
   billingToggle: 'Rechnungsadresse hinzufügen (optional)',
