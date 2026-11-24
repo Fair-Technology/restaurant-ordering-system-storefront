@@ -26,6 +26,7 @@ jobs:
   test:
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
     runs-on: ubuntu-24.04
+    timeout-minutes: 20
     name: Typecheck and Playwright tests
     permissions:
       contents: read
@@ -54,6 +55,7 @@ jobs:
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
     needs: test
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     name: Build the artifact
     environment: dev
     permissions:
@@ -82,6 +84,7 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     name: Deploy to dev
     environment: dev
     permissions:
@@ -145,6 +148,7 @@ jobs:
     if: github.event_name == 'pull_request' && github.event.action != 'closed'
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     name: Deploy preview environment
     permissions:
       contents: read
