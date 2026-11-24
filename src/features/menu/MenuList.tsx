@@ -16,6 +16,8 @@ interface MenuListProps {
   /** Optional line under a section heading, by category slug (e.g. when an "Other times" category is on offer). */
   categoryNotes?: Record<string, string>;
   onAddToCart: (item: Product) => void;
+  /** Orders are paused: dishes can be viewed but not added */
+  disabled?: boolean;
 }
 
 /**
@@ -34,6 +36,7 @@ const MenuList: React.FC<MenuListProps> = ({
   categoryIcons,
   categoryNotes,
   onAddToCart,
+  disabled,
 }) => {
   const storedLanguage = useAppSelector((state) => state.shop.menuLanguage);
   const copy = orderCopy(pageLanguageOf(currentChoice(storedLanguage, navigator.language)));
@@ -69,6 +72,7 @@ const MenuList: React.FC<MenuListProps> = ({
                   <ProductCard
                     product={item}
                     onAddToCart={() => onAddToCart?.(item)}
+                    disabled={disabled}
                   />
                 </div>
               ))}
