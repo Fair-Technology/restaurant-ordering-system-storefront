@@ -13,6 +13,8 @@ import { useMoney } from '../../../hooks/useMoney';
 import type { Product } from '../../../types/Product';
 import type { OrderCopy } from '../../../utils/orderCopy';
 import ProductModal from '../../menu/ProductModal';
+import ComboModal from '../../menu/ComboModal';
+import { comboPicksFromChoices } from '../../../utils/combo';
 import ConfirmModal from '../../../shared/ConfirmModal';
 import DishTimeLine from '../../../shared/DishTimeLine';
 import { useDishTimes } from '../../../hooks/useDishTimes';
@@ -55,10 +57,12 @@ const CartSummary: React.FC<CartSummaryProps> = ({ slug, products, copy, limited
   const count = cartItems.reduce((n, i) => n + i.quantity, 0);
 
   const [editingItem, setEditingItem] = useState<CartItem | null>(null);
+  const [editingCombo, setEditingCombo] = useState<CartItem | null>(null);
   const [removingItem, setRemovingItem] = useState<CartItem | null>(null);
 
   // Look up the full product for the item being edited
   const editProduct = editingItem ? products.find((p) => p.id === editingItem.id) : undefined;
+  const editComboProduct = editingCombo ? products.find((p) => p.id === editingCombo.id) : undefined;
 
   return (
     <section className="rounded-[20px] border border-[#efe7de] bg-white p-5 sm:p-6">
@@ -133,11 +137,11 @@ const CartSummary: React.FC<CartSummaryProps> = ({ slug, products, copy, limited
                           <Plus className="h-4 w-4" strokeWidth={2.6} aria-hidden="true" />
                         </button>
                       </div>
-                      {product && !item.comboChoices && (
+                      {product && (
                         <button
                           type="button"
                           className="px-1 py-3 text-sm font-semibold text-gray-900 underline underline-offset-4"
-                          onClick={() => setEditingItem(item)}
+                          onClick={() => (item.comboChoices ? setEditingCombo(item) : setEditingItem(item))}
                         >
                           {copy.basketEdit}
                         </button>
@@ -171,6 +175,18 @@ const CartSummary: React.FC<CartSummaryProps> = ({ slug, products, copy, limited
           initialVariantId={editingItem.variantId}
           initialAddonIds={editingItem.addonOptionIds}
           initialQuantity={editingItem.quantity}
+        />
+      )}
+
+      {editingCombo && editComboProduct && (
+        <ComboModal
+          product={editComboProduct}
+          isOpen={true}
+          onClose={() => setEditingCombo(null)}
+          shopId={slug}
+          editItemKey={editingCombo.key}
+          initialPicks={comboPicksFromChoices(editingCombo.comboChoices!)}
+          initialQuantity={editingCombo.quantity}
         />
       )}
 

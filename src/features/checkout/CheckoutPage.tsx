@@ -656,6 +656,18 @@ const CheckoutPage: React.FC = () => {
                           </select>
                         </div>
                       )}
+                      {when === 'later' && (
+                        <p className="text-xs text-[#6b6058]">
+                          {copy.slotTimeZoneNote(
+                            new Intl.DateTimeFormat(pageLanguage === 'de' ? 'de-DE' : 'en-GB', {
+                              timeZone,
+                              timeZoneName: 'short',
+                            })
+                              .formatToParts(new Date())
+                              .find((p) => p.type === 'timeZoneName')?.value ?? timeZone,
+                          )}
+                        </p>
+                      )}
                       {when === 'later' && chosenSlot && quote.slotAvailable === false && !quoting && (
                         <p className={errorBox}>{copy.slotGone}</p>
                       )}

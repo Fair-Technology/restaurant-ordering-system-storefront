@@ -275,12 +275,20 @@ const ProductModal: React.FC<ProductModalProps> = ({
         aria-modal="true"
         aria-labelledby={titleId}
         tabIndex={-1}
-        className="relative z-[1001] flex h-[100dvh] w-full flex-col overflow-hidden bg-white text-gray-900 shadow-2xl focus:outline-hidden md:grid md:h-[min(720px,90vh)] md:max-w-[980px] md:grid-cols-[340px_minmax(0,1fr)] md:grid-rows-[auto_minmax(0,1fr)_auto] md:rounded-2xl"
+        className={`relative z-[1001] flex h-[100dvh] w-full flex-col overflow-hidden bg-white text-gray-900 shadow-2xl focus:outline-hidden md:grid md:rounded-2xl ${
+          hasOptions
+            ? 'md:h-[min(720px,90vh)] md:max-w-[980px] md:grid-cols-[340px_minmax(0,1fr)] md:grid-rows-[auto_minmax(0,1fr)_auto]'
+            : 'md:max-h-[90vh] md:max-w-[480px] md:grid-cols-[1fr] md:grid-rows-[minmax(0,1fr)_auto]'
+        }`}
       >
         {/* Phone: this wrapper is the single scroll area. md+: it dissolves (display: contents) into the grid. */}
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain md:contents">
           {/* ── Dish info ── */}
-          <aside className="border-b-8 border-[#f6f1eb] md:col-start-1 md:row-span-3 md:row-start-1 md:overflow-y-auto md:border-b-0 md:border-r md:border-r-[#efe7de] md:bg-[#faf6f1]">
+          <aside
+            className={`border-b-8 border-[#f6f1eb] md:col-start-1 md:row-start-1 md:overflow-y-auto md:border-b-0 ${
+              hasOptions ? 'md:row-span-3 md:border-r md:border-r-[#efe7de] md:bg-[#faf6f1]' : ''
+            }`}
+          >
             <div className="relative">
               {product.imageURL ? (
                 <img
@@ -295,7 +303,8 @@ const ProductModal: React.FC<ProductModalProps> = ({
                   <UtensilsCrossed className="h-10 w-10" aria-hidden="true" />
                 </div>
               )}
-              {closeButton('absolute right-4 top-4 flex bg-white shadow-md md:hidden')}
+              {/* Without an options header, the close button stays on the photo on desktop too */}
+              {closeButton(`absolute right-4 top-4 flex bg-white shadow-md ${hasOptions ? 'md:hidden' : ''}`)}
             </div>
 
             <div className="flex flex-col gap-3 px-5 pb-5 pt-5 md:px-7 md:pt-6">
@@ -357,143 +366,149 @@ const ProductModal: React.FC<ProductModalProps> = ({
             </div>
           </aside>
 
+          {hasOptions && (
+            <>
           {/* ── Options header (md+ only; phones use the floating close button) ── */}
-          <div className="hidden items-center justify-between border-b border-[#f1ebe4] px-7 py-3.5 md:col-start-2 md:row-start-1 md:flex">
-            <span className="text-[17px] font-bold">{hasOptions ? copy.productCustomise : product.label}</span>
-            {closeButton('flex bg-[#f4efe9] hover:bg-[#ebe4dc]')}
-          </div>
+            <div className="hidden items-center justify-between border-b border-[#f1ebe4] px-7 py-3.5 md:col-start-2 md:row-start-1 md:flex">
+              <span className="text-[17px] font-bold">{hasOptions ? copy.productCustomise : product.label}</span>
+              {closeButton('flex bg-[#f4efe9] hover:bg-[#ebe4dc]')}
+            </div>
 
-          {/* ── Options ── */}
-          <div className="md:col-start-2 md:row-start-2 md:min-h-0 md:overflow-y-auto md:overscroll-contain md:px-7 md:py-5">
-            {/* Variant groups — single select per group, shown as chips */}
-            {product.variantTypes?.map((group) => (
-              <fieldset
-                key={group.id}
-                className="border-b-8 border-[#f6f1eb] px-5 py-5 md:mb-6 md:border-b-0 md:p-0"
-              >
-                <legend className="sr-only">{group.label}</legend>
-                {sectionHeading(group.label, requiredBadge(copy.productRequired))}
-                <div className="flex flex-wrap gap-2">
-                  {group.variants.map((variant) => {
-                    const selected = selectedVariantId === variant.id;
-                    return (
-                      <label
-                        key={variant.id}
-                        className={`inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-full border-[1.5px] px-4 text-sm font-semibold transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[var(--brand-accent)] has-[:focus-visible]:ring-offset-2 ${
-                          selected
-                            ? 'border-gray-900 bg-gray-900 text-white'
-                            : 'border-[#e3d9ce] bg-white text-gray-900 hover:border-gray-400'
-                        }`}
-                      >
-                        <input
-                          type="radio"
-                          name={`variant-${group.id}`}
-                          value={variant.id}
-                          checked={selected}
-                          onChange={() => setSelectedVariantId(variant.id)}
-                          className="sr-only"
-                        />
-                        <span>{variant.label}</span>
-                        {variant.priceDelta ? (
-                          <span className="text-xs font-medium opacity-75">
-                            +{money.major(variant.priceDelta)}
-                          </span>
-                        ) : null}
-                      </label>
-                    );
-                  })}
-                </div>
-              </fieldset>
-            ))}
-
-            {/* Addon groups — rows on phones, two-column tiles on md+ */}
-            {product.addons?.map((group, index) => {
-              const single = group.maxSelectable === 1;
-              const chosenCount = group.options.filter((o) => selectedAddonIds.has(o.id)).length;
-              const full = !single && chosenCount >= group.maxSelectable;
-              const isLast = index === (product.addons?.length ?? 0) - 1;
-
-              let badge: React.ReactNode;
-              if (group.minSelectable > 0) {
-                badge = requiredBadge(
-                  single ? copy.productChooseOne : orderCopy(product.language ?? '').addonChooseAtLeast(group.minSelectable),
-                );
-              } else {
-                const limit =
-                  group.maxSelectable < group.options.length && !single
-                    ? ` · ${copy.productChooseUpTo(group.maxSelectable)}`
-                    : '';
-                badge = (
-                  <span className="text-xs text-gray-500">
-                    {copy.productOptional}
-                    {limit}
-                    {chosenCount > 0 ? ` · ${copy.productSelected(chosenCount)}` : ''}
-                  </span>
-                );
-              }
-
-              return (
+            {/* ── Options ── */}
+            <div className="md:col-start-2 md:row-start-2 md:min-h-0 md:overflow-y-auto md:overscroll-contain md:px-7 md:py-5">
+              {/* Variant groups — single select per group, shown as chips */}
+              {product.variantTypes?.map((group) => (
                 <fieldset
                   key={group.id}
-                  className={`px-5 pb-3 pt-5 md:mb-6 md:p-0 ${isLast ? 'pb-6' : 'border-b-8 border-[#f6f1eb] md:border-b-0'}`}
+                  className="border-b-8 border-[#f6f1eb] px-5 py-5 md:mb-6 md:border-b-0 md:p-0"
                 >
                   <legend className="sr-only">{group.label}</legend>
-                  {sectionHeading(group.label, badge)}
-                  <div className="grid grid-cols-1 md:grid-cols-2 md:gap-2">
-                    {group.options.map((option) => {
-                      const checked = selectedAddonIds.has(option.id);
-                      const blocked = full && !checked;
+                  {sectionHeading(group.label, requiredBadge(copy.productRequired))}
+                  <div className="flex flex-wrap gap-2">
+                    {group.variants.map((variant) => {
+                      const selected = selectedVariantId === variant.id;
                       return (
                         <label
-                          key={option.id}
-                          style={checked ? { backgroundColor: ACCENT_TINT } : undefined}
-                          className={`flex min-h-[52px] items-center gap-3.5 border-b border-[#f1ebe4] text-[15px] transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[var(--brand-accent)] md:rounded-xl md:border-[1.5px] md:px-3.5 md:py-2.5 md:text-sm ${
-                            checked
-                              ? 'md:border-[var(--brand-accent)] max-md:!bg-transparent'
-                              : 'md:border-[#ebe2d8] md:hover:border-gray-300'
-                          } ${blocked ? 'cursor-not-allowed opacity-45' : 'cursor-pointer'}`}
+                          key={variant.id}
+                          className={`inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-full border-[1.5px] px-4 text-sm font-semibold transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[var(--brand-accent)] has-[:focus-visible]:ring-offset-2 ${
+                            selected
+                              ? 'border-gray-900 bg-gray-900 text-white'
+                              : 'border-[#e3d9ce] bg-white text-gray-900 hover:border-gray-400'
+                          }`}
                         >
                           <input
-                            type={single && group.minSelectable > 0 ? 'radio' : 'checkbox'}
-                            name={`addon-${group.id}`}
-                            checked={checked}
-                            disabled={blocked}
-                            onChange={() => toggleAddon(option.id)}
+                            type="radio"
+                            name={`variant-${group.id}`}
+                            value={variant.id}
+                            checked={selected}
+                            onChange={() => setSelectedVariantId(variant.id)}
                             className="sr-only"
                           />
-                          <span
-                            aria-hidden="true"
-                            className={`flex h-[22px] w-[22px] shrink-0 items-center justify-center border-[1.5px] md:h-5 md:w-5 ${
-                              single ? 'rounded-full' : 'rounded-md'
-                            } ${
-                              checked
-                                ? 'border-[var(--brand-accent)] bg-[var(--brand-accent)] text-[var(--brand-on-accent)]'
-                                : 'border-gray-400 bg-white'
-                            }`}
-                          >
-                            {checked &&
-                              (single ? (
-                                <span className="h-2 w-2 rounded-full bg-[var(--brand-on-accent)]" />
-                              ) : (
-                                <Check className="h-3.5 w-3.5" strokeWidth={3.5} />
-                              ))}
-                          </span>
-                          <span className="min-w-0 flex-1 font-medium">{option.label}</span>
-                          <span className="whitespace-nowrap text-sm text-gray-600 md:font-semibold">
-                            {option.priceDelta ? `+ ${money.major(option.priceDelta)}` : copy.productIncluded}
-                          </span>
+                          <span>{variant.label}</span>
+                          {variant.priceDelta ? (
+                            <span className="text-xs font-medium opacity-75">
+                              +{money.major(variant.priceDelta)}
+                            </span>
+                          ) : null}
                         </label>
                       );
                     })}
                   </div>
                 </fieldset>
-              );
-            })}
-          </div>
+              ))}
+
+              {/* Addon groups — rows on phones, two-column tiles on md+ */}
+              {product.addons?.map((group, index) => {
+                const single = group.maxSelectable === 1;
+                const chosenCount = group.options.filter((o) => selectedAddonIds.has(o.id)).length;
+                const full = !single && chosenCount >= group.maxSelectable;
+                const isLast = index === (product.addons?.length ?? 0) - 1;
+
+                let badge: React.ReactNode;
+                if (group.minSelectable > 0) {
+                  badge = requiredBadge(
+                    single ? copy.productChooseOne : orderCopy(product.language ?? '').addonChooseAtLeast(group.minSelectable),
+                  );
+                } else {
+                  const limit =
+                    group.maxSelectable < group.options.length && !single
+                      ? ` · ${copy.productChooseUpTo(group.maxSelectable)}`
+                      : '';
+                  badge = (
+                    <span className="text-xs text-gray-500">
+                      {copy.productOptional}
+                      {limit}
+                      {chosenCount > 0 ? ` · ${copy.productSelected(chosenCount)}` : ''}
+                    </span>
+                  );
+                }
+
+                return (
+                  <fieldset
+                    key={group.id}
+                    className={`px-5 pb-3 pt-5 md:mb-6 md:p-0 ${isLast ? 'pb-6' : 'border-b-8 border-[#f6f1eb] md:border-b-0'}`}
+                  >
+                    <legend className="sr-only">{group.label}</legend>
+                    {sectionHeading(group.label, badge)}
+                    <div className="grid grid-cols-1 md:grid-cols-2 md:gap-2">
+                      {group.options.map((option) => {
+                        const checked = selectedAddonIds.has(option.id);
+                        const blocked = full && !checked;
+                        return (
+                          <label
+                            key={option.id}
+                            style={checked ? { backgroundColor: ACCENT_TINT } : undefined}
+                            className={`flex min-h-[52px] items-center gap-3.5 border-b border-[#f1ebe4] text-[15px] transition-colors has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-[var(--brand-accent)] md:rounded-xl md:border-[1.5px] md:px-3.5 md:py-2.5 md:text-sm ${
+                              checked
+                                ? 'md:border-[var(--brand-accent)] max-md:!bg-transparent'
+                                : 'md:border-[#ebe2d8] md:hover:border-gray-300'
+                            } ${blocked ? 'cursor-not-allowed opacity-45' : 'cursor-pointer'}`}
+                          >
+                            <input
+                              type={single && group.minSelectable > 0 ? 'radio' : 'checkbox'}
+                              name={`addon-${group.id}`}
+                              checked={checked}
+                              disabled={blocked}
+                              onChange={() => toggleAddon(option.id)}
+                              className="sr-only"
+                            />
+                            <span
+                              aria-hidden="true"
+                              className={`flex h-[22px] w-[22px] shrink-0 items-center justify-center border-[1.5px] md:h-5 md:w-5 ${
+                                single ? 'rounded-full' : 'rounded-md'
+                              } ${
+                                checked
+                                  ? 'border-[var(--brand-accent)] bg-[var(--brand-accent)] text-[var(--brand-on-accent)]'
+                                  : 'border-gray-400 bg-white'
+                              }`}
+                            >
+                              {checked &&
+                                (single ? (
+                                  <span className="h-2 w-2 rounded-full bg-[var(--brand-on-accent)]" />
+                                ) : (
+                                  <Check className="h-3.5 w-3.5" strokeWidth={3.5} />
+                                ))}
+                            </span>
+                            <span className="min-w-0 flex-1 font-medium">{option.label}</span>
+                            <span className="whitespace-nowrap text-sm text-gray-600 md:font-semibold">
+                              {option.priceDelta ? `+ ${money.major(option.priceDelta)}` : copy.productIncluded}
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </fieldset>
+                );
+              })}
+            </div>
+            </>
+          )}
         </div>
 
         {/* ── Pinned footer: recap, quantity, add ── */}
-        <div className="flex flex-col gap-2.5 border-t border-[#efe7de] bg-white px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-6px_18px_rgba(0,0,0,0.05)] md:col-start-2 md:row-start-3 md:px-7 md:pb-[18px] md:shadow-none">
+        <div className={`flex flex-col gap-2.5 border-t border-[#efe7de] bg-white px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-6px_18px_rgba(0,0,0,0.05)] ${
+          hasOptions ? 'md:col-start-2 md:row-start-3' : 'md:col-start-1 md:row-start-2'
+        } md:px-7 md:pb-[18px] md:shadow-none`}>
           {(summary || addonsIncomplete || quantity > 1) && (
             <div className="flex items-baseline justify-between gap-3 text-[13px] text-gray-600">
               <span className="min-w-0 truncate">
