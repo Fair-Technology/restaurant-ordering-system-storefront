@@ -9,6 +9,7 @@ import {
   removeItem,
   type CartItem,
 } from '../../../store/slices/cartSlice';
+import { MAX_LINE_QUANTITY } from '../../../utils/cartLimits';
 import { useMoney } from '../../../hooks/useMoney';
 import type { Product } from '../../../types/Product';
 import type { OrderCopy } from '../../../utils/orderCopy';
@@ -130,7 +131,8 @@ const CartSummary: React.FC<CartSummaryProps> = ({ slug, products, copy, limited
                         </span>
                         <button
                           type="button"
-                          className="flex h-10 w-10 items-center justify-center rounded-full text-gray-900 hover:bg-gray-100"
+                          className="flex h-10 w-10 items-center justify-center rounded-full text-gray-900 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                          disabled={item.quantity >= MAX_LINE_QUANTITY}
                           aria-label={copy.basketMore(item.name)}
                           onClick={() => dispatch(incrementItem({ key: item.key }))}
                         >
