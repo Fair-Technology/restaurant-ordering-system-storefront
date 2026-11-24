@@ -121,6 +121,16 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart, disable
                 src={product.imageURL}
                 srcSet={dishImageSrcSet(product.imageURL)}
                 sizes="(max-width: 639px) 108px, 291px"
+                onError={(e) => {
+                  // Legacy uploads have no -thumb/-card siblings; srcset does NOT fall back
+                  // on 404, so drop it and let the canonical src load.
+                  const img = e.currentTarget;
+                  if (img.srcset) {
+                    img.removeAttribute('srcset');
+                    img.removeAttribute('sizes');
+                    img.src = product.imageURL;
+                  }
+                }}
                 alt={product.label}
                 loading="lazy"
                 decoding="async"
