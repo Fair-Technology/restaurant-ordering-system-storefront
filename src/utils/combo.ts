@@ -60,6 +60,15 @@ export function comboCartChoices(product: Product, picks: ComboPicks): CartCombo
   }));
 }
 
+/** Reverses comboCartChoices: the picks a cart line was built from, for editing it. */
+export function comboPicksFromChoices(choices: readonly CartComboChoice[]): ComboPicks {
+  const picks: ComboPicks = {};
+  for (const c of choices) {
+    picks[c.groupId] = { productId: c.productId, variantId: c.variantId, addonIds: c.addonOptionIds ?? [] };
+  }
+  return picks;
+}
+
 /** The picks as one line for the basket, e.g. "Pomodoro (Spaghetti) · Cola". */
 export function comboDetail(product: Product, picks: ComboPicks): string {
   return (product.combo ?? [])

@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useId, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Check, Minus, Plus, UtensilsCrossed, X } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
-import { addItem } from '../../store/slices/cartSlice';
+import { addItem, removeItem } from '../../store/slices/cartSlice';
 import { useModalFocus } from '../../hooks/useModalFocus';
 import { toCents } from '../../utils/money';
 import { useMoney } from '../../hooks/useMoney';
@@ -30,12 +30,16 @@ interface ComboModalProps {
   isOpen: boolean;
   onClose: () => void;
   shopId?: string;
+  /** Cart line being edited: it is replaced on save. */
+  editItemKey?: string;
+  initialPicks?: ComboPicks;
+  initialQuantity?: number;
   /** Orders are paused: the combo can be looked at, not added */
   disabled?: boolean;
 }
 
 /** A group with exactly one dish starts picked; the others start empty. */
-function initialPicks(product: Product): ComboPicks {
+function defaultPicks(product: Product): ComboPicks {
   const picks: ComboPicks = {};
   for (const g of product.combo ?? []) {
     if (g.options.length === 1) {
@@ -72,7 +76,16 @@ const dishRatioStyle = { '--dish-ratio': DISH_IMAGE.ratio } as React.CSSProperti
  * Sizes and extras that cost extra are added on top of the combo price. The combo goes into the
  * basket as one line; the server splits it into its dishes.
  */
-const ComboModal: React.FC<ComboModalProps> = ({ product, isOpen, onClose, shopId, disabled }) => {
+const ComboModal: React.FC<ComboModalProps> = ({
+  product,
+  isOpen,
+  onClose,
+  shopId,
+  editItemKey,
+  initialPicks,
+  initialQuantity,
+  disabled,
+}) => {
   const dispatch = useAppDispatch();
   const money = useMoney();
   const storedLanguage = useAppSelector((state) => state.shop.menuLanguage);
@@ -96,15 +109,15 @@ const ComboModal: React.FC<ComboModalProps> = ({ product, isOpen, onClose, shopI
     typeof window !== 'undefined' ? window.location.pathname.split('/').filter(Boolean) : [];
   const effectiveShopId = shopId ?? urlParts[1];
 
-  const [picks, setPicks] = useState<ComboPicks>(() => initialPicks(product));
-  const [quantity, setQuantity] = useState(1);
+  const [picks, setPicks] = useState<ComboPicks>(() => initialPicks ?? defaultPicks(product));
+  const [quantity, setQuantity] = useState(initialQuantity ?? 1);
   const [nudge, setNudge] = useState(false);
 
   // Reset on every open, as ProductModal does
   useEffect(() => {
     if (!isOpen) return;
-    setPicks(initialPicks(product));
-    setQuantity(1);
+    setPicks(initialPicks ?? defaultPicks(product));
+    setQuantity(initialQuantity ?? 1);
     setNudge(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
@@ -150,6 +163,7 @@ const ComboModal: React.FC<ComboModalProps> = ({ product, isOpen, onClose, shopI
       if (first) document.getElementById(`combo-group-${first.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
+    if (editItemKey) dispatch(removeItem({ key: editItemKey }));
     dispatch(
       addItem({
         shopId: effectiveShopId,
@@ -565,7 +579,7 @@ const ComboModal: React.FC<ComboModalProps> = ({ product, isOpen, onClose, shopI
               }`}
             >
               {/* On narrow phones an incomplete combo shows only what's open; the label stays for screen readers */}
-              <span className={`min-w-0 leading-tight ${ready ? '' : 'max-[420px]:sr-only'}`}>{copy.comboAdd}</span>
+              <span className={`min-w-0 leading-tight ${ready ? '' : 'max-[420px]:sr-only'}`}>{editItemKey ? copy.productUpdateOrder : copy.comboAdd}</span>
               <span className="shrink-0 whitespace-nowrap text-[13px] font-semibold opacity-90 md:text-sm">{ready ? money.major(unit * quantity) : copy.comboOpen(openCount)}</span>
             </button>
           </div>

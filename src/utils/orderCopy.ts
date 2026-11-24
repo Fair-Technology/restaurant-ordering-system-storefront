@@ -175,6 +175,7 @@ export interface OrderCopy {
   slotDay: string;
   slotTime: string;
   slotPick: string;
+  slotTimeZoneNote: (tz: string) => string;
   closedOrderLater: string;
   slotGone: string;
   otherTimes: string;
@@ -472,6 +473,7 @@ const en: OrderCopy = {
   slotDay: 'Day',
   slotTime: 'Time',
   slotPick: 'Choose a time',
+  slotTimeZoneNote: (tz) => `Times shown in ${tz} time`,
   closedOrderLater: 'The restaurant is closed right now. You can order for later.',
   slotGone: 'This time is no longer available. Please choose another.',
   otherTimes: 'Other times',
@@ -778,6 +780,7 @@ const de: OrderCopy = {
   slotDay: 'Tag',
   slotTime: 'Uhrzeit',
   slotPick: 'Uhrzeit wählen',
+  slotTimeZoneNote: (tz) => `Zeiten in ${tz}-Zeit`,
   closedOrderLater: 'Das Restaurant hat gerade geschlossen. Sie können für später bestellen.',
   slotGone: 'Diese Uhrzeit ist nicht mehr frei. Bitte wählen Sie eine andere.',
   otherTimes: 'Andere Zeiten',
