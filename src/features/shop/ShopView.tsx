@@ -49,7 +49,6 @@ import { normaliseTableNumber } from '../../utils/tableSession';
 import { useDeliverySession } from '../../hooks/useDeliverySession';
 import { useMoney } from '../../hooks/useMoney';
 import { chosenMode, zoneFor } from '../../utils/delivery';
-import { isPreviewMode, startPreviewBridge, usePreviewState, withPreviewEdits } from '../../utils/preview';
 
 type CategoryOption = { id: string; label: string; count: number; icon?: string };
 
@@ -129,19 +128,6 @@ const ShopView = () => {
     refetch: refetchCatalog,
   } = useGetCatalogQuery({ shopId: resolvedShopId, lang }, { skip: !resolvedShopId || shopIsOffline });
 
-  // Inside the admin's live preview: listen for the dish being edited, saves and language switches
-  const preview = isPreviewMode();
-  const previewState = usePreviewState();
-  useEffect(
-    () =>
-      startPreviewBridge({
-        onRefresh: () => {
-          if (resolvedShopId) void refetchCatalog();
-        },
-        onLanguage: (l) => dispatch(setMenuLanguage(l)),
-      }),
-    [dispatch, refetchCatalog, resolvedShopId],
-  );
   // After a language switch the old menu stays on screen until the new one arrives: show that it is coming
   const switchingLanguage = isCatalogFetching && !!catalogData && !currentCatalog;
 
@@ -328,35 +314,25 @@ const ShopView = () => {
     shownCategories.forEach((cat) => {
       const id = slugifyCategoryName(cat.name!);
       grouped[id] = (cat.products ?? [])
-        // In the admin's preview, the dish being edited follows its unsaved availability too
-        .filter((p) => {
-          const edited = previewState.dish;
-          return edited && edited.id === p.id ? edited.isAvailable : p.isAvailable !== false && !(p as CatalogProductWithOffer).soldOut;
-        })
-        .map((p) =>
-          withPreviewEdits(
-            {
-              ...mapApiProductToProduct(p, cat, resolvedLanguage),
-              ...((p as CatalogProductWithOffer).combo
-                ? { combo: resolveCombo(p as CatalogProductWithOffer, dishes)! }
-                : {}),
-              // every timed category the dish is in, so a dish served Fridays and Saturdays says both
-              ...((p as CatalogProductWithOffer).availableNow === false
-                ? {
-                    availableLater: copy.availableWhen(
-                      dishTimesText(p.id!, (catalogData?.categories ?? []) as CatalogCategoryWithTimes[], pageLanguage) ??
-                        windowOf(cat),
-                    ),
-                  }
-                : {}),
-            },
-            previewState.dish,
-            resolvedLanguage,
-          ),
-        );
+        .filter((p) => p.isAvailable !== false && !(p as CatalogProductWithOffer).soldOut)
+        .map((p) => ({
+          ...mapApiProductToProduct(p, cat, resolvedLanguage),
+          ...((p as CatalogProductWithOffer).combo
+            ? { combo: resolveCombo(p as CatalogProductWithOffer, dishes)! }
+            : {}),
+          // every timed category the dish is in, so a dish served Fridays and Saturdays says both
+          ...((p as CatalogProductWithOffer).availableNow === false
+            ? {
+                availableLater: copy.availableWhen(
+                  dishTimesText(p.id!, (catalogData?.categories ?? []) as CatalogCategoryWithTimes[], pageLanguage) ??
+                    windowOf(cat),
+                ),
+              }
+            : {}),
+        }));
     });
     return grouped;
-  }, [shownCategories, resolvedLanguage, dishes, previewState.dish, copy, pageLanguage, catalogData]);
+  }, [shownCategories, resolvedLanguage, dishes, copy, pageLanguage, catalogData]);
 
   const categoryLabels = useMemo(() => {
     return shownOptions.reduce<Record<string, string>>((acc, category) => {
@@ -457,7 +433,7 @@ const ShopView = () => {
           shopName={shopName}
           shopId={slug ?? ''}
           logoUrl={resolvedBranding.logoUrl}
-          onCheckout={() => !preview && navigate(`/shops/${slug}/checkout`)}
+          onCheckout={() => navigate(`/shops/${slug}/checkout`)}
           languageSwitcher={languageSwitcher}
           cartContext={cartContext}
         />
@@ -476,7 +452,7 @@ const ShopView = () => {
         offline={isOffline}
         paused={ordersPaused}
       />
-      {noticeKind && !noticeSeen && !preview && (
+      {noticeKind && !noticeSeen && (
         <ShopNoticeModal
           kind={noticeKind}
           title={
@@ -636,7 +612,7 @@ const ShopView = () => {
       )}
       </main>
       <Footer slug={slug} flush={!!resolvedShopData} />
-      {!isOffline && <MobileCartBar onCheckout={() => !preview && navigate(`/shops/${slug}/checkout`)} copy={copy} />}
+      {!isOffline && <MobileCartBar onCheckout={() => navigate(`/shops/${slug}/checkout`)} copy={copy} />}
     </div>
   );
 };
