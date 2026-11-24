@@ -351,7 +351,7 @@ const CheckoutPage: React.FC = () => {
     } else if (msg === CUSTOMER_PHONE_ERROR) {
       setPlaceError(copy.phoneInvalidError);
     } else {
-      setPlaceError(msg ?? copy.orderFailed);
+      setPlaceError(copy.orderFailed);
     }
   }
 
