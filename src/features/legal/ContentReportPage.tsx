@@ -36,7 +36,7 @@ const isHttpUrl = (value: string): boolean => {
 
 const labelClass = 'block text-sm font-semibold text-gray-900';
 const inputClass =
-  'mt-1 w-full rounded-[12px] border border-[#e3d9ce] bg-white px-3.5 py-2.5 text-[15px] text-gray-900 outline-none transition-colors focus:border-gray-900';
+  'mt-1 w-full rounded-[12px] border border-[#e3d9ce] bg-white px-3.5 py-2.5 text-base text-gray-900 outline-none transition-colors focus:border-gray-900 sm:text-[15px]';
 
 /**
  * ContentReportPage — the diner's anonymous notice-and-action form at
