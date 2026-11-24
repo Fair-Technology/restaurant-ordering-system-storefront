@@ -372,6 +372,16 @@ const ShopView = () => {
     }, {});
   }, [shownOptions]);
 
+  // The footer lists the closed categories; once one is picked, bring its new menu section into view
+  useEffect(() => {
+    if (!pickedLaterId) return;
+    const t = window.setTimeout(
+      () => document.getElementById(pickedLaterId)?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
+      50,
+    );
+    return () => window.clearTimeout(t);
+  }, [pickedLaterId]);
+
   const otherTimes = useMemo(
     () =>
       laterCategories.map((c) => ({
@@ -598,9 +608,6 @@ const ShopView = () => {
           )}
           <CategoryFilterBar
             categories={categories}
-            otherTimes={otherTimes}
-            otherTimesLabel={copy.otherTimes}
-            onPickOtherTime={setPickedLaterId}
           />
           <div className="w-full flex items-center justify-center flex-col mt-4">
             <MenuList
@@ -623,6 +630,8 @@ const ShopView = () => {
           deliveryHours={fulfilment?.modes.includes('delivery') ? fulfilment.delivery?.hours : null}
           phone={(resolvedShopData as { phone?: string | null }).phone}
           copy={copy}
+          otherTimes={otherTimes}
+          onPickOtherTime={setPickedLaterId}
         />
       )}
       </main>

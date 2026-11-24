@@ -2139,7 +2139,7 @@ test.describe('Other times', () => {
     await expect(pills(page).getByRole('button', { name: /^Pasta/ })).toBeVisible();
     await expect(pills(page).getByRole('button', { name: /^Lunch/ })).toHaveCount(0);
     await expect(page.getByText('Lunch Lasagne')).toHaveCount(0);
-    await pills(page).getByRole('button', { name: 'Other times' }).click();
+    await page.getByTestId('shop-info').getByRole('button', { name: 'Other times' }).click();
     const list = page.getByTestId('other-times');
     for (const t of ['Lunch', 'Mon–Fri 11:30–14:30', 'Friday Grill', 'Fridays 17:00–21:00', 'Breakfast', 'Daily 07:00–10:30']) {
       await expect(list).toContainText(t);
@@ -2151,7 +2151,7 @@ test.describe('Other times', () => {
     await mockLaterMenu(page);
     await page.goto('/shops/test-shop');
 
-    await pills(page).getByRole('button', { name: 'Other times' }).click();
+    await page.getByTestId('shop-info').getByRole('button', { name: 'Other times' }).click();
     await page.getByTestId('other-times').getByRole('button', { name: /Lunch/ }).click();
     await expect(page.getByTestId('other-times')).toHaveCount(0);
     await expect(page.getByText('Lunch Lasagne')).toBeVisible();
@@ -2169,7 +2169,7 @@ test.describe('Other times', () => {
     await mockLaterMenu(page);
     await page.goto('/shops/test-shop');
 
-    await pills(page).getByRole('button', { name: 'Other times' }).click();
+    await page.getByTestId('shop-info').getByRole('button', { name: 'Other times' }).click();
     await expect(page.getByTestId('other-times')).toBeVisible();
     await page.keyboard.press('Escape');
     await expect(page.getByTestId('other-times')).toHaveCount(0);
@@ -2192,7 +2192,7 @@ test.describe('Other times in German', () => {
     await mockLaterMenu(page, 'de');
     await page.goto('/shops/test-shop');
 
-    await pills(page).getByRole('button', { name: 'Andere Zeiten' }).click();
+    await page.getByTestId('shop-info').getByRole('button', { name: 'Andere Zeiten' }).click();
     const list = page.getByTestId('other-times');
     for (const t of ['Mo–Fr 11:30–14:30', 'Freitags 17:00–21:00', 'Täglich 07:00–10:30']) {
       await expect(list).toContainText(t);
@@ -2209,7 +2209,7 @@ test.describe('Other times: more cases', () => {
     await mockBackend(page);
     await mockLaterMenu(page);
     await page.goto('/shops/test-shop');
-    await pills(page).getByRole('button', { name: 'Other times' }).click();
+    await page.getByTestId('shop-info').getByRole('button', { name: 'Other times' }).click();
     const list = page.getByTestId('other-times');
     await expect(list.getByRole('button')).toHaveCount(3);
     await expect(list).not.toContainText('Pasta');
@@ -2230,7 +2230,7 @@ test.describe('Other times: more cases', () => {
     await mockBackend(page);
     await page.route('**/api/shops/shop-t/catalog**', (route) => route.fulfill(fulfil(menu('en'))));
     await page.goto('/shops/test-shop');
-    await pills(page).getByRole('button', { name: 'Other times' }).click();
+    await page.getByTestId('shop-info').getByRole('button', { name: 'Other times' }).click();
     await expect(page.getByTestId('other-times')).toContainText('Weekends 10:00–14:00');
     await expect(page.getByTestId('other-times')).toContainText('Mon, Wed, Fri 17:00–21:00');
   });
@@ -2249,7 +2249,7 @@ test.describe('Other times: more cases', () => {
       })),
     );
     await page.goto('/shops/test-shop');
-    await pills(page).getByRole('button', { name: 'Other times' }).click();
+    await page.getByTestId('shop-info').getByRole('button', { name: 'Other times' }).click();
     await page.getByTestId('other-times').getByRole('button', { name: /Dessert/ }).click();
     await expect(page.getByTestId('not-now')).toHaveText('Available Fridays 17:00–21:00 · Saturdays 11:30–14:30');
   });
@@ -2267,7 +2267,7 @@ test.describe('Other times: more cases', () => {
       })),
     );
     await page.goto('/shops/test-shop');
-    await pills(page).getByRole('button', { name: 'Other times' }).click();
+    await page.getByTestId('shop-info').getByRole('button', { name: 'Other times' }).click();
     await page.getByTestId('other-times').getByRole('button', { name: /Lunch/ }).click();
     await expect(page.getByText('Lunch Lasagne')).toBeVisible();
     // only the dish that is not on now carries a badge; Carbonara (served now) has none
@@ -2279,19 +2279,19 @@ test.describe('Other times: more cases', () => {
     await mockBackend(page);
     await mockLaterMenu(page);
     await page.goto('/shops/test-shop');
-    await pills(page).getByRole('button', { name: 'Other times' }).click();
+    await page.getByTestId('shop-info').getByRole('button', { name: 'Other times' }).click();
     await page.mouse.click(5, 400);
     await expect(page.getByTestId('other-times')).toHaveCount(0);
 
-    await pills(page).getByRole('button', { name: 'Other times' }).click();
+    await page.getByTestId('shop-info').getByRole('button', { name: 'Other times' }).click();
     await page.getByTestId('other-times').getByRole('button', { name: /Lunch/ }).click();
-    await pills(page).getByRole('button', { name: 'Other times' }).click();
+    await page.getByTestId('shop-info').getByRole('button', { name: 'Other times' }).click();
     await page.getByTestId('other-times').getByRole('button', { name: /Breakfast/ }).click();
     await expect(page.getByText('Omelette')).toBeVisible();
     await expect(page.getByText('Lunch Lasagne')).toHaveCount(0);
   });
 
-  test('before opening time only the Other times pill is shown', async ({ page }) => {
+  test('before opening time there are no category pills, only the footer Other times', async ({ page }) => {
     await mockBackend(page);
     await page.route('**/api/shops/shop-t/catalog**', (route) =>
       route.fulfill(fulfil({
@@ -2303,8 +2303,8 @@ test.describe('Other times: more cases', () => {
       })),
     );
     await page.goto('/shops/test-shop');
-    await expect(pills(page).getByRole('button', { name: 'Other times' })).toBeVisible();
-    await expect(pills(page).getByRole('button')).toHaveCount(1);
+    await expect(page.getByTestId('shop-info').getByRole('button', { name: 'Other times' })).toBeVisible();
+    await expect(pills(page)).toHaveCount(0);
   });
 });
 
@@ -2373,7 +2373,7 @@ test.describe('Other times in German: more cases', () => {
       })),
     );
     await page.goto('/shops/test-shop');
-    await pills(page).getByRole('button', { name: 'Andere Zeiten' }).click();
+    await page.getByTestId('shop-info').getByRole('button', { name: 'Andere Zeiten' }).click();
     await expect(page.getByTestId('other-times')).toContainText('Am Wochenende 10:00–14:00');
     await expect(page.getByTestId('other-times')).toContainText('Mo, Mi, Fr 17:00–21:00');
   });
