@@ -4,6 +4,7 @@ import ProductModal from './ProductModal';
 import ComboModal from './ComboModal';
 import { PREVIEW_OPEN_EVENT, isPreviewMode, postToAdmin, usePreviewState } from '../../utils/preview';
 import { orderCopy } from '../../utils/orderCopy';
+import { dishImageSrcSet } from '../../utils/imageVariants';
 import { Product } from '../../types/Product';
 import { useMoney } from '../../hooks/useMoney';
 import { useAppSelector } from '../../store/hooks';
@@ -118,6 +119,8 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart, disable
             {product.imageURL ? (
               <img
                 src={product.imageURL}
+                srcSet={dishImageSrcSet(product.imageURL)}
+                sizes="(max-width: 639px) 108px, 291px"
                 alt={product.label}
                 loading="lazy"
                 decoding="async"
