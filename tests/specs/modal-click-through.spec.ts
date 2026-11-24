@@ -90,7 +90,7 @@ async function mockMenu(page: Page) {
 
 const cartCount = (page: Page) =>
   page.evaluate(() =>
-    JSON.parse(localStorage.getItem('mewmew_cart_v1:test-shop') || '[]').reduce(
+    JSON.parse(localStorage.getItem('cart_v1:test-shop') || '[]').reduce(
       (n: number, i: { quantity?: number }) => n + (i.quantity ?? 0),
       0,
     ),

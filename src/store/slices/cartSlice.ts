@@ -1,7 +1,7 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 // shop-scoped storage key helper
-const BASE_CART_KEY = 'mewmew_cart_v1';
+const BASE_CART_KEY = 'cart_v1';
 const cartKey = (shopId?: string) => `${BASE_CART_KEY}:${shopId ?? 'global'}`;
 
 export type CartComboChoice = {

@@ -172,7 +172,7 @@ async function mockBackend(page: Page, opts: MockOptions = {}) {
 async function seedCart(page: Page) {
   await page.addInitScript(() =>
     localStorage.setItem(
-      'mewmew_cart_v1:test-shop',
+      'cart_v1:test-shop',
       JSON.stringify([{ key: 'p1::::', id: 'p1', name: 'Carbonara', price: 10.5, quantity: 1 }]),
     ),
   );
@@ -1535,7 +1535,7 @@ async function seedComboCart(page: Page) {
   await page.addInitScript(
     (choices) =>
       localStorage.setItem(
-        'mewmew_cart_v1:test-shop',
+        'cart_v1:test-shop',
         JSON.stringify([
           {
             key: 'm1::::::g-main=p1//;g-drink=p2//',
@@ -1789,7 +1789,7 @@ test.describe('Cart in the top bar', () => {
     await bindDelivery(page);
     await page.addInitScript(() =>
       localStorage.setItem(
-        'mewmew_cart_v1:test-shop',
+        'cart_v1:test-shop',
         JSON.stringify([{ key: 'p1::::', id: 'p1', name: 'Carbonara', price: 7.5, quantity: 1 }]),
       ),
     );
@@ -2072,7 +2072,7 @@ test.describe('Dishes served later', () => {
   test('dishes served at different times are named together', async ({ page }) => {
     await page.addInitScript(() =>
       localStorage.setItem(
-        'mewmew_cart_v1:test-shop',
+        'cart_v1:test-shop',
         JSON.stringify([
           { key: 'p1::::', id: 'p1', name: 'Carbonara', price: 10.5, quantity: 1 },
           { key: 'p2::::', id: 'p2', name: 'Cola', price: 3.5, quantity: 1 },
@@ -2160,7 +2160,7 @@ test.describe('Other times', () => {
     await page.getByRole('button', { name: 'Add Lunch Lasagne' }).click();
     await page.getByRole('button', { name: /Add to order/ }).click();
     await expect
-      .poll(() => page.evaluate(() => localStorage.getItem('mewmew_cart_v1:test-shop') ?? ''))
+      .poll(() => page.evaluate(() => localStorage.getItem('cart_v1:test-shop') ?? ''))
       .toContain('"p7"');
   });
 
@@ -2386,7 +2386,7 @@ const dish = (id: string, name: string) => ({ ...baseProduct, id, name });
 async function seedDishes(page: Page, dishes: { id: string; name: string }[]) {
   await page.addInitScript((items) =>
     localStorage.setItem(
-      'mewmew_cart_v1:test-shop',
+      'cart_v1:test-shop',
       JSON.stringify(items.map((d) => ({ key: `${d.id}::::`, id: d.id, name: d.name, price: 5, quantity: 1 }))),
     ), dishes);
 }
