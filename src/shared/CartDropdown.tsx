@@ -9,6 +9,7 @@ import {
   removeItem,
   clearCart,
 } from '../store/slices/cartSlice';
+import { MAX_LINE_QUANTITY } from '../utils/cartLimits';
 import { useMoney } from '../hooks/useMoney';
 import DishTimeLine from './DishTimeLine';
 import { useDishTimes } from '../hooks/useDishTimes';
@@ -204,8 +205,9 @@ const CartDropdown: React.FC<CartDropdownProps> = ({ dropdownRef, style, onClose
                   <button
                     type="button"
                     onClick={() => dispatch(incrementItem({ key: item.key }))}
+                    disabled={item.quantity >= MAX_LINE_QUANTITY}
                     aria-label={copy.basketMore(item.name)}
-                    className={`flex items-center justify-center rounded-full hover:bg-gray-100 ${phone ? 'h-10 w-10' : 'h-8 w-8'}`}
+                    className={`flex items-center justify-center rounded-full hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent ${phone ? 'h-10 w-10' : 'h-8 w-8'}`}
                   >
                     <Plus className="h-3.5 w-3.5" strokeWidth={2.5} aria-hidden="true" />
                   </button>

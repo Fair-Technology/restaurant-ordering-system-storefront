@@ -1,4 +1,5 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { MAX_LINE_QUANTITY } from '../../utils/cartLimits';
 
 // shop-scoped storage key helper
 const BASE_CART_KEY = 'mewmew_cart_v1';
@@ -121,7 +122,10 @@ const cartSlice = createSlice({
       const signature = makeSignature(item);
       const idx = state.items.findIndex((it) => it.key === signature);
       if (idx >= 0) {
-        state.items[idx].quantity += item.quantity ?? 1;
+        state.items[idx].quantity = Math.min(
+          MAX_LINE_QUANTITY,
+          state.items[idx].quantity + (item.quantity ?? 1)
+        );
       } else {
         state.items.push({
           key: signature,
@@ -129,7 +133,7 @@ const cartSlice = createSlice({
           name: item.name,
           imageUrl: item.imageUrl,
           price: item.price,
-          quantity: item.quantity ?? 1,
+          quantity: Math.min(MAX_LINE_QUANTITY, item.quantity ?? 1),
           variantId: item.variantId,
           addonOptionIds: item.addonOptionIds,
           comboChoices: item.comboChoices,
@@ -146,7 +150,7 @@ const cartSlice = createSlice({
       const { key, by = 1 } = action.payload;
       const it = state.items.find((i) => i.key === key);
       if (it) {
-        it.quantity += by;
+        it.quantity = Math.min(MAX_LINE_QUANTITY, it.quantity + by);
         persist(state);
       }
     },
@@ -167,7 +171,7 @@ const cartSlice = createSlice({
       const { key, quantity } = action.payload;
       const it = state.items.find((i) => i.key === key);
       if (it) {
-        it.quantity = Math.max(0, quantity);
+        it.quantity = Math.min(MAX_LINE_QUANTITY, Math.max(0, quantity));
         if (it.quantity === 0)
           state.items = state.items.filter((i) => i.key !== key);
         persist(state);

@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Check, Minus, Plus, UtensilsCrossed, X } from 'lucide-react';
 import { useAppDispatch, useAppSelector } from '../../store/hooks';
 import { addItem, removeItem } from '../../store/slices/cartSlice';
+import { MAX_LINE_QUANTITY } from '../../utils/cartLimits';
 import { useModalFocus } from '../../hooks/useModalFocus';
 import { toCents } from '../../utils/money';
 import { useMoney } from '../../hooks/useMoney';
@@ -559,9 +560,10 @@ const ComboModal: React.FC<ComboModalProps> = ({
               </span>
               <button
                 type="button"
-                onClick={() => setQuantity((q) => q + 1)}
+                onClick={() => setQuantity((q) => Math.min(MAX_LINE_QUANTITY, q + 1))}
+                disabled={quantity >= MAX_LINE_QUANTITY}
                 aria-label={copy.productIncrease}
-                className="flex h-11 w-11 items-center justify-center rounded-full hover:bg-gray-100"
+                className="flex h-11 w-11 items-center justify-center rounded-full hover:bg-gray-100 disabled:opacity-35 disabled:hover:bg-transparent"
               >
                 <Plus className="h-4 w-4" strokeWidth={2.5} aria-hidden="true" />
               </button>
