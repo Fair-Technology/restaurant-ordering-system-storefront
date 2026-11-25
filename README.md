@@ -71,6 +71,10 @@ npm test              # Playwright, against http://localhost:5173 (starts the de
 
 `npm test` is **Playwright**, not vitest. Every spec mocks the API (`page.route`), so it needs no backend. Locally it reuses a server already on 5173; CI always starts its own.
 
+### Git hooks
+
+Run `git config core.hooksPath scripts/git-hooks` once per clone/worktree to enable the post-merge hook that deletes branches already merged into `main` (`scripts/cleanup-merged-branches.sh [--dry-run]`).
+
 ### API client
 
 The RTK Query client lives in **`src/api/`**, not `src/services/`:
