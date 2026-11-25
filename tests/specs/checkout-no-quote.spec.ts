@@ -249,7 +249,7 @@ test.describe('Checkout with no price quote', () => {
     await page.goto('/shops/test-shop/checkout');
     await page.getByPlaceholder('Your full name').fill('Test Diner');
     await page.getByPlaceholder('your@email.com').fill('diner@example.com');
-    await page.getByPlaceholder('+1 (555) 000-0000').fill('0301234567');
+    await page.getByTestId('checkout-phone-input').fill('0301234567');
     await expect(submit(page)).toBeEnabled();
     await submit(page).click();
 
