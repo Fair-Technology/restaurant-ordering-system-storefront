@@ -16,6 +16,9 @@ export default defineConfig(({ mode }) => {
 
   return {
     plugins: [react()],
+    // Fixed port: this app's port per the local port map (storefront 5173, admin 5174, superadmin 5175)
+    // and rs-backend's Host.CORS allow-list. Fail instead of drifting to another port.
+    server: { port: 5173, strictPort: true },
     define: {
       'process.env': {
         API_BASE_URL: apiBaseUrl,

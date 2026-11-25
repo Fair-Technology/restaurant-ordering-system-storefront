@@ -15,7 +15,7 @@ npm start                 # = npm run build && func start → http://localhost:7
 
 - Needs Azure Functions Core Tools v4 (`func`) and the backend's own `local.settings.json`. That file holds live dev credentials and isn't committed; ask for it.
 - The local backend uses the **shared dev** Cosmos DB and storage (no Azurite). Its three timers are switched off locally (`AzureWebJobs.<timer>.Disabled = true`); the deployed dev app runs them.
-- Its CORS allow-list is exactly `http://localhost:5173`–`http://localhost:5176`. An origin outside that list (including `127.0.0.1`) gets its API calls blocked.
+- Its CORS allow-list is exactly `http://localhost:5173`, `http://localhost:5174` and `http://localhost:5175`. An origin outside that list (including `127.0.0.1`) gets its API calls blocked.
 
 Quick check: `curl -s -o /dev/null -w '%{http_code}\n' http://localhost:7071/api/shops/public` → `200`.
 
@@ -30,23 +30,23 @@ Create `.env.local` in this folder (it's git-ignored). `src/` reads exactly two 
 
 `.env.example` currently lists only `VITE_API_BASE_URL` (and `NODE_ENV`). Add `VITE_STRIPE_PUBLIC_KEY` yourself. Diners don't sign in, so there's no MSAL configuration here.
 
-### 3. Run on port 5176
+### 3. Run on port 5173
 
 ```bash
 npm install
-npm run dev -- --port 5176 --strictPort
+npm run dev
 ```
 
-Open **http://localhost:5176** (e.g. `http://localhost:5176/shops/mapasta` for the seeded test restaurant Ma Pasta). Use `localhost`, not `127.0.0.1`: Vite binds IPv6 (`::1`) only, so `http://127.0.0.1:5176` doesn't answer even while the app is running.
+Open **http://localhost:5173** (e.g. `http://localhost:5173/shops/mapasta` for the seeded test restaurant Ma Pasta). Use `localhost`, not `127.0.0.1`: Vite binds IPv6 (`::1`) only, so `http://127.0.0.1:5173` doesn't answer even while the app is running.
 
-`vite.config.ts` doesn't pin a port, so a bare `npm run dev` takes 5173 or whatever is free. 5176 is the storefront's assigned port; rs-admin's `.env.local` (`VITE_SHOP_BASE_URL`) points at it.
+`vite.config.ts` pins the port to 5173 with `strictPort`, so `npm run dev` fails rather than drifting to another port if 5173 is taken. 5173 is the storefront's assigned port (and is in the backend's CORS allow-list); rs-admin's `.env.local` (`VITE_SHOP_BASE_URL`) points at `http://localhost:5173` (informational; not editable from here).
 
 | App | Port |
 |---|---|
 | rs-backend (Functions host) | 7071 |
-| rs-superadmin | 5174 |
-| rs-admin | 5175 |
-| rs-storefront (this repo) | 5176 |
+| rs-admin | 5174 |
+| rs-superadmin | 5175 |
+| rs-storefront (this repo) | 5173 |
 
 ### 4. Card payments locally: the Stripe forwarder
 
@@ -66,10 +66,10 @@ stripe listen --forward-connect-to localhost:7071/api/webhooks/stripe-connect --
 ```bash
 npm run check         # tsc --noEmit
 npm run build         # tsc && vite build
-npm test              # Playwright, against http://localhost:5176 (starts the dev server if none is running there)
+npm test              # Playwright, against http://localhost:5173 (starts the dev server if none is running there)
 ```
 
-`npm test` is **Playwright**, not vitest. Every spec mocks the API (`page.route`), so it needs no backend. Locally it reuses a server already on 5176; CI always starts its own.
+`npm test` is **Playwright**, not vitest. Every spec mocks the API (`page.route`), so it needs no backend. Locally it reuses a server already on 5173; CI always starts its own.
 
 ### API client
 
