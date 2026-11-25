@@ -235,4 +235,28 @@ test.describe('Checkout with no price quote', () => {
     await expect(page.getByTestId('quote-error').getByRole('alert')).toHaveText('Back at 6 pm');
     await expect(page.getByText(PRICES_UNAVAILABLE)).toHaveCount(0);
   });
+
+  test('order creation 500 shows the translated generic error, never the raw server text', async ({
+    page,
+  }) => {
+    await mockShop(page);
+    await seedCart(page);
+    await page.route('**/api/orders/quote', (route) => route.fulfill(fulfil(okQuote)));
+    await page.route('**/api/orders', (route) =>
+      route.fulfill(fulfil({ error: 'Internal error' }, 500)),
+    );
+
+    await page.goto('/shops/test-shop/checkout');
+    await page.getByPlaceholder('Your full name').fill('Test Diner');
+    await page.getByPlaceholder('your@email.com').fill('diner@example.com');
+    await page.getByPlaceholder('+1 (555) 000-0000').fill('0301234567');
+    await expect(submit(page)).toBeEnabled();
+    await submit(page).click();
+
+    await expect(page.getByRole('alert').filter({ hasText: ORDER_FAILED })).toBeVisible();
+    await expect(page.getByText('Internal error')).toHaveCount(0);
+    // not stuck loading: the diner can retry
+    await expect(submit(page)).toBeEnabled();
+    await expect(submit(page)).toContainText('Continue to payment');
+  });
 });
