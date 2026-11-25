@@ -879,11 +879,12 @@ test.describe('Ordering paused', () => {
     await mockBackend(page, { quote: () => ({ ...okQuote, orderLimitReached: true }) });
     await seedCart(page);
     await page.goto('/shops/test-shop/checkout');
-    await fillDetails(page);
-    await expect(
-      page.getByText('Online ordering is paused at the moment.', { exact: false }),
-    ).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Continue to payment' })).toBeDisabled();
+    const card = page.getByTestId('checkout-paused');
+    await expect(card).toBeVisible();
+    await expect(card).toContainText("We can't take orders right now.");
+    // no form and no pay button at all while paused (not merely disabled)
+    await expect(page.locator('button[form="checkout-details"]')).toHaveCount(0);
+    await expect(page.getByTestId('retry-quote')).toHaveCount(0);
   });
 
   test('a limit reached during checkout shows the paused message', async ({ page }) => {
@@ -895,9 +896,10 @@ test.describe('Ordering paused', () => {
     await page.goto('/shops/test-shop/checkout');
     await fillDetails(page);
     await page.getByRole('button', { name: 'Continue to payment' }).click();
-    await expect(
-      page.getByText('Online ordering is paused at the moment.', { exact: false }),
-    ).toBeVisible();
+    const card = page.getByTestId('checkout-paused');
+    await expect(card).toBeVisible();
+    await expect(card).toHaveAttribute('role', 'alert');
+    await expect(page.locator('button[form="checkout-details"]')).toHaveCount(0);
   });
 });
 
@@ -1920,14 +1922,55 @@ test.describe('Closed or paused popup', () => {
     await expect(popup).toBeVisible();
   });
 
-  test('checkout: 409 ORDERS_PAUSED shows the server message', async ({ page }) => {
+  test("checkout: 409 ORDERS_PAUSED shows the paused card with the shop's message", async ({ page }) => {
+    await mockBackend(page, { shop: { ordersPaused: true, ordersPausedMessage: 'Back at 6 pm' } });
+    await page.route('**/api/orders/quote', (route) =>
+      route.fulfill(fulfil({ error: 'Back at 6 pm', code: 'ORDERS_PAUSED' }, 409)),
+    );
+    await seedCart(page);
+    await page.goto('/shops/test-shop/checkout');
+    await expect(page.getByTestId('checkout-paused')).toContainText('Back at 6 pm');
+    await expect(page.getByTestId('retry-quote')).toHaveCount(0);
+  });
+
+  test('checkout: a 409 ORDERS_PAUSED on the quote alone (shop payload not paused) shows the generic card as an alert', async ({ page }) => {
     await mockBackend(page);
     await page.route('**/api/orders/quote', (route) =>
       route.fulfill(fulfil({ error: 'Back at 6 pm', code: 'ORDERS_PAUSED' }, 409)),
     );
     await seedCart(page);
     await page.goto('/shops/test-shop/checkout');
-    await expect(page.getByText('Back at 6 pm')).toBeVisible();
+    const card = page.getByTestId('checkout-paused');
+    await expect(card).toHaveAttribute('role', 'alert');
+    await expect(card).toContainText("We can't take orders right now.");
+    await expect(page.getByTestId('quote-error')).toHaveCount(0);
+  });
+
+  test('checkout: a paused shop with a phone offers Call us; without one it does not', async ({ page }) => {
+    await mockBackend(page, { shop: { ordersPaused: true, phone: '+49 30 1234567' } });
+    await seedCart(page);
+    await page.goto('/shops/test-shop/checkout');
+    const card = page.getByTestId('checkout-paused');
+    await expect(card).toHaveAttribute('role', 'status');
+    await expect(card.getByRole('link', { name: /\+49 30 1234567/ })).toBeVisible();
+    await expect(card.getByRole('link', { name: 'Back to the menu' })).toBeVisible();
+  });
+
+  test('checkout: a 30-minute pause says when ordering is back', async ({ page }) => {
+    await page.clock.setFixedTime(new Date('2026-10-17T12:00:00Z'));
+    await mockBackend(page, { shop: { ordersPaused: true, ordersPausedUntil: '2026-10-17T12:30:00.000Z' } });
+    await seedCart(page);
+    await page.goto('/shops/test-shop/checkout');
+    await expect(page.getByTestId('checkout-paused')).toContainText('We take orders again from 14:30.');
+  });
+
+  test('checkout: paused shop without a phone has no Call us link', async ({ page }) => {
+    await mockBackend(page, { shop: { ordersPaused: true } });
+    await seedCart(page);
+    await page.goto('/shops/test-shop/checkout');
+    const card = page.getByTestId('checkout-paused');
+    await expect(card).toBeVisible();
+    await expect(card.getByRole('link')).toHaveCount(1);
   });
 
   test('checkout: an unrecognised order error never shows raw server text', async ({ page }) => {

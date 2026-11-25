@@ -55,16 +55,18 @@ import { currentChoice, pageLanguageOf } from '../../utils/pageLanguage';
 import CartSummary, { itemDetail } from './components/CartSummary';
 import CustomerDetailsForm, { inputClass, type CustomerFormData } from './components/CustomerDetailsForm';
 import PaymentStep from './components/PaymentStep';
+import PausedNotice from './components/PausedNotice';
+import { pauseResumeTime } from '../../utils/pauseResume';
 
 /** The diner's order page; the access token in the link is what lets them see it. */
 function orderPath(slug: string | undefined, orderId: string, accessToken: string): string {
   return `/shops/${slug}/orders/${orderId}?t=${accessToken}`;
 }
 
-/** The server's own text when it refused with 409 ORDERS_PAUSED (shop paused), otherwise undefined */
-function pausedMessageOf(error: unknown, fallback: string): string | undefined {
-  const data = (error as { data?: { error?: string; code?: string } } | undefined)?.data;
-  return data?.code === ORDERS_PAUSED_CODE ? data.error || fallback : undefined;
+/** True when the server refused with 409 ORDERS_PAUSED (owner/timed pause, caught while quoting or placing). */
+function isOrdersPausedError(error: unknown): boolean {
+  const data = (error as { data?: { code?: string } } | undefined)?.data;
+  return data?.code === ORDERS_PAUSED_CODE;
 }
 
 const CheckoutPage: React.FC = () => {
@@ -88,6 +90,10 @@ const CheckoutPage: React.FC = () => {
   const shopName = resolvedShopData?.name ?? 'Online Ordering';
   // Offline: the owner or the platform took the shop off the web. Its catalog answers 403.
   const shopIsOffline = (shopData as ShopNoticeFields | undefined)?.isOffline === true;
+  const shopNoticeFields = resolvedShopData as ShopNoticeFields | undefined;
+  const shopOrderLimitReached = (resolvedShopData as { orderLimitReached?: boolean } | undefined)?.orderLimitReached === true;
+  // True the instant the shop payload says so: owner pause, timed pause, monthly limit and auto-pause (no need to wait for a quote)
+  const shopPaused = shopNoticeFields?.ordersPaused === true || shopOrderLimitReached;
 
   // Apply CSS custom properties and get page wrapper style
   const brandStyle = useBrandingStyle(resolvedBranding);
@@ -149,6 +155,7 @@ const CheckoutPage: React.FC = () => {
 
   const [placeOrder, { isLoading: isInitiating }] = useCreateOrderMutation();
   const [placeError, setPlaceError] = useState<string | undefined>(undefined);
+  const [pausedBySubmit, setPausedBySubmit] = useState(false);
 
   // Ask the server to re-price the basket; it flags changed prices, sold-out
   // dishes, closing time and which payment method this restaurant offers.
@@ -195,6 +202,14 @@ const CheckoutPage: React.FC = () => {
     error: quoteError,
     refetch: requote,
   } = useQuoteBasketQuery(quoteArg, { skip: !resolvedShopId || cartItems.length === 0 });
+  // Clear it once a fresh quote confirms the shop is not (or no longer) paused, so a resumed shop doesn't stay stuck on the card
+  useEffect(() => {
+    if (quote && !quote.orderLimitReached && !quoteFailed) setPausedBySubmit(false);
+  }, [quote, quoteFailed]);
+  const quotePaused = quoteFailed && isOrdersPausedError(quoteError);
+  const paused = shopPaused || quote?.orderLimitReached === true || quotePaused || pausedBySubmit;
+  // alert when the card just interrupted an action, status when it was already known on load
+  const pausedRole: 'status' | 'alert' = quotePaused || pausedBySubmit ? 'alert' : 'status';
   // One key per attempt: a double click re-sends the same key and yields one order
   const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID());
   const method = quote?.paymentMethods[0] ?? null;
@@ -214,6 +229,11 @@ const CheckoutPage: React.FC = () => {
     setCodeInput('');
   }
   const timeZone = (shopData as { timezone?: string } | undefined)?.timezone ?? 'Europe/Berlin';
+  const pausedMessageText = shopNoticeFields?.ordersPausedMessage?.trim() || copy.noticePausedText;
+  const pausedBackAt = shopPaused
+    ? pauseResumeTime(shopNoticeFields?.ordersPausedUntil, timeZone, new Date(), pageLanguage)
+    : null;
+  const shopPhone = (resolvedShopData as { phone?: string | null } | undefined)?.phone ?? null;
   const quoteSlots = useMemo(() => quote?.slots ?? [], [quote?.slots]);
   const hasSlots = mode !== 'dine_in' && quoteSlots.length > 0;
   const servedNow = quote?.servedNow !== false; // absent on an older backend = served now
@@ -313,9 +333,10 @@ const CheckoutPage: React.FC = () => {
       return;
     }
     const msg = (res.error as { data?: { error?: string } } | undefined)?.data?.error;
-    const pausedText = pausedMessageOf(res.error, copy.orderingPaused);
-    if (pausedText) {
-      setPlaceError(pausedText);
+    if (isOrdersPausedError(res.error)) {
+      setIdempotencyKey(crypto.randomUUID());
+      requote();
+      setPausedBySubmit(true);
     } else if (msg === DELIVERY_POSTCODE_NOT_SERVED_ERROR) {
       setIdempotencyKey(crypto.randomUUID());
       clearDelivery();
@@ -358,8 +379,9 @@ const CheckoutPage: React.FC = () => {
         setTableNotice(msg === MODE_NOT_OFFERED_ERROR ? copy.dineInOff : copy.tableInvalid);
       }
     } else if (msg === ORDER_LIMIT_REACHED_ERROR) {
+      setIdempotencyKey(crypto.randomUUID());
       requote();
-      setPlaceError(copy.orderingPaused);
+      setPausedBySubmit(true);
     } else if (msg === CUSTOMER_PHONE_ERROR) {
       setPlaceError(copy.phoneInvalidError);
     } else {
@@ -501,8 +523,6 @@ const CheckoutPage: React.FC = () => {
   const warnBox = 'rounded-2xl bg-amber-50 px-4 py-3 text-sm leading-relaxed text-amber-900';
   const totalCents = quote ? quote.totalCents ?? quote.subtotalCents : null;
   const submitError = placeError;
-  // A failed price check is not a failed order: give it its own message and a retry
-  const quotePausedMessage = quoteFailed ? pausedMessageOf(quoteError, copy.orderingPaused) : undefined;
   // Show "Loading…" only while a first quote is genuinely in flight, never merely because there is no quote
   const loadingPrices = quoting && !quote;
   const backClass =
@@ -565,7 +585,28 @@ const CheckoutPage: React.FC = () => {
             {/* Step 1. Stays mounted (only hidden) on the payment step, so "back to details" keeps what was typed */}
             <div hidden={step !== 'info'}>
               <div className="flex flex-col gap-5">
-                {(tableNotice || table || (quote && (!allOk || quote.paymentMethods.length === 0 || quote.orderLimitReached || !quote.openNow || !servedNow))) && (
+                {paused ? (
+                  <>
+                    <CartSummary
+                      slug={slug ?? ''}
+                      products={products}
+                      copy={copy}
+                      limitedIndexes={quote ? limited.map((l) => l.index) : undefined}
+                      clashIndexes={clashIndexes}
+                    />
+                    <PausedNotice
+                      role={pausedRole}
+                      title={copy.noticePausedTitle}
+                      message={pausedMessageText}
+                      backAt={pausedBackAt}
+                      phone={shopPhone}
+                      backToMenuHref={`/shops/${slug}`}
+                      copy={copy}
+                    />
+                  </>
+                ) : (
+                  <>
+                {(tableNotice || table || (quote && (!allOk || quote.paymentMethods.length === 0 || !quote.openNow || !servedNow))) && (
                   <div className="flex flex-col gap-3">
                     {tableNotice && <p className={warnBox}>{tableNotice}</p>}
                     {table && (
@@ -583,7 +624,6 @@ const CheckoutPage: React.FC = () => {
                       />
                     )}
                     {quote && quote.paymentMethods.length === 0 && <p className={errorBox}>{copy.noOnlinePayment}</p>}
-                    {quote?.orderLimitReached && <p className={errorBox}>{copy.orderingPaused}</p>}
                     {quote && !quote.openNow && !hasSlots && !noTimeFits && <p className={errorBox}>{copy.closedNow}</p>}
                     {quote && !quote.openNow && hasSlots && <p className={warnBox}>{copy.closedOrderLater}</p>}
                     {quote && quote.openNow && !servedNow && hasSlots && <p className={warnBox}>{copy.servedLaterOnly}</p>}
@@ -740,6 +780,8 @@ const CheckoutPage: React.FC = () => {
                     )}
                   </CustomerDetailsForm>
                 </section>
+                  </>
+                )}
               </div>
             </div>
 
@@ -777,7 +819,7 @@ const CheckoutPage: React.FC = () => {
                 <section className={`${card} flex flex-col gap-3 shadow-[0_8px_28px_rgba(31,26,23,0.06)]`}>
                   <h2 className="text-[19px] font-bold text-gray-900">{copy.summaryTitle}</h2>
 
-                  {!quote && !quoteFailed && cartItems.length > 0 && (
+                  {!paused && !quote && !quoteFailed && cartItems.length > 0 && (
                     <div className="flex flex-col gap-2" aria-hidden="true" data-testid="totals-skeleton">
                       <div className="flex justify-between gap-3">
                         <div className="h-5 w-16 animate-pulse rounded bg-gray-200" />
@@ -820,6 +862,8 @@ const CheckoutPage: React.FC = () => {
                     </dl>
                   )}
 
+                  {!paused && (
+                    <>
                   {quote && showCodeBox && (
                     <div className="flex flex-col gap-2" data-testid="discount">
                       {!codeOpen && !appliedCode ? (
@@ -883,9 +927,9 @@ const CheckoutPage: React.FC = () => {
                   {quote && quote.belowMinimum && (
                     <p className={errorBox}>{copy.belowMinimum(money.cents(quote.minOrderAmountCents))}</p>
                   )}
-                  {quoteFailed && (
+                  {quoteFailed && !quotePaused && (
                     <div className="flex flex-col items-start gap-2" data-testid="quote-error">
-                      <p role="alert" className={errorBox}>{quotePausedMessage ?? copy.pricesUnavailable}</p>
+                      <p role="alert" className={errorBox}>{copy.pricesUnavailable}</p>
                       <button
                         type="button"
                         data-testid="retry-quote"
@@ -918,6 +962,8 @@ const CheckoutPage: React.FC = () => {
                     <Lock className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
                     <span>{copy.payOnlineInfo}</span>
                   </div>
+                    </>
+                  )}
                 </section>
 
                 {legalData && (
