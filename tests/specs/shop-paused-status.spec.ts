@@ -41,15 +41,25 @@ test.describe('paused shop on the menu page', () => {
     await expect(intro).not.toContainText(/Open/);
   });
 
-  test('banner stays after the explanatory popup is dismissed', async ({ page }) => {
+  test('badge stays red after the explanatory popup is dismissed', async ({ page }) => {
     await stub(page, { ordersPaused: true, ordersPausedMessage: MESSAGE });
     await page.goto('/shops/test-shop');
-    await expect(page.getByRole('alertdialog')).toBeVisible();
-    await expect(page.getByTestId('paused-banner')).toContainText(MESSAGE);
+    await expect(page.getByRole('alertdialog')).toContainText(MESSAGE);
     await page.getByRole('button', { name: 'OK' }).click();
     await expect(page.getByRole('alertdialog')).toHaveCount(0);
-    await expect(page.getByTestId('paused-banner')).toBeVisible();
-    await expect(page.getByTestId('paused-banner')).toContainText(MESSAGE);
+    await expect(page.getByTestId('shop-intro')).toContainText('Ordering paused');
+  });
+
+  // The monthly-limit pause is driven by the same ordersPaused flag in ShopView, so this covers it too
+  test('paused badge uses the danger (red) style, not grey', async ({ page }) => {
+    await stub(page, { ordersPaused: true });
+    await page.goto('/shops/test-shop');
+    await page.getByRole('button', { name: 'OK' }).click();
+    const badge = page.getByTestId('shop-intro').locator('span.rounded-full', { hasText: 'Ordering paused' });
+    await expect(badge).toHaveClass(/bg-\[#fdeceb\]/);
+    await expect(badge).toHaveClass(/text-\[#b42318\]/);
+    await expect(badge).not.toHaveClass(/bg-gray-100/);
+    await expect(badge).not.toHaveClass(/text-gray-700/);
   });
 
   test('the quick-add button is disabled', async ({ page }) => {
@@ -76,7 +86,6 @@ test.describe('paused shop on the menu page', () => {
     await page.goto('/shops/test-shop');
     await expect(page.getByTestId('shop-intro')).toContainText(/Open/);
     await expect(page.getByTestId('shop-intro')).not.toContainText('Ordering paused');
-    await expect(page.getByTestId('paused-banner')).toHaveCount(0);
     const add = page.getByRole('button', { name: /Add Carbonara/i });
     await expect(add).toBeEnabled();
   });

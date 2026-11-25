@@ -84,8 +84,8 @@ const ShopIntro: React.FC<ShopIntroProps> = ({
                 {copy.introOffline}
               </span>
             ) : paused ? (
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1 font-semibold text-gray-700">
-                <span className="h-2 w-2 rounded-full bg-gray-400" aria-hidden="true" />
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#fdeceb] px-3 py-1 font-semibold text-[#b42318]">
+                <span className="h-2 w-2 rounded-full bg-[#b42318]" aria-hidden="true" />
                 {copy.introPaused}
               </span>
             ) : (

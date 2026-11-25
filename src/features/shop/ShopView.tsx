@@ -496,12 +496,6 @@ const ShopView = () => {
           {copy.tableInvalid}
         </p>
       )}
-      {/* Stays for as long as orders are paused, unlike the one-time popup above */}
-      {!isOffline && ordersPaused && (
-        <p role="status" data-testid="paused-banner" className="max-w-7xl mx-auto px-6 pt-3 text-sm text-amber-800">
-          {ordersPausedMessage || copy.orderingPaused}
-        </p>
-      )}
       {isOffline ? null : table ? (
         <div className="max-w-7xl mx-auto px-6 pt-3 flex flex-wrap items-center gap-3">
           <span className="inline-block rounded-full bg-white border border-gray-200 px-3 py-1 text-sm font-semibold text-gray-900">
