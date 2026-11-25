@@ -103,8 +103,8 @@ async function mockShopExtras(page: Page) {
   );
 }
 
-async function mockShop(page: Page) {
-  await page.route('**/api/shops/slug/test-shop', (route) => route.fulfill(fulfil(SHOP)));
+async function mockShop(page: Page, overrides: Record<string, unknown> = {}) {
+  await page.route('**/api/shops/slug/test-shop', (route) => route.fulfill(fulfil({ ...SHOP, ...overrides })));
   await mockShopExtras(page);
 }
 
@@ -223,8 +223,8 @@ test.describe('Checkout with no price quote', () => {
     await expect(page.getByTestId('quote-error')).toHaveCount(0);
   });
 
-  test("409 ORDERS_PAUSED shows the server's own message", async ({ page }) => {
-    await mockShop(page);
+  test("ORDERS_PAUSED shows the paused notice card with the owner's message", async ({ page }) => {
+    await mockShop(page, { ordersPaused: true, ordersPausedMessage: 'Back at 6 pm' });
     await seedCart(page);
     await page.route('**/api/orders/quote', (route) =>
       route.fulfill(fulfil({ error: 'Back at 6 pm', code: 'ORDERS_PAUSED' }, 409)),
@@ -232,7 +232,12 @@ test.describe('Checkout with no price quote', () => {
 
     await page.goto('/shops/test-shop/checkout');
 
-    await expect(page.getByTestId('quote-error').getByRole('alert')).toHaveText('Back at 6 pm');
+    const card = page.getByTestId('checkout-paused');
+    await expect(card).toBeVisible();
+    await expect(card).toContainText('Back at 6 pm');
+    await expect(page.getByTestId('quote-error')).toHaveCount(0);
+    await expect(page.getByTestId('retry-quote')).toHaveCount(0);
+    await expect(page.locator('button[form="checkout-details"]')).toHaveCount(0);
     await expect(page.getByText(PRICES_UNAVAILABLE)).toHaveCount(0);
   });
 

@@ -214,7 +214,6 @@ export interface OrderCopy {
   statusAcceptedDineIn: (time: string) => string;
   statusReadyDineIn: string;
   statusCompletedDineIn: string;
-  orderingPaused: string;
   noticeOk: string;
   noticePausedTitle: string;
   noticePausedText: string;
@@ -587,8 +586,6 @@ const en: OrderCopy = {
     n === 0 ? `We open again today at ${t}.` : n === 1 ? `We open again tomorrow at ${t}.` : `We open again on ${d} at ${t}.`,
   noticeClosedText: 'You can still look through the menu. If the restaurant takes orders for later, you can choose a time at checkout.',
   weekdayLong: { mon: 'Monday', tue: 'Tuesday', wed: 'Wednesday', thu: 'Thursday', fri: 'Friday', sat: 'Saturday', sun: 'Sunday' },
-  orderingPaused:
-    'Online ordering is paused at the moment. Please try again later or contact the restaurant directly.',
   comboBadge: 'Combo',
   comboPickOne: 'Choose one',
   comboAdd: 'Add to order',
@@ -921,8 +918,6 @@ const de: OrderCopy = {
     n === 0 ? `Wir öffnen heute wieder um ${t} Uhr.` : n === 1 ? `Wir öffnen morgen wieder um ${t} Uhr.` : `Wir öffnen wieder am ${d} um ${t} Uhr.`,
   noticeClosedText: 'Sie können sich die Speisekarte trotzdem ansehen. Nimmt das Restaurant Bestellungen für später an, wählen Sie an der Kasse eine Zeit.',
   weekdayLong: { mon: 'Montag', tue: 'Dienstag', wed: 'Mittwoch', thu: 'Donnerstag', fri: 'Freitag', sat: 'Samstag', sun: 'Sonntag' },
-  orderingPaused:
-    'Online-Bestellungen sind im Moment pausiert. Bitte versuchen Sie es später erneut oder wenden Sie sich direkt an das Restaurant.',
   comboBadge: 'Menü',
   comboPickOne: 'Bitte eins wählen',
   comboAdd: 'Zur Bestellung',
