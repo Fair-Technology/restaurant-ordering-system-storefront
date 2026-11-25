@@ -14,7 +14,7 @@ const EmptyPlate: React.FC<{ label?: string; className?: string }> = ({ label, c
     <path d="M14 28v26a6 6 0 0 0 6 6v58M8 28v18M20 28v18" fill="none" stroke="#b9ada2" strokeWidth="3" strokeLinecap="round" />
     <path d="M166 28c-8 4-10 20-10 30h8v60" fill="none" stroke="#b9ada2" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
     {label && (
-      <text x="90" y="80" textAnchor="middle" fontFamily="'Fraunces Variable', Georgia, serif" fontSize="28" fontWeight="600" fill="#8a7f77">
+      <text x="90" y="80" textAnchor="middle" fontFamily="'Roboto', system-ui, sans-serif" fontSize="28" fontWeight="600" fill="#8a7f77">
         {label}
       </text>
     )}
