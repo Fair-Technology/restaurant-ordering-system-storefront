@@ -395,7 +395,7 @@ const CheckoutPage: React.FC = () => {
         colorTextSecondary: '#5c524b',
         colorDanger: '#8a1f12',
         borderRadius: '12px',
-        fontFamily: 'system-ui, Avenir, Helvetica, Arial, sans-serif',
+        fontFamily: '"Roboto", system-ui, sans-serif',
         fontSizeBase: '15px',
         spacingUnit: '4px',
       },

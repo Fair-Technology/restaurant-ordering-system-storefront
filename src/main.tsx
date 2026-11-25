@@ -2,7 +2,6 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Provider } from 'react-redux';
 import { store } from './store';
-import '@fontsource-variable/fraunces';
 import './main.css';
 import App from './App.tsx';
 import { migrateLegacyCartKeys } from './utils/cartKeyMigration';
