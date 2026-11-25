@@ -56,11 +56,16 @@ test('a dressing must be chosen', async ({ page }) => {
   await page.goto('/shops/test-shop');
   await page.getByRole('button', { name: 'View details for Insalata' }).click();
 
-  const add = page.getByRole('button', { name: 'Add To Order' });
-  await expect(add).toBeDisabled();
+  // The main button says what to do next; tapping it explains and flags the required label
+  const choose = page.getByRole('button', { name: 'Choose your dressing' });
+  await expect(choose).toBeVisible();
+  await choose.click();
+  await expect(page.getByRole('alert').first()).toContainText('Please choose a dressing');
+  const add = page.getByRole('button', { name: /Add to order/i });
 
   // A required single-choice group is a radio group; the whole row is clickable
   await page.getByText('Oil', { exact: true }).click();
+  await expect(choose).toHaveCount(0);
   await expect(add).toBeEnabled();
   await expect(page.getByRole('radio', { name: 'Oil' })).toBeChecked();
 

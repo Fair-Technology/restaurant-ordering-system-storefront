@@ -91,6 +91,28 @@ export interface OrderCopy {
   productIncrease: string;
   productPerItem: (price: string) => string;
   productStillToChoose: (groups: string) => string;
+  dishChooseYour: (group: string) => string;
+  dishPleaseChoose: (group: string) => string;
+  dishStartByChoosing: (group: string) => string;
+  dishStepYour: (group: string) => string;
+  dishStepOf: (n: number, total: number, name: string) => string;
+  dishStepExtras: string;
+  dishStepReview: string;
+  dishAnythingExtra: string;
+  dishTapToAdd: string;
+  dishSkipExtras: string;
+  dishNext: string;
+  dishBack: string;
+  dishReviewTitle: string;
+  dishChange: string;
+  dishPerDish: (price: string) => string;
+  dishNone: string;
+  dishTotal: string;
+  dishAddExtras: string;
+  dishExtrasHint: string;
+  dishAdded: string;
+  dishContinueOrdering: string;
+  dishViewCart: (n: number) => string;
   introOpen: string;
   introOpenUntil: (time: string) => string;
   introClosedNow: string;
@@ -391,6 +413,28 @@ const en: OrderCopy = {
   productIncrease: 'Increase quantity',
   productPerItem: (p) => `${p} each`,
   productStillToChoose: (g) => `Still to choose: ${g}`,
+  dishChooseYour: (g) => `Choose your ${g.toLowerCase()}`,
+  dishPleaseChoose: (g) => `Please choose a ${g.toLowerCase()} to continue.`,
+  dishStartByChoosing: (g) => `Start by choosing your ${g.toLowerCase()}`,
+  dishStepYour: (g) => `Your ${g.toLowerCase()}`,
+  dishStepOf: (n, t, name) => `Step ${n} of ${t} · ${name}`,
+  dishStepExtras: 'Extras',
+  dishStepReview: 'Review',
+  dishAnythingExtra: 'Anything extra?',
+  dishTapToAdd: 'Tap to add. You can skip this step.',
+  dishSkipExtras: 'Skip extras',
+  dishNext: 'Next',
+  dishBack: 'Back',
+  dishReviewTitle: 'Review your dish',
+  dishChange: 'Change',
+  dishPerDish: (p) => `Per dish ${p}`,
+  dishNone: 'None',
+  dishTotal: 'Total',
+  dishAddExtras: 'Add extras',
+  dishExtrasHint: 'Cheese, protein, toppings and sides',
+  dishAdded: 'Added to your order',
+  dishContinueOrdering: 'Continue ordering',
+  dishViewCart: (n) => `View cart (${n})`,
   introOpen: 'Open now',
   introOpenUntil: (t) => `Open until ${t}`,
   introClosedNow: 'Closed right now',
@@ -701,6 +745,28 @@ const de: OrderCopy = {
   productIncrease: 'Menge erhöhen',
   productPerItem: (p) => `${p} pro Portion`,
   productStillToChoose: (g) => `Noch auswählen: ${g}`,
+  dishChooseYour: (g) => `${g} wählen`,
+  dishPleaseChoose: (g) => `Bitte wähle: ${g}, um fortzufahren.`,
+  dishStartByChoosing: (g) => `Beginne mit: ${g}`,
+  dishStepYour: (g) => g,
+  dishStepOf: (n, t, name) => `Schritt ${n} von ${t} · ${name}`,
+  dishStepExtras: 'Extras',
+  dishStepReview: 'Übersicht',
+  dishAnythingExtra: 'Noch etwas dazu?',
+  dishTapToAdd: 'Antippen zum Hinzufügen. Du kannst diesen Schritt überspringen.',
+  dishSkipExtras: 'Extras überspringen',
+  dishNext: 'Weiter',
+  dishBack: 'Zurück',
+  dishReviewTitle: 'Gericht prüfen',
+  dishChange: 'Ändern',
+  dishPerDish: (p) => `Pro Gericht ${p}`,
+  dishNone: 'Keine',
+  dishTotal: 'Gesamt',
+  dishAddExtras: 'Extras hinzufügen',
+  dishExtrasHint: 'Käse, Protein, Toppings und Beilagen',
+  dishAdded: 'Zu deiner Bestellung hinzugefügt',
+  dishContinueOrdering: 'Weiter bestellen',
+  dishViewCart: (n) => `Warenkorb ansehen (${n})`,
   introOpen: 'Jetzt geöffnet',
   introOpenUntil: (t) => `Geöffnet bis ${t}`,
   introClosedNow: 'Gerade geschlossen',

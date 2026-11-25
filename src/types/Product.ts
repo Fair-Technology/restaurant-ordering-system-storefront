@@ -76,6 +76,8 @@ export interface AddonOption {
   id: string;
   label: string;
   imageURL: string;
+  /** Heading the extra is grouped under in the customise popup; absent = its add-on group's name. */
+  category?: string;
   priceDelta: number;
   isAvailable: boolean;
   allergens: CatalogLabel[];

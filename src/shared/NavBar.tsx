@@ -6,6 +6,7 @@ import { Icon } from './Icon';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
 import { loadCart, selectCartCount } from '../store/slices/cartSlice';
 import CartDropdown, { type CartContext } from './CartDropdown';
+import { OPEN_CART_EVENT } from '../constants/cart';
 import ShopLogo from './ShopLogo';
 import { orderCopy } from '../utils/orderCopy';
 import { siteCopy } from '../utils/siteCopy';
@@ -55,6 +56,13 @@ const NavBar: React.FC<NavBarProps> = ({
     if (!shopId) return;
     dispatch(loadCart({ shopId }));
   }, [dispatch, shopId]);
+
+  // The customise popup's "View cart" asks for the cart to open without owning its state
+  useEffect(() => {
+    const open = () => setIsCartOpen(true);
+    window.addEventListener(OPEN_CART_EVENT, open);
+    return () => window.removeEventListener(OPEN_CART_EVENT, open);
+  }, []);
 
   // Refs for the cart button and its portal dropdown panel
   const buttonRef = useRef<HTMLButtonElement | null>(null);

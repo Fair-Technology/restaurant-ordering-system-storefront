@@ -119,6 +119,12 @@ async function open(page: Page, name: string) {
   await page.getByRole('button', { name: `View details for ${name}` }).click();
 }
 
+/** Extras sit behind an "Add extras" row until opened. */
+async function openExtras(page: Page) {
+  const row = page.getByRole('button', { name: /Add extras/ });
+  if (await row.count()) await row.click();
+}
+
 test.beforeEach(async ({ page }) => {
   await mockMenu(page, 'en');
   await page.goto('/shops/test-shop');
@@ -128,6 +134,7 @@ test('the allergen list grows and shrinks with the extras picked', async ({ page
   await open(page, 'Pizza Tonno');
   await expect(page.getByTestId('dish-allergens')).toHaveText('Cereals containing gluten');
   await expect(page.getByTestId('dish-additives')).toHaveText('2 with preservative');
+  await openExtras(page);
   await page.getByText('Tuna', { exact: true }).click();
   await expect(page.getByTestId('dish-allergens')).toHaveText('Cereals containing gluten, Fish');
   await page.getByText('Aioli', { exact: true }).click();
@@ -147,6 +154,7 @@ test('a size adds its allergens and switching back removes them', async ({ page 
 
 test("an extra repeating the dish's allergen lists it once", async ({ page }) => {
   await open(page, 'Pizza Tonno');
+  await openExtras(page);
   await page.getByText('Bread', { exact: true }).click();
   await expect(page.getByTestId('dish-allergens')).toHaveText('Cereals containing gluten');
 });
@@ -157,6 +165,7 @@ test('the note shows only when an option declares something', async ({ page }) =
   await page.keyboard.press('Escape');
   await open(page, 'Insalata');
   await expect(page.getByTestId('dish-declaration-varies')).toHaveCount(0);
+  await openExtras(page);
   await page.getByText('Oil', { exact: true }).click();
   await expect(page.getByTestId('dish-allergens')).toHaveText('Contains none of the 14 declarable allergens');
 });

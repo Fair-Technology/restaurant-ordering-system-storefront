@@ -356,6 +356,7 @@ export type CheckoutRequestDto = {
   idempotencyKey?: string;
   language?: string;
   legalRevisions?: LegalRevisions;
+  ageConfirmedAt?: string;
 };
 export type LineStatus =
   'ok' | 'price_changed' | 'unavailable' | 'invalid_options';
@@ -603,6 +604,7 @@ export type CatalogOptionDto = {
   isAvailable: boolean;
   allergens: CatalogLabelDto[];
   additives: CatalogAdditiveDto[];
+  category: string | null;
 };
 export type CatalogVariantGroupDto = {
   id: string;

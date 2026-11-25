@@ -136,6 +136,7 @@ export const mapApiProductToProduct = (
       id: opt.id ?? '',
       label: opt.name ?? '',
       imageURL: '',
+      category: opt.category ?? undefined,
       priceDelta: centsToDollars(opt.priceDelta ?? 0),
       isAvailable: opt.isAvailable ?? true,
       allergens: opt.allergens ?? [],

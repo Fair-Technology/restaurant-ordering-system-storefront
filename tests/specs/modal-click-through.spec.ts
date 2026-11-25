@@ -96,23 +96,6 @@ const cartCount = (page: Page) =>
     ),
   );
 
-/** Counts clicks that make it past `document` (i.e. to the page underneath the modal). */
-async function countLeakedClicks(page: Page) {
-  return page.evaluate(() => {
-    (window as unknown as { __leaked: number }).__leaked = 0;
-    document.body.addEventListener(
-      'click',
-      () => {
-        const w = window as unknown as { __leaked: number };
-        w.__leaked += 1;
-      },
-      true,
-    );
-  });
-}
-const leakedClicks = (page: Page) =>
-  page.evaluate(() => (window as unknown as { __leaked: number }).__leaked);
-
 async function openModal(page: Page, dish = 'Lasagne 1') {
   await page.getByText(dish).first().click();
   await expect(page.getByRole('dialog')).toBeVisible();
@@ -133,16 +116,13 @@ test.describe('Add to order click-through', () => {
     await expect(page.getByText('Lasagne 1').first()).toBeVisible();
 
     await openModal(page);
-    await countLeakedClicks(page);
     await dblclickAdd(page);
 
-    // one item added, modal closed, still on the menu — not pushed to checkout
+    // one item added and the confirmation stays up: the stray second click hit nothing
     expect(await cartCount(page)).toBe(1);
-    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await expect(page.getByRole('dialog').getByText('Added to your order')).toBeVisible();
     await expect(page).toHaveURL(/\/shops\/test-shop$/);
     await expect(page.getByText('Your order', { exact: true })).toHaveCount(0);
-    // only the click that closed the modal reached the page; the stray one was swallowed
-    expect(await leakedClicks(page)).toBe(1);
   });
 
   test('on a desktop the second click does not open another dish', async ({ page }) => {
@@ -152,14 +132,12 @@ test.describe('Add to order click-through', () => {
     await expect(page.getByText('Lasagne 1').first()).toBeVisible();
 
     await openModal(page);
-    await countLeakedClicks(page);
     await dblclickAdd(page);
 
     expect(await cartCount(page)).toBe(1);
-    // no dialog at all — in particular not a different dish's
-    await expect(page.getByRole('dialog')).toHaveCount(0);
-    // only the click that closed the modal reached the page; the stray one was swallowed
-    expect(await leakedClicks(page)).toBe(1);
+    // the confirmation stays up, and it is this dish's — not a different one opened by the stray click
+    await expect(page.getByRole('dialog').getByText('Added to your order')).toBeVisible();
+    await expect(page.getByRole('dialog').getByText(/1 × Lasagne 1/)).toBeVisible();
   });
 
   test('a combo does not click through either', async ({ page }) => {
