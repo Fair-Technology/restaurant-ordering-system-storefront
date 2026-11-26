@@ -215,7 +215,7 @@ const CustomerOrderPage: React.FC = () => {
   } else if (order) {
     if (order.state === 'PLACED') {
       title = order.scheduledFor ? copy.statusScheduled(order.shopName) : copy.statusPlaced(order.shopName);
-      subtitle = order.scheduledFor ? copy.statusScheduledHint : copy.statusPlacedHint;
+      subtitle = order.scheduledFor ? copy.statusScheduledHint : copy.statusPlacedHint(order.emailsEnabled);
     } else if (order.state === 'REJECTED') {
       title = copy.statusRejected;
       subtitle = order.rejectionReason ? copy.rejectReason[order.rejectionReason] : null;
@@ -474,7 +474,7 @@ const CustomerOrderPage: React.FC = () => {
                       {copy.liveUpdates}
                     </span>
                   )}
-                  {order && order.state !== 'PLACED' && (
+                  {order && order.state !== 'PLACED' && order.emailsEnabled && (
                     <span className="inline-flex items-center gap-2">
                       <Mail className="h-4 w-4" aria-hidden="true" />
                       {copy.emailedCopy}

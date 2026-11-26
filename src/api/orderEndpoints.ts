@@ -239,6 +239,7 @@ export interface PlacedCheckoutResult {
 export type PlaceOrderResult = CardCheckoutResult | PlacedCheckoutResult;
 
 export interface CustomerOrderDto {
+  emailsEnabled: boolean;
   orderId: string;
   orderRef: string;
   shopSlug: string;
