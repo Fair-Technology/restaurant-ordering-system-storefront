@@ -20,7 +20,7 @@ export interface OrderCopy {
   couldNotLoadShopText: string;
   yourOrder: (ref: string) => string;
   statusPlaced: (shop: string) => string;
-  statusPlacedHint: string;
+  statusPlacedHint: (emailsEnabled: boolean) => string;
   statusAccepted: (time: string) => string;
   statusReady: string;
   statusCompleted: string;
@@ -322,8 +322,10 @@ const en: OrderCopy = {
   couldNotLoadShopText: 'Something went wrong while loading the restaurant. Please try again.',
   yourOrder: (r) => `Order ${r}`,
   statusPlaced: (s) => `Waiting for ${s} to confirm your order`,
-  statusPlacedHint:
-    'We have emailed you a copy. You can cancel until the restaurant confirms.',
+  statusPlacedHint: (emailsEnabled) =>
+    emailsEnabled
+      ? 'We have emailed you a copy. You can cancel until the restaurant confirms.'
+      : 'You can cancel until the restaurant confirms.',
   statusAccepted: (t) => `Confirmed — ready for collection at ${t}`,
   statusReady: 'Ready for collection',
   statusCompleted: 'Collected — enjoy your meal!',
@@ -647,8 +649,10 @@ const de: OrderCopy = {
   couldNotLoadShopText: 'Beim Laden des Restaurants ist ein Fehler aufgetreten. Bitte versuchen Sie es erneut.',
   yourOrder: (r) => `Bestellung ${r}`,
   statusPlaced: (s) => `Warten auf Bestätigung durch ${s}`,
-  statusPlacedHint:
-    'Wir haben Ihnen eine Kopie per E-Mail geschickt. Bis zur Bestätigung können Sie stornieren.',
+  statusPlacedHint: (emailsEnabled) =>
+    emailsEnabled
+      ? 'Wir haben Ihnen eine Kopie per E-Mail geschickt. Bis zur Bestätigung können Sie stornieren.'
+      : 'Bis zur Bestätigung können Sie stornieren.',
   statusAccepted: (t) => `Bestätigt – abholbereit um ${t}`,
   statusReady: 'Abholbereit',
   statusCompleted: 'Abgeholt – guten Appetit!',

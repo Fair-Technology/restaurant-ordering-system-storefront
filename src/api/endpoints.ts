@@ -208,6 +208,7 @@ export type RejectReason =
 export type CustomerOrderDto = {
   orderId: string;
   orderRef: string;
+  emailsEnabled: boolean;
   shopSlug: string;
   shopName: string;
   sellerPhone: string | null;
@@ -641,8 +642,6 @@ export type CatalogProductDto = {
   variants: CatalogVariantGroupDto[];
   addons: CatalogAddonGroupDto[];
   isAvailable: boolean;
-  unavailableUntil: string | null;
-  soldOut: boolean;
   allergens: CatalogLabelDto[];
   additives: CatalogAdditiveDto[];
   dietaryTags: CatalogLabelDto[];

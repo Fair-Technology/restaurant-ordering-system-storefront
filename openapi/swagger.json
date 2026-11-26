@@ -1125,6 +1125,73 @@
         }
       }
     },
+    "/platform/owners": {
+      "get": {
+        "summary": "List restaurant owners with shop counts (platform staff)",
+        "description": "Paged, ordered by email. Optional search matches email or name (case-insensitive substring). shopCount uses the same rule as the create-shop limit check; effectiveLimit is the per-user maxShops or the global default.",
+        "operationId": "listOwners",
+        "tags": [
+          "Platform"
+        ],
+        "security": [],
+        "parameters": [
+          {
+            "name": "search",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Owners page",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListOwnersResultDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
     "/platform/reference-lists/{countryCode}": {
       "put": {
         "operationId": "updateReferenceLists",
@@ -1333,6 +1400,7 @@
     "/products": {
       "post": {
         "summary": "Create a new product",
+        "description": "A new dish has no photo yet (photos are added after create), so it is created off: leaving isAvailable out creates it with isAvailable false, and isAvailable true is refused with 409 code PRODUCT_IMAGE_REQUIRED_TO_ENABLE (body { error, code }; message: a dish can't be turned on without a photo).",
         "operationId": "createProduct",
         "tags": [
           "Products"
@@ -1557,7 +1625,7 @@
       },
       "patch": {
         "summary": "Update product",
-        "description": "Sending an images array that would leave a dish which has photos with none is refused with 409 code PRODUCT_IMAGE_REQUIRED (body { error, code }); nothing is changed. To replace a photo, add the new one first (POST .../images), then remove the old one.",
+        "description": "A dish or combo may have no photo only while it is off. A write that would leave it available (isAvailable true, sent now or already stored) with no photo is refused with 409 and body { error, code }; nothing is changed and nothing is switched off for you. Code PRODUCT_IMAGE_REQUIRED: an images array that removes the last photo while the dish stays on (message: the update was refused because it would leave an available dish with no photo). Code PRODUCT_IMAGE_REQUIRED_TO_ENABLE: the request sets isAvailable true on a dish with no photo (message: a dish can't be turned on without a photo). For a combo (a product with combo set) both situations return COMBO_IMAGE_REQUIRED_TO_ENABLE. To remove the last photo, send isAvailable false in the same request, or turn the item off first.",
         "operationId": "updateProduct",
         "tags": [
           "Products"
@@ -1728,7 +1796,7 @@
     "/products/{productId}/availability": {
       "patch": {
         "summary": "Mark a dish sold out (or back on sale)",
-        "description": "Stock-only write: sets isAvailable and/or the sold-out window unavailableUntil (ISO-8601 instant, or null to clear). Nothing else about the dish can be changed here. Allowed with the manage_stock or manage_menu permission. A dish inside its sold-out window stays on the menu marked sold out but cannot be ordered.",
+        "description": "Stock-only write: switches a dish on or off (isAvailable). Nothing else about the dish can be changed here. Allowed with the manage_stock or manage_menu permission. Turning a dish or combo on (isAvailable true) when it has no photo is refused with 409 code PRODUCT_IMAGE_REQUIRED_TO_ENABLE for a dish, or COMBO_IMAGE_REQUIRED_TO_ENABLE for a combo (message: it can't be turned on without a photo); turning off is always allowed.",
         "operationId": "updateProductAvailability",
         "tags": [
           "Products"
@@ -1757,10 +1825,6 @@
                   },
                   "isAvailable": {
                     "type": "boolean"
-                  },
-                  "unavailableUntil": {
-                    "type": "string",
-                    "nullable": true
                   }
                 },
                 "required": [
@@ -2328,7 +2392,7 @@
     },
     "/shops/{shopId}/audit": {
       "get": {
-        "description": "Access: the restaurant's owner or staff with the `view_audit` permission; platform operators (Platform.Owner, Platform.Support, Platform.ReadOnly) may also read. A read never writes.",
+        "description": "Access: the restaurant's owner or staff with the `view_audit` permission; platform operators (Platform.Owner, Platform.Support, Platform.ReadOnly) may also read. A read never writes. Optional filters combine and `total` reflects the filtered set: `area` (menu, orders, shop, discounts, staff, subscription) and `actor` (`actorType:actorId` for one actor, or a bare `actorType` such as `superadmin`/`system`). `actors` lists every actor in the shop's log for the \"Who\" dropdown, regardless of filters.",
         "operationId": "getAuditEntries",
         "tags": [
           "Audit"
@@ -2357,6 +2421,22 @@
             "required": false,
             "schema": {
               "type": "number"
+            }
+          },
+          {
+            "name": "area",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "actor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
             }
           }
         ],
@@ -2914,10 +2994,91 @@
         }
       }
     },
+    "/shops/{shopId}/categories/{categoryId}/dish-order": {
+      "put": {
+        "summary": "Set the order of a category's dishes",
+        "description": "Access: manage_menu. Body: { productIds } — exactly the dishes currently in the category (combos excluded), in the intended order; unknown, foreign, deleted, duplicate or missing ids are rejected. Idempotent: only dishes whose position changes are written. Not transactional across dishes (last write wins per dish).",
+        "operationId": "setCategoryDishOrder",
+        "tags": [
+          "Categories"
+        ],
+        "security": [],
+        "parameters": [
+          {
+            "name": "shopId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "categoryId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "productIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "productIds"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Dish order saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetCategoryDishOrderResultDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
     "/shops/{shopId}/combos": {
       "post": {
         "summary": "Create combo",
-        "description": "Adds a combo. Translations are optional. A combo photo is uploaded like a dish photo: POST /shops/{shopId}/products/{comboId}/images/upload-url, PUT the file (exactly 1200 x 900 px), then POST /shops/{shopId}/products/{comboId}/images. Updates with images omitted keep the existing photo.",
+        "description": "Adds a combo, created off when isAvailable is left out. Translations are optional. A combo photo is uploaded like a dish photo: POST /shops/{shopId}/products/{comboId}/images/upload-url, PUT the file (exactly 1200 x 900 px), then POST /shops/{shopId}/products/{comboId}/images. Updates with images omitted keep the existing photo. A combo can be saved without a photo only while it is off: isAvailable true with no photo is refused with 409 code COMBO_IMAGE_REQUIRED_TO_ENABLE (body { error, code }; message: a combo can't be turned on without a photo).",
         "operationId": "createCombo",
         "tags": [
           "Combos"
@@ -3031,7 +3192,7 @@
     "/shops/{shopId}/combos/{comboId}": {
       "put": {
         "summary": "Replace combo",
-        "description": "Replaces the combo fields as a whole. Group ids sent back are kept. Translation fields left out keep their stored value. A combo photo is uploaded like a dish photo: POST /shops/{shopId}/products/{comboId}/images/upload-url, PUT the file (exactly 1200 x 900 px), then POST /shops/{shopId}/products/{comboId}/images. Updates with images omitted keep the existing photo.",
+        "description": "Replaces the combo fields as a whole (isAvailable left out keeps the stored value). Group ids sent back are kept. Translation fields left out keep their stored value. A combo photo is uploaded like a dish photo: POST /shops/{shopId}/products/{comboId}/images/upload-url, PUT the file (exactly 1200 x 900 px), then POST /shops/{shopId}/products/{comboId}/images. Updates with images omitted keep the existing photo. A combo can be saved without a photo only while it is off: isAvailable true with no photo is refused with 409 code COMBO_IMAGE_REQUIRED_TO_ENABLE (body { error, code }; message: a combo can't be turned on without a photo).",
         "operationId": "updateCombo",
         "tags": [
           "Combos"
@@ -8337,13 +8498,6 @@
           "isAvailable": {
             "type": "boolean"
           },
-          "unavailableUntil": {
-            "type": "string",
-            "nullable": true
-          },
-          "soldOut": {
-            "type": "boolean"
-          },
           "allergens": {
             "type": "array",
             "items": {
@@ -8406,8 +8560,6 @@
           "variants",
           "addons",
           "isAvailable",
-          "unavailableUntil",
-          "soldOut",
           "allergens",
           "additives",
           "dietaryTags",
@@ -8982,6 +9134,12 @@
               "type": "string"
             }
           },
+          "categoryOrder": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            }
+          },
           "images": {
             "type": "array",
             "items": {
@@ -9069,10 +9227,6 @@
           },
           "isAvailable": {
             "type": "boolean"
-          },
-          "unavailableUntil": {
-            "type": "string",
-            "nullable": true
           },
           "isDeleted": {
             "type": "boolean"
@@ -11783,6 +11937,12 @@
               "additionalProperties": false
             }
           },
+          "categoryOrder": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            }
+          },
           "images": {
             "type": "array",
             "items": {
@@ -11811,10 +11971,6 @@
           },
           "isAvailable": {
             "type": "boolean"
-          },
-          "unavailableUntil": {
-            "type": "string",
-            "nullable": true
           },
           "isDeleted": {
             "type": "boolean"
@@ -11849,7 +12005,6 @@
           "spiceLevel",
           "taxClassId",
           "unavailableModes",
-          "unavailableUntil",
           "updatedAt"
         ],
         "additionalProperties": false
@@ -13720,6 +13875,37 @@
         ],
         "additionalProperties": false
       },
+      "OwnerSummaryDto": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "maxShops": {
+            "type": "number",
+            "nullable": true
+          },
+          "effectiveLimit": {
+            "type": "number"
+          },
+          "shopCount": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "userId",
+          "maxShops",
+          "effectiveLimit",
+          "shopCount"
+        ],
+        "additionalProperties": false
+      },
       "GetMeResultDto": {
         "type": "object",
         "properties": {
@@ -13782,6 +13968,25 @@
             "additionalProperties": {
               "type": "string"
             }
+          },
+          "actors": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "key",
+                "label"
+              ],
+              "additionalProperties": false
+            }
           }
         },
         "required": [
@@ -13789,7 +13994,8 @@
           "total",
           "page",
           "pageSize",
-          "actorLabels"
+          "actorLabels",
+          "actors"
         ],
         "additionalProperties": false
       },
@@ -13804,6 +14010,12 @@
           },
           "pageSize": {
             "type": "number"
+          },
+          "area": {
+            "type": "string"
+          },
+          "actor": {
+            "type": "string"
           }
         },
         "required": [
@@ -15563,6 +15775,9 @@
           "orderRef": {
             "type": "string"
           },
+          "emailsEnabled": {
+            "type": "boolean"
+          },
           "shopSlug": {
             "type": "string"
           },
@@ -15751,6 +15966,7 @@
         "required": [
           "orderId",
           "orderRef",
+          "emailsEnabled",
           "shopSlug",
           "shopName",
           "sellerPhone",
@@ -16803,7 +17019,6 @@
         "required": [
           "shopId",
           "name",
-          "description",
           "price"
         ],
         "additionalProperties": false
@@ -16967,10 +17182,6 @@
           "isAvailable": {
             "type": "boolean"
           },
-          "unavailableUntil": {
-            "type": "string",
-            "nullable": true
-          },
           "isDeleted": {
             "type": "boolean"
           },
@@ -17056,7 +17267,6 @@
           "spiceLevel",
           "taxClassId",
           "unavailableModes",
-          "unavailableUntil",
           "updatedAt"
         ],
         "additionalProperties": false
@@ -17092,6 +17302,61 @@
         },
         "required": [
           "shopId"
+        ],
+        "additionalProperties": false
+      },
+      "SetCategoryDishOrderResultDto": {
+        "type": "object",
+        "properties": {
+          "categoryId": {
+            "type": "string"
+          },
+          "products": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "name"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "categoryId",
+          "products"
+        ],
+        "additionalProperties": false
+      },
+      "SetCategoryDishOrderRequestDto": {
+        "type": "object",
+        "properties": {
+          "shopId": {
+            "type": "string"
+          },
+          "categoryId": {
+            "type": "string"
+          },
+          "productIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "shopId",
+          "categoryId",
+          "productIds"
         ],
         "additionalProperties": false
       },
@@ -17176,10 +17441,6 @@
           "isAvailable": {
             "type": "boolean"
           },
-          "unavailableUntil": {
-            "type": "string",
-            "nullable": true
-          },
           "isDeleted": {
             "type": "boolean"
           },
@@ -17219,7 +17480,6 @@
           "spiceLevel",
           "taxClassId",
           "unavailableModes",
-          "unavailableUntil",
           "updatedAt"
         ],
         "additionalProperties": false
@@ -17353,13 +17613,6 @@
           "isAvailable": {
             "type": "boolean"
           },
-          "unavailableUntil": {
-            "type": "string",
-            "nullable": true
-          },
-          "soldOut": {
-            "type": "boolean"
-          },
           "updatedAt": {
             "type": "string"
           }
@@ -17368,8 +17621,6 @@
           "id",
           "shopId",
           "isAvailable",
-          "unavailableUntil",
-          "soldOut",
           "updatedAt"
         ],
         "additionalProperties": false
@@ -17385,10 +17636,6 @@
           },
           "isAvailable": {
             "type": "boolean"
-          },
-          "unavailableUntil": {
-            "type": "string",
-            "nullable": true
           }
         },
         "required": [
@@ -17938,8 +18185,7 @@
           "timezone",
           "minOrderAmountCents",
           "address",
-          "openingHours",
-          "industry"
+          "openingHours"
         ],
         "additionalProperties": false
       },
@@ -20021,10 +20267,18 @@
         "properties": {
           "maxShopsDefault": {
             "type": "number"
+          },
+          "emailEnabled": {
+            "type": "boolean"
+          },
+          "emailTransportConfigured": {
+            "type": "boolean"
           }
         },
         "required": [
-          "maxShopsDefault"
+          "maxShopsDefault",
+          "emailEnabled",
+          "emailTransportConfigured"
         ],
         "additionalProperties": false
       },
@@ -20055,10 +20309,14 @@
         "properties": {
           "maxShopsDefault": {
             "type": "number"
+          },
+          "emailEnabled": {
+            "type": "boolean"
           }
         },
         "required": [
-          "maxShopsDefault"
+          "maxShopsDefault",
+          "emailEnabled"
         ],
         "additionalProperties": false
       },
@@ -20067,11 +20325,11 @@
         "properties": {
           "maxShopsDefault": {
             "type": "number"
+          },
+          "emailEnabled": {
+            "type": "boolean"
           }
         },
-        "required": [
-          "maxShopsDefault"
-        ],
         "additionalProperties": false
       },
       "OrderLimitWithPaymentDto": {
@@ -20179,6 +20437,48 @@
           "usage",
           "reconciledCount"
         ],
+        "additionalProperties": false
+      },
+      "ListOwnersResultDto": {
+        "type": "object",
+        "properties": {
+          "owners": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OwnerSummaryDto"
+            }
+          },
+          "total": {
+            "type": "number"
+          },
+          "page": {
+            "type": "number"
+          },
+          "pageSize": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "owners",
+          "total",
+          "page",
+          "pageSize"
+        ],
+        "additionalProperties": false
+      },
+      "ListOwnersRequestDto": {
+        "type": "object",
+        "properties": {
+          "search": {
+            "type": "string"
+          },
+          "page": {
+            "type": "number"
+          },
+          "pageSize": {
+            "type": "number"
+          }
+        },
         "additionalProperties": false
       },
       "UpdateMyLanguageResultDto": {
