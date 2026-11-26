@@ -1,5 +1,5 @@
 import SkipLink from '../../shared/SkipLink';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { ShopPageSkeleton } from '../../shared/Skeletons';
 import NotFound from '../../pages/NotFound';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
@@ -12,7 +12,9 @@ import {
   useGetShopBySlugQuery,
   useGetShopByIdQuery,
   useGetCatalogQuery,
+  api,
 } from '../../api/endpoints';
+import { useQuoteBasketQuery } from '../../api/orderEndpoints';
 import NavBar from '../../shared/NavBar';
 import PlatformHeader from '../../shared/PlatformHeader';
 import { siteCopy } from '../../utils/siteCopy';
@@ -22,6 +24,12 @@ import { setActiveShop, setMenuLanguage, setResolvedMenuLanguage, type Fulfilmen
 import FulfilmentModeBar from './FulfilmentModeBar';
 import DeliveryPostcodeBox from './DeliveryPostcodeBox';
 import ShopInfoFooter from './ShopInfoFooter';
+import OtherTimesDialog from './OtherTimesDialog';
+import { unservedLines, type QuoteFn } from './basketTimeCheck';
+import { selectCartItems, removeItem, type CartItem } from '../../store/slices/cartSlice';
+import { useOtherTimeChoice } from '../../hooks/useOtherTimeChoice';
+import { otherTimeEntries, type OtherTimeEntry } from '../../utils/otherTimes';
+import { slotShortLabel } from '../../utils/slots';
 import ShopIntro from './ShopIntro';
 import MobileCartBar from './MobileCartBar';
 import LogoLoader from '../../shared/LogoLoader';
@@ -40,8 +48,9 @@ import {
   resolveCombo,
   type CatalogCategoryWithTimes,
   type CatalogProductWithOffer,
+  type CatalogWithOtherTimes,
 } from '../../utils/catalogMapper';
-import { categoryWindowText, capitalise, dishTimesText } from '../../utils/categoryTimes';
+import { categoryWindowText, dishTimesText } from '../../utils/categoryTimes';
 import { useBrandingStyle } from '../../hooks/useBrandingStyle';
 import { currentChoice, pageLanguageOf, pickerCurrent, pickerLanguages } from '../../utils/pageLanguage';
 import { useTableSession } from '../../hooks/useTableSession';
@@ -117,30 +126,6 @@ const ShopView = () => {
   const storedMenuLanguage = useAppSelector((state) => state.shop.menuLanguage);
   const lang = currentChoice(storedMenuLanguage, navigator.language);
 
-  // Offline shops refuse the catalog (403), so don't ask for it
-  const shopIsOffline = (resolvedShopData as ShopNoticeFields | undefined)?.isOffline === true;
-  const {
-    data: catalogData,
-    currentData: currentCatalog,
-    isLoading: isCatalogLoading,
-    isError: isCatalogError,
-    isFetching: isCatalogFetching,
-    refetch: refetchCatalog,
-  } = useGetCatalogQuery({ shopId: resolvedShopId, lang }, { skip: !resolvedShopId || shopIsOffline });
-
-  // After a language switch the old menu stays on screen until the new one arrives: show that it is coming
-  const switchingLanguage = isCatalogFetching && !!catalogData && !currentCatalog;
-
-  // Two separate things: the language the menu came back in, and the language of the page's own text
-  const resolvedLanguage = catalogData?.language ?? lang;
-  const pageLanguage = pageLanguageOf(lang);
-  const offeredLanguages = pickerLanguages(catalogData?.languages);
-
-  // Remember the language the menu actually came back in, for price formatting
-  useEffect(() => {
-    if (catalogData?.language) dispatch(setResolvedMenuLanguage(catalogData.language));
-  }, [dispatch, catalogData?.language]);
-
   const fulfilment = (resolvedShopData as { fulfilment?: ShopFulfilment } | undefined)?.fulfilment;
   const orderLimitReached =
     (resolvedShopData as { orderLimitReached?: boolean } | undefined)?.orderLimitReached === true;
@@ -179,6 +164,37 @@ const ShopView = () => {
     }
     navigate(`/shops/${slug}`, { replace: true }); // the tab session is the one source of truth
   }, [slug, scanned, fulfilment, dineInOn, bind, unbind, navigate]);
+
+  // "Other times": the moment the diner chose to order for. Table orders are always "now", so it is ignored there.
+  const { choice, choose: chooseTime, clear: clearTime } = useOtherTimeChoice(slug);
+  const atIso = mode !== 'dine_in' && choice ? choice.iso : null;
+
+  // Offline shops refuse the catalog (403), so don't ask for it
+  const shopIsOffline = (resolvedShopData as ShopNoticeFields | undefined)?.isOffline === true;
+  const {
+    data: catalogData,
+    currentData: currentCatalog,
+    isLoading: isCatalogLoading,
+    isError: isCatalogError,
+    isFetching: isCatalogFetching,
+    refetch: refetchCatalog,
+  } = useGetCatalogQuery(
+    { shopId: resolvedShopId, lang, ...(atIso ? { at: atIso } : {}) },
+    { skip: !resolvedShopId || shopIsOffline },
+  );
+
+  // After a language switch the old menu stays on screen until the new one arrives: show that it is coming
+  const switchingLanguage = isCatalogFetching && !!catalogData && !currentCatalog;
+
+  // Two separate things: the language the menu came back in, and the language of the page's own text
+  const resolvedLanguage = catalogData?.language ?? lang;
+  const pageLanguage = pageLanguageOf(lang);
+  const offeredLanguages = pickerLanguages(catalogData?.languages);
+
+  // Remember the language the menu actually came back in, for price formatting
+  useEffect(() => {
+    if (catalogData?.language) dispatch(setResolvedMenuLanguage(catalogData.language));
+  }, [dispatch, catalogData?.language]);
 
   // Closed, paused or offline: a popup over the page instead of a banner pushing the menu down
   const openingHours = (resolvedShopData as { openingHours?: WeeklyHours } | undefined)?.openingHours;
@@ -266,8 +282,7 @@ const ShopView = () => {
   const copy = orderCopy(pageLanguage);
   const site = siteCopy(pageLanguage);
 
-  // Categories outside their times right now wait behind the "Other times" pill; one can be opened at a time
-  const [pickedLaterId, setPickedLaterId] = useState<string | null>(null);
+  // Categories outside their times (at the moment being viewed) wait behind the "Other times" button
   const laterCategories = useMemo(
     () => visibleCategories.filter((c) => (c as CatalogCategoryWithTimes).availableNow === false),
     [visibleCategories],
@@ -276,11 +291,7 @@ const ShopView = () => {
     () => visibleCategories.filter((c) => (c as CatalogCategoryWithTimes).availableNow !== false),
     [visibleCategories],
   );
-  const pickedLater = laterCategories.find((c) => slugifyCategoryName(c.name!) === pickedLaterId) ?? null;
-  const shownCategories = useMemo(
-    () => (pickedLater ? [...nowCategories, pickedLater] : nowCategories),
-    [nowCategories, pickedLater],
-  );
+  const shownCategories = nowCategories;
   const windowOf = (c: { name?: string | null }): string => {
     const s = (c as CatalogCategoryWithTimes).schedule;
     return s ? categoryWindowText(s, pageLanguage) : '';
@@ -294,8 +305,7 @@ const ShopView = () => {
   });
   // Build the list of category filter options (pills) from the categories on offer now
   const categories = useMemo<CategoryOption[]>(() => nowCategories.map(toOption), [nowCategories]);
-  // Same, plus the "Other times" category the diner opened: these get a menu section
-  const shownOptions = useMemo<CategoryOption[]>(() => shownCategories.map(toOption), [shownCategories]);
+  const shownOptions = categories;
 
   // Map category slugs to their icon name (for MenuList section headers)
   const categoryIcons = useMemo<Record<string, string>>(
@@ -348,32 +358,100 @@ const ShopView = () => {
     }, {});
   }, [shownOptions]);
 
-  // The footer lists the closed categories; once one is picked, bring its new menu section into view
-  useEffect(() => {
-    if (!pickedLaterId) return;
-    const t = window.setTimeout(
-      () => document.getElementById(pickedLaterId)?.scrollIntoView({ behavior: 'smooth', block: 'start' }),
-      50,
-    );
-    return () => window.clearTimeout(t);
-  }, [pickedLaterId]);
-
-  const otherTimes = useMemo(
+  const timeZone = shopTimeZone ?? 'Europe/Berlin';
+  const entries = useMemo(
     () =>
-      laterCategories.map((c) => ({
-        id: slugifyCategoryName(c.name!),
-        label: c.name!,
-        when: capitalise(windowOf(c)),
-      })),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [laterCategories, pageLanguage],
+      otherTimeEntries(
+        laterCategories as CatalogCategoryWithTimes[],
+        (catalogData as CatalogWithOtherTimes | undefined)?.otherTimeDishes ?? [],
+        atIso ? new Date(atIso) : null,
+        timeZone,
+      ),
+    [laterCategories, catalogData, atIso, timeZone],
   );
-  const categoryNotes = pickedLater
-    ? { [slugifyCategoryName(pickedLater.name!)]: copy.availableWhen(windowOf(pickedLater)) }
-    : {};
+
+  // Which times can be booked at all, from a quote of one everyday dish (the quote refuses an empty basket)
+  const probeId = useMemo(() => {
+    const all = (catalogData?.categories ?? []) as CatalogCategoryWithTimes[];
+    const ok = (p: CatalogProductWithOffer) =>
+      p.id && p.isAvailable !== false && !p.soldOut && !p.combo && p.availableNow !== false && !(p.unavailableModes ?? []).includes(mode);
+    return all.find((c) => !c.schedule && c.availableNow !== false && (c.products ?? []).some(ok))?.products?.find(ok)?.id ?? null;
+  }, [catalogData, mode]);
+  const bookingMode = mode !== 'dine_in';
+  const { currentData: probe } = useQuoteBasketQuery(
+    {
+      shopId: resolvedShopId,
+      fulfilmentMode: mode,
+      language: pageLanguage,
+      ...(mode === 'delivery' && deliveryPostcode ? { postcode: deliveryPostcode } : {}),
+      items: [{ productId: probeId ?? '', quantity: 1 }],
+    },
+    { skip: !bookingMode || !probeId || !resolvedShopId || (entries.length === 0 && !choice) },
+  );
+  const slots = bookingMode ? probe?.slots ?? [] : [];
+  const horizonDays = bookingMode && probe ? probe.scheduleHorizonDays : null;
+
+  // The chosen time cannot be kept when the shop stopped taking orders for later, or the server refuses it
   useEffect(() => {
-    if (pickedLaterId) document.getElementById(pickedLaterId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, [pickedLaterId]);
+    if (choice && bookingMode && probe && probe.slots.length === 0) clearTime();
+  }, [choice, bookingMode, probe, clearTime]);
+  useEffect(() => {
+    if (atIso && isCatalogError) clearTime();
+  }, [atIso, isCatalogError, clearTime]);
+
+  const cartItems = useAppSelector(selectCartItems);
+  const [dialog, setDialog] = useState<{ initial: { entry: OtherTimeEntry; iso: string } | null } | null>(null);
+  const [backToNow, setBackToNow] = useState<{ names: string[] } | null>(null);
+  const [bannerBusy, setBannerBusy] = useState(false);
+  const [bannerError, setBannerError] = useState(false);
+  const doomed = useRef<{ iso: string; items: CartItem[] }>({ iso: '', items: [] });
+
+  const quoteFn: QuoteFn = async (arg) => {
+    const req = dispatch(api.endpoints.quoteBasket.initiate(arg, { forceRefetch: true }));
+    try {
+      return await req.unwrap();
+    } finally {
+      req.unsubscribe();
+    }
+  };
+  const quoteBase = {
+    shopId: resolvedShopId,
+    fulfilmentMode: mode,
+    language: pageLanguage,
+    ...(mode === 'delivery' && deliveryPostcode ? { postcode: deliveryPostcode } : {}),
+  };
+  const checkBasket = async (iso: string): Promise<string[]> => {
+    const bad = await unservedLines(quoteFn, quoteBase, cartItems, iso);
+    doomed.current = { iso, items: bad };
+    return bad.map((i) => i.name);
+  };
+  const applyTime = (iso: string, entry: OtherTimeEntry) => {
+    if (doomed.current.iso === iso) doomed.current.items.forEach((i) => dispatch(removeItem({ key: i.key })));
+    doomed.current = { iso: '', items: [] };
+    chooseTime(iso, entry);
+    setDialog(null);
+  };
+  const backConflictItems = useRef<CartItem[]>([]);
+  const leaveTime = () => {
+    backConflictItems.current.forEach((i) => dispatch(removeItem({ key: i.key })));
+    backConflictItems.current = [];
+    clearTime();
+    setBackToNow(null);
+  };
+  async function requestBackToNow() {
+    setBannerBusy(true);
+    setBannerError(false);
+    try {
+      const bad = await unservedLines(quoteFn, quoteBase, cartItems, null);
+      backConflictItems.current = bad;
+      if (bad.length === 0) leaveTime();
+      else setBackToNow({ names: bad.map((i) => i.name) });
+    } catch {
+      setBannerError(true);
+    } finally {
+      setBannerBusy(false);
+    }
+  }
 
   const isLoading = shouldFetchBySlug ? isSlugLoading : isIdLoading;
   const shopQueryError = shouldFetchBySlug ? isSlugError : isIdError;
@@ -496,6 +574,37 @@ const ShopView = () => {
           {copy.tableInvalid}
         </p>
       )}
+      {!isOffline && choice && atIso && (
+        <div
+          role="status"
+          data-testid="other-time-banner"
+          className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-4 gap-y-1 px-4 pt-3 sm:px-6"
+        >
+          <div className="flex w-full flex-wrap items-center gap-x-3 gap-y-1 rounded-2xl border border-[#e8d9b8] bg-[#fdf6e7] px-4 py-2 text-[15px] text-[#4a3a14]">
+            <span className="font-semibold">{copy.otherTimesBanner(slotShortLabel(atIso, timeZone, pageLanguage))}</span>
+            <span className="flex items-center gap-1">
+              <span aria-hidden="true">·</span>
+              <button
+                type="button"
+                onClick={() => setDialog({ initial: { entry: choice.entry, iso: choice.iso } })}
+                className="inline-flex min-h-[44px] items-center px-2 font-bold underline underline-offset-2"
+              >
+                {copy.otherTimesChange}
+              </button>
+              <span aria-hidden="true">·</span>
+              <button
+                type="button"
+                disabled={bannerBusy}
+                onClick={() => void requestBackToNow()}
+                className="inline-flex min-h-[44px] items-center px-2 font-bold underline underline-offset-2 disabled:opacity-50"
+              >
+                {copy.otherTimesBackToNow}
+              </button>
+            </span>
+            {bannerError && <span role="alert" className="w-full text-sm text-[#7c2a09]">{copy.otherTimesCheckFailed}</span>}
+          </div>
+        </div>
+      )}
       {isOffline ? null : table ? (
         <div className="max-w-7xl mx-auto px-6 pt-3 flex flex-wrap items-center gap-3">
           <span className="inline-block rounded-full bg-white border border-gray-200 px-3 py-1 text-sm font-semibold text-gray-900">
@@ -585,7 +694,6 @@ const ShopView = () => {
               categoryLabels={categoryLabels}
               categoryCounts={categoryCounts}
               categoryIcons={categoryIcons}
-              categoryNotes={categoryNotes}
               onAddToCart={() => {}}
               disabled={ordersPaused}
             />
@@ -600,8 +708,29 @@ const ShopView = () => {
           deliveryHours={fulfilment?.modes.includes('delivery') ? fulfilment.delivery?.hours : null}
           phone={(resolvedShopData as { phone?: string | null }).phone}
           copy={copy}
-          otherTimes={otherTimes}
-          onPickOtherTime={setPickedLaterId}
+          hasOtherTimes={entries.length > 0 && !isOffline}
+          onOpenOtherTimes={() => setDialog({ initial: null })}
+          otherTimesOpen={dialog !== null}
+        />
+      )}
+      {(dialog || backToNow) && (
+        <OtherTimesDialog
+          entries={entries}
+          slots={slots}
+          horizonDays={horizonDays}
+          timeZone={timeZone}
+          lang={pageLanguage}
+          copy={copy}
+          initial={dialog?.initial ?? null}
+          backToNow={backToNow}
+          checkBasket={checkBasket}
+          onApply={applyTime}
+          onBackToNow={leaveTime}
+          onClose={() => {
+            doomed.current = { iso: '', items: [] };
+            setDialog(null);
+            setBackToNow(null);
+          }}
         />
       )}
       </main>

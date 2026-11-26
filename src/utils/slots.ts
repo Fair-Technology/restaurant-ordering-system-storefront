@@ -54,3 +54,12 @@ export function slotLabel(iso: string, timeZone: string, lang: string): string {
   const time = new Intl.DateTimeFormat(locale, { timeZone, hour: '2-digit', minute: '2-digit' }).format(d);
   return `${weekday}, ${dayMonth}, ${time}`;
 }
+
+/** 'Sat 28 Nov, 18:00' / 'Sa., 28. Nov., 18:00' — short, for the "Ordering for …" banner. */
+export function slotShortLabel(iso: string, timeZone: string, lang: string): string {
+  const locale = localeFor(lang);
+  const d = new Date(iso);
+  const day = new Intl.DateTimeFormat(locale, { timeZone, weekday: 'short', day: 'numeric', month: 'short' }).format(d);
+  const time = new Intl.DateTimeFormat(locale, { timeZone, hour: '2-digit', minute: '2-digit' }).format(d);
+  return `${day}, ${time}`;
+}

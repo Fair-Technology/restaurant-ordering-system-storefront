@@ -171,6 +171,8 @@ export interface BasketQuoteDto {
   addressRequired: boolean;
   prepMinutes: number;
   orderLimitReached?: boolean;
+  /** How many calendar days ahead a diner may book (1-6, platform setting); never assume a number. */
+  scheduleHorizonDays: number;
   deliveryFeeCents?: number | null;
   totalCents?: number;
   postcodeServed?: boolean | null;

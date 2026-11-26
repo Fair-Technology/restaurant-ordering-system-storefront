@@ -207,6 +207,24 @@ export interface OrderCopy {
   servedLaterOnly: string;
   dishesNeverServed: (names: string) => string;
   dishesServedApart: string;
+  otherTimesLead: string;
+  otherTimesInfoOnly: string;
+  otherTimesNothing: string;
+  otherTimesPreorderFrom: (date: string) => string;
+  otherTimesDates: (from: string | null, until: string | null) => string;
+  otherTimesChoose: string;
+  otherTimesConfirm: string;
+  otherTimesBackToList: string;
+  otherTimesClose: string;
+  otherTimesBanner: (when: string) => string;
+  otherTimesChange: string;
+  otherTimesBackToNow: string;
+  otherTimesRemoveTitle: string;
+  otherTimesRemoveText: (names: string) => string;
+  otherTimesRemoveConfirm: string;
+  otherTimesKeep: string;
+  otherTimesCheckFailed: string;
+  otherTimesChecking: string;
   onlyWhen: (when: string) => string;
   scheduledLine: (when: string) => string;
   statusScheduled: (shop: string) => string;
@@ -531,6 +549,24 @@ const en: OrderCopy = {
   servedLaterOnly: 'Some dishes in your basket are only served later. Please choose a time.',
   dishesNeverServed: (names) => `${names}: not on offer at any time you can order for. Please remove it to continue.`,
   dishesServedApart: 'These dishes are served at different times. Remove one to continue.',
+  otherTimesLead: 'Pick one, then the day and time you want it.',
+  otherTimesInfoOnly: 'These are served at the times shown. This restaurant is not taking orders for later, so they can only be ordered while they are served.',
+  otherTimesNothing: 'Nothing else is served at other times.',
+  otherTimesPreorderFrom: (date) => `Pre-order from ${date}`,
+  otherTimesDates: (from, until) => (from && until ? `${from} – ${until}` : from ? `from ${from}` : until ? `until ${until}` : ''),
+  otherTimesChoose: 'Choose a day and time',
+  otherTimesConfirm: 'Order for this time',
+  otherTimesBackToList: 'Back',
+  otherTimesClose: 'Close',
+  otherTimesBanner: (when) => `Ordering for ${when}`,
+  otherTimesChange: 'Change',
+  otherTimesBackToNow: 'Back to now',
+  otherTimesRemoveTitle: 'Some items are not served then',
+  otherTimesRemoveText: (names) => `${names} will be removed from your basket if you change the time.`,
+  otherTimesRemoveConfirm: 'Remove and change time',
+  otherTimesKeep: 'Keep current time',
+  otherTimesCheckFailed: 'We could not check your basket. Please try again.',
+  otherTimesChecking: 'Checking your basket…',
   onlyWhen: (when) => `Only ${when}`,
   scheduledLine: (w) => `For: ${w}`,
   statusScheduled: (s) => `Booked — ${s} confirms it shortly before.`,
@@ -863,6 +899,24 @@ const de: OrderCopy = {
   servedLaterOnly: 'Einige Gerichte in Ihrem Warenkorb gibt es erst später. Bitte wählen Sie eine Uhrzeit.',
   dishesNeverServed: (names) => `${names}: zu keiner bestellbaren Zeit erhältlich. Bitte entfernen, um fortzufahren.`,
   dishesServedApart: 'Diese Gerichte gibt es zu unterschiedlichen Zeiten. Entfernen Sie eines, um fortzufahren.',
+  otherTimesLead: 'Wählen Sie eines aus, dann Tag und Uhrzeit.',
+  otherTimesInfoOnly: 'Diese gibt es zu den angegebenen Zeiten. Das Restaurant nimmt keine Bestellungen für später an, sie können also nur bestellt werden, während sie angeboten werden.',
+  otherTimesNothing: 'Zu anderen Zeiten gibt es nichts weiter.',
+  otherTimesPreorderFrom: (date) => `Vorbestellen ab ${date}`,
+  otherTimesDates: (from, until) => (from && until ? `${from} – ${until}` : from ? `ab ${from}` : until ? `bis ${until}` : ''),
+  otherTimesChoose: 'Tag und Uhrzeit wählen',
+  otherTimesConfirm: 'Für diese Zeit bestellen',
+  otherTimesBackToList: 'Zurück',
+  otherTimesClose: 'Schließen',
+  otherTimesBanner: (when) => `Bestellung für ${when}`,
+  otherTimesChange: 'Ändern',
+  otherTimesBackToNow: 'Zurück zu jetzt',
+  otherTimesRemoveTitle: 'Einige Artikel gibt es dann nicht',
+  otherTimesRemoveText: (names) => `${names} wird aus Ihrem Warenkorb entfernt, wenn Sie die Zeit ändern.`,
+  otherTimesRemoveConfirm: 'Entfernen und Zeit ändern',
+  otherTimesKeep: 'Aktuelle Zeit behalten',
+  otherTimesCheckFailed: 'Wir konnten Ihren Warenkorb nicht prüfen. Bitte versuchen Sie es erneut.',
+  otherTimesChecking: 'Warenkorb wird geprüft…',
   onlyWhen: (when) => `Nur ${when}`,
   scheduledLine: (w) => `Für: ${w}`,
   statusScheduled: (s) => `Vorbestellt – ${s} bestätigt kurz vorher.`,

@@ -1,6 +1,7 @@
 import SkipLink from '../../shared/SkipLink';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { toComboChoiceDtos } from '../../utils/combo';
+import { readOtherTime } from '../../utils/otherTimeChoice';
 import { cartHasAgeRestrictedItem } from '../../utils/ageRestriction';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { Check, ChevronLeft, Lock } from 'lucide-react';
@@ -166,8 +167,13 @@ const CheckoutPage: React.FC = () => {
   const { postcode: deliveryPostcode, clear: clearDelivery } = useDeliverySession(slug);
   const mode = chosenMode({ table, deliveryPostcode, modes: fulfilment?.modes ?? ['collection'] });
   const copy = orderCopy(pageLanguage);
-  const [whenChoice, setWhenChoice] = useState<WhenChoice | null>(null);
-  const [slotChoice, setSlotChoice] = useState<string | null>(null);
+  // An "other time" the diner chose on the shop page opens checkout with that time already selected
+  const seededSlot = useRef<string | null | undefined>(undefined);
+  if (seededSlot.current === undefined) {
+    seededSlot.current = slug && mode !== 'dine_in' ? readOtherTime(slug, Date.now())?.iso ?? null : null;
+  }
+  const [whenChoice, setWhenChoice] = useState<WhenChoice | null>(seededSlot.current ? 'later' : null);
+  const [slotChoice, setSlotChoice] = useState<string | null>(seededSlot.current);
   const [dayChoice, setDayChoice] = useState<string | null>(null);
   const [codeOpen, setCodeOpen] = useState(false);
   const [codeInput, setCodeInput] = useState('');
@@ -202,6 +208,16 @@ const CheckoutPage: React.FC = () => {
     error: quoteError,
     refetch: requote,
   } = useQuoteBasketQuery(quoteArg, { skip: !resolvedShopId || cartItems.length === 0 });
+  // The seeded time stopped being bookable: say so through the page's usual "time gone" notice and let the diner pick again
+  useEffect(() => {
+    const seeded = seededSlot.current;
+    if (!seeded || !quote || quoting || slotChoice !== seeded || quote.scheduledFor !== seeded) return;
+    if (!quote.slots.includes(seeded) || quote.slotAvailable !== true) {
+      seededSlot.current = null;
+      setSlotChoice(null);
+      setPlaceError(copy.slotGone);
+    }
+  }, [quote, quoting, slotChoice, copy.slotGone]);
   // Clear it once a fresh quote confirms the shop is not (or no longer) paused, so a resumed shop doesn't stay stuck on the card
   useEffect(() => {
     if (quote && !quote.orderLimitReached && !quoteFailed) setPausedBySubmit(false);

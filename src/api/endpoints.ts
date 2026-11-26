@@ -71,6 +71,7 @@ const injectedRtkApi = api
           url: `/shops/${queryArg.shopId}/catalog`,
           params: {
             lang: queryArg.lang,
+            at: queryArg.at,
           },
         }),
         providesTags: ['Catalog'],
@@ -148,6 +149,8 @@ export type GetCatalogApiArg = {
   shopId: string;
   /** Preferred menu language; falls back to the original */
   lang?: string;
+  /** Hand-added until regenerated: show the menu as of this future quarter-hour instant (within the booking window) */
+  at?: string;
 };
 export type ListPublicShopsApiResponse =
   /** status 200 Listed shops, sorted by name */ GetPublicShopsResultDto;
@@ -400,6 +403,8 @@ export type BasketQuoteDto = {
   addressRequired: boolean;
   prepMinutes: number;
   orderLimitReached: boolean;
+  /** Hand-added until regenerated: the booking window in days (1-6), set by the platform */
+  scheduleHorizonDays: number;
   slots: string[];
   scheduledFor: string | null;
   slotAvailable: boolean | null;

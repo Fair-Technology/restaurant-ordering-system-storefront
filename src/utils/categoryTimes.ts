@@ -25,6 +25,30 @@ export function categoryWindowText(w: CategoryWindowDto, lang: string): string {
   return `${when} ${w.startTime}–${w.endTime}`;
 }
 
+/** A weekly window with optional date range (a scheduled dish): "daily 11:00–15:00". Null times = all day. */
+export function scheduleWindowText(
+  s: { daysOfWeek: number[] | null; startTime: string | null; endTime: string | null },
+  lang: string,
+): string {
+  return categoryWindowText(
+    {
+      daysOfWeek: s.daysOfWeek ?? [0, 1, 2, 3, 4, 5, 6],
+      startTime: s.startTime ?? '00:00',
+      endTime: s.endTime ?? '23:59',
+    },
+    lang,
+  );
+}
+
+/** A plain YYYY-MM-DD date as "28 Nov" / "28. Nov." — no time zone, it is a calendar date. */
+export function plainDateText(date: string, lang: string): string {
+  return new Intl.DateTimeFormat(lang === 'de' ? 'de-DE' : 'en-GB', {
+    timeZone: 'UTC',
+    day: 'numeric',
+    month: 'short',
+  }).format(new Date(`${date.slice(0, 10)}T00:00:00Z`));
+}
+
 /**
  * When a dish is served, from the categories it sits in: every timed window joined with " · ", or
  * null when it is served any time (it sits in a category with no weekly times, or in none at all).
