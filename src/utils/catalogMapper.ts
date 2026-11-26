@@ -49,6 +49,23 @@ export type CatalogCategoryWithTimes = CatalogCategoryDto & {
   schedule?: CategoryWindowDto | null;
 };
 
+// A scheduled dish or combo not served right now (informational): the catalog's `otherTimeDishes`.
+export interface CatalogOtherTimeDishDto {
+  id: string;
+  name: string;
+  price: number;
+  schedule: {
+    startDate: string;
+    endDate: string | null;
+    daysOfWeek: number[] | null; // null = every day
+    startTime: string | null; // null = 00:00
+    endTime: string | null; // null = 23:59
+  };
+}
+
+// `otherTimeDishes` is also newer than the generated catalog result (absent from an older backend).
+export type CatalogWithOtherTimes = { otherTimeDishes?: CatalogOtherTimeDishDto[] };
+
 export type CatalogProductWithOffer = CatalogProductDto & {
   availableNow?: boolean;
   soldOut?: boolean;
