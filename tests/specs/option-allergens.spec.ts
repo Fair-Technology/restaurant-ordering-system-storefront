@@ -116,7 +116,8 @@ async function mockMenu(page: Page, language: 'en' | 'de') {
 }
 
 async function open(page: Page, name: string) {
-  await page.getByRole('button', { name: `View details for ${name}` }).click();
+  // The photo button's name follows the page language (en: "View details for X", de: "Details zu X ansehen").
+  await page.getByRole('button', { name: new RegExp(`^(View details for ${name}|Details zu ${name} ansehen)$`) }).click();
 }
 
 /** Extras sit behind an "Add extras" row until opened. */

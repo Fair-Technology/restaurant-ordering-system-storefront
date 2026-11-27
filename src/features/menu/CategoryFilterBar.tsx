@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { ICON_MAP } from '../../utils/iconMap';
+import { orderCopy } from '../../utils/orderCopy';
 
 type CategoryOption = { id: string; label: string; count?: number; icon?: string };
 
 interface CategoryFilterBarProps {
   categories: CategoryOption[];
+  pageLanguage: string;
 }
 
 // STICKY_OFFSET accounts for the combined height of the sticky NavBar (64px)
@@ -12,7 +14,7 @@ interface CategoryFilterBarProps {
 // fires slightly before the heading scrolls fully behind the bars.
 const STICKY_OFFSET = 140;
 
-const CategoryFilterBar: React.FC<CategoryFilterBarProps> = ({ categories }) => {
+const CategoryFilterBar: React.FC<CategoryFilterBarProps> = ({ categories, pageLanguage }) => {
   const [selected, setSelected] = useState(() => categories[0]?.id ?? '');
   const [hovered, setHovered] = useState('');
   // Keep selected in sync if categories change (e.g. after data loads)
@@ -94,7 +96,7 @@ const CategoryFilterBar: React.FC<CategoryFilterBarProps> = ({ categories }) => 
 
   return (
     <nav
-      aria-label="Categories"
+      aria-label={orderCopy(pageLanguage).categoriesNav}
       className="sticky top-[64px] z-40 border-y border-[#f1ebe4] bg-white"
     >
       <div className="mx-auto flex max-w-7xl gap-2 overflow-x-auto px-4 py-2.5 [scrollbar-width:none] sm:flex-wrap sm:overflow-visible sm:px-6 sm:py-3 [&::-webkit-scrollbar]:hidden">

@@ -122,6 +122,8 @@ export interface OrderCopy {
   viewCart: string;
   cartItems: (n: number) => string;
   addDish: (name: string) => string;
+  viewDetailsFor: (name: string) => string;
+  categoriesNav: string;
   dishCount: (n: number) => string;
   checkoutTitle: string;
   backToMenu: string;
@@ -463,6 +465,8 @@ const en: OrderCopy = {
   viewCart: 'View cart',
   cartItems: (n) => (n === 1 ? '1 item' : `${n} items`),
   addDish: (name) => `Add ${name}`,
+  viewDetailsFor: (n) => `View details for ${n}`,
+  categoriesNav: 'Categories',
   dishCount: (n) => (n === 1 ? '1 dish' : `${n} dishes`),
   checkoutTitle: 'Your order',
   backToMenu: 'Back to the menu',
@@ -813,6 +817,8 @@ const de: OrderCopy = {
   viewCart: 'Warenkorb ansehen',
   cartItems: (n) => `${n} Artikel`,
   addDish: (name) => `${name} hinzufügen`,
+  viewDetailsFor: (n) => `Details zu ${n} ansehen`,
+  categoriesNav: 'Kategorien',
   dishCount: (n) => (n === 1 ? '1 Gericht' : `${n} Gerichte`),
   checkoutTitle: 'Ihre Bestellung',
   backToMenu: 'Zurück zur Speisekarte',
