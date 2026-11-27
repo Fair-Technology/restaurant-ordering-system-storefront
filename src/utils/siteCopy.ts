@@ -22,6 +22,7 @@ export interface SiteCopy {
   pageMissingTitle: string;
   pageMissingText: string;
   toHome: string;
+  goToShop: (name: string) => string;
   back: string;
   subTitle: string;
   subEyebrow: string;
@@ -64,6 +65,7 @@ const en: SiteCopy = {
   pageMissingTitle: 'This page doesn’t exist',
   pageMissingText: 'The link is not (or no longer) valid. The home page lists all restaurants.',
   toHome: 'Go to the home page',
+  goToShop: (name) => `Go to ${name}`,
   back: 'Back',
   subTitle: 'Sub-processors',
   subEyebrow: 'Data protection',
@@ -105,6 +107,7 @@ const de: SiteCopy = {
   pageMissingTitle: 'Diese Seite gibt es nicht',
   pageMissingText: 'Der Link ist nicht (mehr) gültig. Über die Startseite finden Sie alle Restaurants.',
   toHome: 'Zur Startseite',
+  goToShop: (name) => `Zu ${name}`,
   back: 'Zurück',
   subTitle: 'Unterauftragsverarbeiter',
   subEyebrow: 'Datenschutz',

@@ -687,6 +687,7 @@ const ShopView = () => {
           )}
           <CategoryFilterBar
             categories={categories}
+            pageLanguage={pageLanguage}
           />
           <div className="w-full flex items-center justify-center flex-col mt-4">
             <MenuList

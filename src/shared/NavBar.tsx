@@ -128,7 +128,7 @@ const NavBar: React.FC<NavBarProps> = ({
           <button
             className="flex min-w-0 items-center gap-2 hover:opacity-80 transition-opacity"
             onClick={() => navigate(`/shops/${shopId}`)}
-            aria-label={hasIdentity ? `Go to ${shopName}` : homeLabel}
+            aria-label={hasIdentity ? siteCopy(pageLang).goToShop(shopName) : homeLabel}
           >
             {hasIdentity ? (
               <>

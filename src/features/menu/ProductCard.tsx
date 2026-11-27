@@ -97,7 +97,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onAddToCart, disable
             type="button"
             className="relative block h-[108px] w-[108px] cursor-pointer overflow-hidden rounded-[14px] bg-[#f6f1eb] sm:aspect-[4/3] sm:h-auto sm:w-full sm:rounded-none"
             onClick={openModal}
-            aria-label={`View details for ${product.label}`}
+            aria-label={copy.viewDetailsFor(product.label)}
           >
             {product.imageURL ? (
               <img
