@@ -149,7 +149,6 @@ export type GetCatalogApiArg = {
   shopId: string;
   /** Preferred menu language; falls back to the original */
   lang?: string;
-  /** Hand-added until regenerated: show the menu as of this future quarter-hour instant (within the booking window) */
   at?: string;
 };
 export type ListPublicShopsApiResponse =
@@ -390,6 +389,7 @@ export type DiscountProblem =
 export type BasketQuoteDto = {
   currency: string;
   fulfilmentMode: FulfilmentMode;
+  scheduleHorizonDays: number;
   lines: QuoteLineDto[];
   subtotalCents: number;
   deliveryFeeCents: number | null;
@@ -403,8 +403,6 @@ export type BasketQuoteDto = {
   addressRequired: boolean;
   prepMinutes: number;
   orderLimitReached: boolean;
-  /** Hand-added until regenerated: the booking window in days (1-6), set by the platform */
-  scheduleHorizonDays: number;
   slots: string[];
   scheduledFor: string | null;
   slotAvailable: boolean | null;
@@ -527,6 +525,7 @@ export type GetShopResultDto = {
   currency: string;
   timezone: string;
   minOrderAmountCents: number;
+  addressLocked: boolean;
   address: {
     street?: string;
     city?: string;
@@ -586,6 +585,7 @@ export type GetShopResultDto = {
     connectOnboardingStatus: ('not_started' | 'pending' | 'complete') | null;
   } | null;
   orderSettings: OrderSettings;
+  scheduleHorizonDays: number;
   createdAt: string;
   updatedAt: string;
 };
@@ -667,10 +667,24 @@ export type CatalogCategoryDto = {
   schedule: CatalogCategoryScheduleDto | null;
   products: CatalogProductDto[];
 };
+export type CatalogProductScheduleDto = {
+  startDate: string;
+  endDate: string | null;
+  daysOfWeek: number[] | null;
+  startTime: string | null;
+  endTime: string | null;
+};
+export type CatalogOtherTimeDishDto = {
+  id: string;
+  name: string;
+  price: number;
+  schedule: CatalogProductScheduleDto;
+};
 export type GetCatalogResultDto = {
   language: MenuLanguage;
   languages: MenuLanguage[];
   categories: CatalogCategoryDto[];
+  otherTimeDishes: CatalogOtherTimeDishDto[];
 };
 export type PublicShopBrandingDto = {
   logoUrl: string | null;

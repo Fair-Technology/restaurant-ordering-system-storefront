@@ -1038,6 +1038,266 @@
         }
       }
     },
+    "/platform/cover-images": {
+      "get": {
+        "summary": "List the cover image library (platform)",
+        "description": "Superadmin or Platform.ReadOnly. Returns the library sorted by order.",
+        "operationId": "executeListCoverImageLibraryForPlatform",
+        "tags": [
+          "Cover Image Library"
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Cover image library retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListCoverImageLibraryResultDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      },
+      "post": {
+        "summary": "Register a library cover image",
+        "description": "Superadmin only. Registers an uploaded image in the platform cover library (max 50). The URL must be the blob issued for this imageId; the image is size-checked and a card variant is generated. Audited as platform.cover_image.register.",
+        "operationId": "executeRegisterCoverLibraryImage",
+        "tags": [
+          "Cover Image Library"
+        ],
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RegisterCoverLibraryImageRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Library cover image registered successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoverLibraryImage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/platform/cover-images/{imageId}": {
+      "delete": {
+        "summary": "Delete a library cover image",
+        "description": "Superadmin only. Removes the image from the library and deletes its stored files. Shops that already picked it keep their own copy.",
+        "operationId": "executeDeleteCoverLibraryImage",
+        "tags": [
+          "Cover Image Library"
+        ],
+        "security": [],
+        "parameters": [
+          {
+            "name": "imageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Library cover image deleted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeleteCoverLibraryImageResultDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      },
+      "patch": {
+        "summary": "Rename a library cover image",
+        "description": "Superadmin only. Changes the display name of a library cover image. No audit entry is written when the name is unchanged.",
+        "operationId": "executeRenameCoverLibraryImage",
+        "tags": [
+          "Cover Image Library"
+        ],
+        "security": [],
+        "parameters": [
+          {
+            "name": "imageId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "name"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Library cover image renamed successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoverLibraryImage"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/platform/cover-images/upload-url": {
+      "post": {
+        "summary": "Generate upload URL for a library cover image",
+        "description": "Superadmin only. Generates a short-lived SAS URL for uploading a platform library cover image to Azure Blob Storage (platform/cover-library/).",
+        "operationId": "executeGenerateCoverLibraryUploadUrl",
+        "tags": [
+          "Cover Image Library"
+        ],
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GenerateCoverLibraryUploadUrlRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Upload URL generated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenerateCoverLibraryUploadUrlResultDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
     "/platform/legal-identity": {
       "get": {
         "operationId": "getPlatformLegalIdentity",
@@ -1400,7 +1660,7 @@
     "/products": {
       "post": {
         "summary": "Create a new product",
-        "description": "A new dish has no photo yet (photos are added after create), so it is created off: leaving isAvailable out creates it with isAvailable false, and isAvailable true is refused with 409 code PRODUCT_IMAGE_REQUIRED_TO_ENABLE (body { error, code }; message: a dish can't be turned on without a photo).",
+        "description": "A new dish has no photo yet (photos are added after create), so it is created off: leaving isAvailable out creates it with isAvailable false, and isAvailable true is refused with 400 code PRODUCT_IMAGE_REQUIRED_TO_ENABLE (body { error, code }; message: a dish can't be turned on without a photo).",
         "operationId": "createProduct",
         "tags": [
           "Products"
@@ -2561,6 +2821,14 @@
               "type": "string"
             },
             "description": "Preferred menu language; falls back to the original"
+          },
+          {
+            "name": "at",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -2994,6 +3262,87 @@
         }
       }
     },
+    "/shops/{shopId}/categories/{categoryId}/combo-order": {
+      "put": {
+        "summary": "Set the order of a category's combos",
+        "description": "Access: manage_menu. Body: { productIds } — exactly the combos currently in the category, in the intended order; unknown, foreign, deleted, duplicate or missing ids are rejected. Idempotent: only combos whose position changes are written. Not transactional across combos (last write wins per combo). Shares logic with dish-order.",
+        "operationId": "setCategoryComboOrder",
+        "tags": [
+          "Categories"
+        ],
+        "security": [],
+        "parameters": [
+          {
+            "name": "shopId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "categoryId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "productIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "productIds"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Combo order saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetCategoryComboOrderResultDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
     "/shops/{shopId}/categories/{categoryId}/dish-order": {
       "put": {
         "summary": "Set the order of a category's dishes",
@@ -3078,7 +3427,7 @@
     "/shops/{shopId}/combos": {
       "post": {
         "summary": "Create combo",
-        "description": "Adds a combo, created off when isAvailable is left out. Translations are optional. A combo photo is uploaded like a dish photo: POST /shops/{shopId}/products/{comboId}/images/upload-url, PUT the file (exactly 1200 x 900 px), then POST /shops/{shopId}/products/{comboId}/images. Updates with images omitted keep the existing photo. A combo can be saved without a photo only while it is off: isAvailable true with no photo is refused with 409 code COMBO_IMAGE_REQUIRED_TO_ENABLE (body { error, code }; message: a combo can't be turned on without a photo).",
+        "description": "Adds a combo, created off when isAvailable is left out. Translations are optional. A combo photo is uploaded like a dish photo: POST /shops/{shopId}/products/{comboId}/images/upload-url, PUT the file (exactly 1200 x 900 px), then POST /shops/{shopId}/products/{comboId}/images. Updates with images omitted keep the existing photo. A combo can be saved without a photo only while it is off: isAvailable true with no photo is refused with 400 code COMBO_IMAGE_REQUIRED_TO_ENABLE (body { error, code }; message: a combo can't be turned on without a photo).",
         "operationId": "createCombo",
         "tags": [
           "Combos"
@@ -3406,6 +3755,127 @@
                 "required": [
                   "imageId",
                   "url"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Shop cover image updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ShopCoverImageResultDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/shops/{shopId}/cover-image-library": {
+      "get": {
+        "summary": "List the cover image library for a shop",
+        "description": "Requires manage_shop on the shop. Returns the platform cover image library sorted by order.",
+        "operationId": "executeListCoverImageLibraryForShop",
+        "tags": [
+          "Cover Image Library"
+        ],
+        "security": [],
+        "parameters": [
+          {
+            "name": "shopId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cover image library retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ListCoverImageLibraryResultDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "409": {
+            "$ref": "#/components/responses/Conflict"
+          },
+          "500": {
+            "$ref": "#/components/responses/InternalError"
+          }
+        }
+      }
+    },
+    "/shops/{shopId}/cover-image/from-library": {
+      "post": {
+        "summary": "Use a library image as the shop cover",
+        "description": "Requires manage_shop. Body is { libraryImageId }. The server copies the image and its card variant into the shop's own branding folder and sets branding.heroImageUrl; the previous cover is deleted.",
+        "operationId": "executeUseLibraryCoverImageForShop",
+        "tags": [
+          "Cover Image Library"
+        ],
+        "security": [],
+        "parameters": [
+          {
+            "name": "shopId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "libraryImageId": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "libraryImageId"
                 ]
               }
             }
@@ -8749,6 +9219,65 @@
         ],
         "additionalProperties": false
       },
+      "CatalogOtherTimeDishDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "price": {
+            "type": "number"
+          },
+          "schedule": {
+            "$ref": "#/components/schemas/CatalogProductScheduleDto"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "price",
+          "schedule"
+        ],
+        "additionalProperties": false
+      },
+      "CatalogProductScheduleDto": {
+        "type": "object",
+        "properties": {
+          "startDate": {
+            "type": "string"
+          },
+          "endDate": {
+            "type": "string",
+            "nullable": true
+          },
+          "daysOfWeek": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "nullable": true
+          },
+          "startTime": {
+            "type": "string",
+            "nullable": true
+          },
+          "endTime": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "startDate",
+          "endDate",
+          "daysOfWeek",
+          "startTime",
+          "endTime"
+        ],
+        "additionalProperties": false
+      },
       "CategoryDto": {
         "type": "object",
         "properties": {
@@ -11833,6 +12362,38 @@
         ],
         "additionalProperties": false
       },
+      "CoverLibraryImage": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "imageUrl": {
+            "type": "string"
+          },
+          "cardImageUrl": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "order": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "imageUrl",
+          "cardImageUrl",
+          "createdAt",
+          "order"
+        ],
+        "additionalProperties": false
+      },
       "ProductDto": {
         "type": "object",
         "properties": {
@@ -12619,6 +13180,9 @@
           "minOrderAmountCents": {
             "type": "number"
           },
+          "addressLocked": {
+            "type": "boolean"
+          },
           "address": {
             "type": "object",
             "properties": {
@@ -12870,6 +13434,7 @@
           "currency",
           "timezone",
           "minOrderAmountCents",
+          "addressLocked",
           "address",
           "openingHours",
           "closures",
@@ -14213,12 +14778,19 @@
             "items": {
               "$ref": "#/components/schemas/CatalogCategoryDto"
             }
+          },
+          "otherTimeDishes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CatalogOtherTimeDishDto"
+            }
           }
         },
         "required": [
           "language",
           "languages",
-          "categories"
+          "categories",
+          "otherTimeDishes"
         ],
         "additionalProperties": false
       },
@@ -14229,6 +14801,9 @@
             "type": "string"
           },
           "lang": {
+            "type": "string"
+          },
+          "at": {
             "type": "string"
           }
         },
@@ -14502,6 +15077,12 @@
               ]
             }
           },
+          "categoryOrder": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            }
+          },
           "createdAt": {
             "type": "string"
           },
@@ -14523,6 +15104,61 @@
           "groups",
           "createdAt",
           "updatedAt"
+        ],
+        "additionalProperties": false
+      },
+      "SetCategoryComboOrderResultDto": {
+        "type": "object",
+        "properties": {
+          "categoryId": {
+            "type": "string"
+          },
+          "products": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "name"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "categoryId",
+          "products"
+        ],
+        "additionalProperties": false
+      },
+      "SetCategoryComboOrderRequestDto": {
+        "type": "object",
+        "properties": {
+          "shopId": {
+            "type": "string"
+          },
+          "categoryId": {
+            "type": "string"
+          },
+          "productIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "shopId",
+          "categoryId",
+          "productIds"
         ],
         "additionalProperties": false
       },
@@ -16288,6 +16924,9 @@
           "fulfilmentMode": {
             "$ref": "#/components/schemas/FulfilmentMode"
           },
+          "scheduleHorizonDays": {
+            "type": "number"
+          },
           "lines": {
             "type": "array",
             "items": {
@@ -16415,6 +17054,7 @@
         "required": [
           "currency",
           "fulfilmentMode",
+          "scheduleHorizonDays",
           "lines",
           "subtotalCents",
           "deliveryFeeCents",
@@ -16726,6 +17366,122 @@
             }
           }
         },
+        "additionalProperties": false
+      },
+      "DeleteCoverLibraryImageResultDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "deleted": {
+            "type": "boolean",
+            "const": true
+          }
+        },
+        "required": [
+          "id",
+          "deleted"
+        ],
+        "additionalProperties": false
+      },
+      "DeleteCoverLibraryImageRequestDto": {
+        "type": "object",
+        "properties": {
+          "imageId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "imageId"
+        ],
+        "additionalProperties": false
+      },
+      "GenerateCoverLibraryUploadUrlResultDto": {
+        "type": "object",
+        "properties": {
+          "imageId": {
+            "type": "string"
+          },
+          "uploadUrl": {
+            "type": "string"
+          },
+          "blobUrl": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "imageId",
+          "uploadUrl",
+          "blobUrl",
+          "expiresAt"
+        ],
+        "additionalProperties": false
+      },
+      "GenerateCoverLibraryUploadUrlRequestDto": {
+        "type": "object",
+        "properties": {
+          "contentType": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "contentType"
+        ],
+        "additionalProperties": false
+      },
+      "ListCoverImageLibraryResultDto": {
+        "type": "object",
+        "properties": {
+          "images": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CoverLibraryImage"
+            }
+          }
+        },
+        "required": [
+          "images"
+        ],
+        "additionalProperties": false
+      },
+      "RegisterCoverLibraryImageRequestDto": {
+        "type": "object",
+        "properties": {
+          "imageId": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "imageId",
+          "url",
+          "name"
+        ],
+        "additionalProperties": false
+      },
+      "RenameCoverLibraryImageRequestDto": {
+        "type": "object",
+        "properties": {
+          "imageId": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "imageId",
+          "name"
+        ],
         "additionalProperties": false
       },
       "AddProductImageResultDto": {
@@ -18329,11 +19085,15 @@
             "items": {
               "$ref": "#/components/schemas/GoLiveCriterion"
             }
+          },
+          "hasAnyProducts": {
+            "type": "boolean"
           }
         },
         "required": [
           "allMet",
-          "criteria"
+          "criteria",
+          "hasAnyProducts"
         ],
         "additionalProperties": false
       },
@@ -18449,6 +19209,9 @@
           },
           "minOrderAmountCents": {
             "type": "number"
+          },
+          "addressLocked": {
+            "type": "boolean"
           },
           "address": {
             "type": "object",
@@ -18732,6 +19495,9 @@
           "orderSettings": {
             "$ref": "#/components/schemas/OrderSettings"
           },
+          "scheduleHorizonDays": {
+            "type": "number"
+          },
           "createdAt": {
             "type": "string"
           },
@@ -18754,6 +19520,7 @@
           "currency",
           "timezone",
           "minOrderAmountCents",
+          "addressLocked",
           "address",
           "openingHours",
           "closures",
@@ -18765,6 +19532,7 @@
           "pendingNameChange",
           "stripe",
           "orderSettings",
+          "scheduleHorizonDays",
           "createdAt",
           "updatedAt"
         ],
@@ -19145,6 +19913,18 @@
         },
         "required": [
           "slug"
+        ],
+        "additionalProperties": false
+      },
+      "ListCoverImageLibraryForShopRequestDto": {
+        "type": "object",
+        "properties": {
+          "shopId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "shopId"
         ],
         "additionalProperties": false
       },
@@ -19648,6 +20428,22 @@
         },
         "required": [
           "shopId"
+        ],
+        "additionalProperties": false
+      },
+      "UseLibraryCoverImageForShopRequestDto": {
+        "type": "object",
+        "properties": {
+          "shopId": {
+            "type": "string"
+          },
+          "libraryImageId": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "shopId",
+          "libraryImageId"
         ],
         "additionalProperties": false
       },
@@ -20271,6 +21067,9 @@
           "emailEnabled": {
             "type": "boolean"
           },
+          "scheduleHorizonDays": {
+            "type": "number"
+          },
           "emailTransportConfigured": {
             "type": "boolean"
           }
@@ -20278,6 +21077,7 @@
         "required": [
           "maxShopsDefault",
           "emailEnabled",
+          "scheduleHorizonDays",
           "emailTransportConfigured"
         ],
         "additionalProperties": false
@@ -20312,11 +21112,15 @@
           },
           "emailEnabled": {
             "type": "boolean"
+          },
+          "scheduleHorizonDays": {
+            "type": "number"
           }
         },
         "required": [
           "maxShopsDefault",
-          "emailEnabled"
+          "emailEnabled",
+          "scheduleHorizonDays"
         ],
         "additionalProperties": false
       },
@@ -20328,6 +21132,9 @@
           },
           "emailEnabled": {
             "type": "boolean"
+          },
+          "scheduleHorizonDays": {
+            "type": "number"
           }
         },
         "additionalProperties": false
