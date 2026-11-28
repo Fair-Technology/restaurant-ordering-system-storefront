@@ -192,7 +192,30 @@ test.describe('Checkout discount code', () => {
     await input.press('Enter');
 
     await expect(page.getByText('This code is not valid.')).toBeVisible();
-    await expect(page.getByTestId('discount').getByRole('button', { name: 'Remove' })).toBeVisible();
+    await expect(page.getByTestId('discount').getByRole('button', { name: 'Apply' })).toBeVisible();
+    await expect(page.getByTestId('discount').getByRole('button', { name: 'Remove' })).toHaveCount(0);
+    await expect(input).toBeEnabled();
+  });
+
+  test('correcting a wrong code and re-applying works without pressing Remove', async ({ page }) => {
+    await setup(page);
+    await page.goto('/shops/test-shop/checkout');
+
+    const input = await openCodeBox(page);
+    await input.fill('WRONG');
+    await input.press('Enter');
+    await expect(page.getByText('This code is not valid.')).toBeVisible();
+    await expect(input).toBeEnabled();
+
+    await input.clear();
+    await input.fill('TESTX');
+    await input.press('Enter');
+
+    await expect(page.getByText('This code is not valid.')).toHaveCount(0);
+    await expect(page.getByTestId('order-totals')).toContainText('Discount (TESTX)');
+    const discount = page.getByTestId('discount');
+    await expect(discount.getByRole('button', { name: 'Remove' })).toBeVisible();
+    await expect(discount.getByRole('button', { name: 'Apply' })).toHaveCount(0);
   });
 
   test('Enter on an empty box does nothing', async ({ page }) => {

@@ -232,6 +232,7 @@ const CheckoutPage: React.FC = () => {
   const allOk = !!quote && quote.lines.every((l) => l.status === 'ok');
   const discount = appliedCode && quote?.discount ? quote.discount : null;
   const codeProblem = appliedCode && quote && !quote.discount ? quote.discountProblem ?? 'unknown' : null;
+  const discountApplied = appliedCode !== null && !!quote?.discount;
   const showCodeBox = quote?.acceptsCodes === true || appliedCode !== null;
   const loyalty = quote?.loyalty ?? null;
   function applyCode() {
@@ -899,7 +900,7 @@ const CheckoutPage: React.FC = () => {
                               className={`${inputClass} h-11 uppercase`}
                               value={codeInput}
                               onChange={(e) => setCodeInput(e.target.value)}
-                              disabled={appliedCode !== null}
+                              disabled={discountApplied}
                               aria-label={copy.codeLabel}
                               onKeyDown={(e) => {
                                 if (e.key === 'Enter') {
@@ -909,7 +910,7 @@ const CheckoutPage: React.FC = () => {
                               }}
                             />
                           </label>
-                          {appliedCode === null ? (
+                          {!discountApplied ? (
                             <button
                               type="button"
                               className="h-11 rounded-xl border-[1.5px] border-gray-900 bg-white px-4 text-sm font-bold text-gray-900 disabled:opacity-40"

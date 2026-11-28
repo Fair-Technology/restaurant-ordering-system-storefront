@@ -1380,7 +1380,7 @@ test.describe('Discount codes', () => {
     expect(placed).toMatchObject({ discountCode: 'WELCOME10', expectedDiscountCents: 105 });
   });
 
-  test('an unknown code says so and blocks ordering until removed', async ({ page }) => {
+  test('an unknown code says so and lets the diner correct it without removing', async ({ page }) => {
     await mockBackend(page, { quote: codeQuote() });
     await seedCart(page);
     await page.goto('/shops/test-shop/checkout');
@@ -1389,10 +1389,13 @@ test.describe('Discount codes', () => {
     await page.getByLabel('Discount code').fill('NOPE1');
     await page.getByRole('button', { name: 'Apply' }).click();
     await expect(page.getByText('This code is not valid.')).toBeVisible();
+    await expect(page.getByLabel('Discount code')).toBeEnabled();
 
     await fillDetails(page);
     await expect(page.getByRole('button', { name: 'Continue to payment' })).toBeDisabled();
-    await page.getByTestId('discount').getByRole('button', { name: 'Remove' }).click();
+    await page.getByLabel('Discount code').fill('WELCOME10');
+    await page.getByRole('button', { name: 'Apply' }).click();
+    await expect(page.getByTestId('order-totals')).toContainText('Discount (WELCOME10)');
     await expect(page.getByRole('button', { name: 'Continue to payment' })).toBeEnabled();
   });
 
@@ -1492,6 +1495,7 @@ test.describe('Discount codes in German', () => {
     await page.getByLabel('Rabattcode').fill('NOPE1');
     await page.getByRole('button', { name: 'Einlösen' }).click();
     await expect(page.getByText('Dieser Code ist ungültig.')).toBeVisible();
+    await expect(page.getByLabel('Rabattcode')).toBeEnabled();
   });
 });
 
