@@ -375,7 +375,6 @@ const CheckoutPage: React.FC = () => {
     } else if (errData?.errorCode === 'BELOW_MINIMUM') {
       setIdempotencyKey(crypto.randomUUID());
       requote();
-      setPlaceError(copy.belowMinimum(money.cents(errData.minimumCents ?? quote?.minOrderAmountCents ?? 0)));
     } else if (isOrdersPausedError(res.error)) {
       setIdempotencyKey(crypto.randomUUID());
       requote();
