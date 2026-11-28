@@ -7,7 +7,7 @@ import ShopLogo from '../shared/ShopLogo';
 import PlatformHeader from '../shared/PlatformHeader';
 import { shopCoverSrcSet, shopLogoSrcSet } from '../utils/imageVariants';
 import { resolveShopBranding } from '../utils/branding';
-import { openState } from '../utils/openingHours';
+import { openState, activeClosure } from '../utils/openingHours';
 import { useAppSelector } from '../store/hooks';
 import { currentChoice, pageLanguageOf } from '../utils/pageLanguage';
 import { filterShopsByQuery } from '../utils/search';
@@ -16,6 +16,7 @@ import { siteCopy, PLATFORM_NAME, type SiteCopy } from '../utils/siteCopy';
 /** Ordering paused / open / closed as a small pill. Offline shops never reach this list: the server leaves them out. */
 function statusOf(shop: PublicShopSummary, copy: SiteCopy): { text: string; open: boolean } | null {
   if (shop.ordersPaused) return { text: copy.homePaused, open: false };
+  if (activeClosure(shop.closures, new Date())) return { text: copy.homeClosed, open: false };
   const hours = shop.openingHours;
   if (!hours || Object.keys(hours).length === 0) return null;
   const s = openState(hours, new Date(), shop.timezone);

@@ -733,6 +733,12 @@ export type PublicShopSummaryDto = {
   };
   timezone: string;
   ordersPaused: boolean;
+  closures: {
+    id: string;
+    start: string;
+    end: string;
+    reason?: string;
+  }[];
 };
 export type GetPublicShopsResultDto = {
   shops: PublicShopSummaryDto[];

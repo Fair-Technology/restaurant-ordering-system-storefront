@@ -1,7 +1,7 @@
 // Hand-written types for the diner home page's restaurant list; the endpoint is
 // generated in endpoints.ts. Shapes mirror the backend's src/application/shop/getPublicShops/dtos.ts.
 import { api } from './endpoints';
-import type { WeeklyHours } from '../utils/openingHours';
+import type { ShopClosure, WeeklyHours } from '../utils/openingHours';
 
 export interface PublicShopSummary {
   id: string;
@@ -17,6 +17,7 @@ export interface PublicShopSummary {
   openingHours: WeeklyHours;
   timezone: string;
   ordersPaused: boolean;
+  closures: ShopClosure[];
 }
 
 export interface PublicShopListResponse {
