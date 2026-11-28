@@ -529,6 +529,7 @@ const ShopView = () => {
         copy={copy}
         offline={isOffline}
         paused={ordersPaused}
+        closed={!!closureNow}
       />
       {noticeKind && !noticeSeen && (
         <ShopNoticeModal

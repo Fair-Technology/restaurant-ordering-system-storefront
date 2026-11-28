@@ -18,6 +18,8 @@ interface ShopIntroProps {
   offline?: boolean;
   /** Orders are paused: the pill says so instead of the opening-hours status */
   paused?: boolean;
+  /** A dated closure is active right now: the pill reads closed, whatever the opening hours say */
+  closed?: boolean;
 }
 
 /**
@@ -35,6 +37,7 @@ const ShopIntro: React.FC<ShopIntroProps> = ({
   copy,
   offline,
   paused,
+  closed,
 }) => {
   const place = [address?.street, address?.city].map((p) => p?.trim()).filter(Boolean).join(', ');
   const status = openingHours ? openState(openingHours, new Date(), timeZone) : null;
@@ -87,6 +90,11 @@ const ShopIntro: React.FC<ShopIntroProps> = ({
               <span className="inline-flex items-center gap-1.5 rounded-full bg-[#fdeceb] px-3 py-1 font-semibold text-[#b42318]">
                 <span className="h-2 w-2 rounded-full bg-[#b42318]" aria-hidden="true" />
                 {copy.introPaused}
+              </span>
+            ) : closed ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-gray-100 px-3 py-1 font-semibold text-gray-700">
+                <span className="h-2 w-2 rounded-full bg-gray-400" aria-hidden="true" />
+                {copy.introClosedNow}
               </span>
             ) : (
               status &&

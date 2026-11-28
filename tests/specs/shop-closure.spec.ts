@@ -54,6 +54,11 @@ test.describe('shop closures', () => {
     await page.goto('/shops/test-shop');
     await expect(page.locator('[data-testid="menu"]')).toBeVisible();
     await expect(page.getByRole('alertdialog')).toHaveCount(0);
+    // all-day hours + expired closure: the pill stays green
+    const intro = page.getByTestId('shop-intro');
+    await expect(intro).toContainText(/Open/);
+    await expect(intro).not.toContainText('Closed right now');
+    await expect(intro.locator('span.rounded-full', { hasText: /Open/ })).toHaveClass(/bg-\[#e6f3ea\]/);
   });
 
   test('the closed popup can be dismissed', async ({ page }) => {
@@ -63,5 +68,53 @@ test.describe('shop closures', () => {
     await page.getByRole('button', { name: 'OK' }).click();
     await expect(page.getByRole('alertdialog')).toHaveCount(0);
     await expect(page.locator('[data-testid="menu"]')).toBeVisible();
+  });
+});
+
+test.describe('header pill with an active closure', () => {
+  test('says closed, not open, before and after dismissing the popup', async ({ page }) => {
+    await stub(page, [{ id: 'c1', start: iso(-3600_000), end: iso(3600_000), reason: 'Holiday' }]);
+    await page.goto('/shops/test-shop');
+    const intro = page.getByTestId('shop-intro');
+    await expect(page.getByRole('alertdialog')).toBeVisible();
+    await expect(intro).toContainText('Closed right now');
+    await expect(intro).not.toContainText(/Open/);
+    await page.getByRole('button', { name: 'OK' }).click();
+    await expect(page.getByRole('alertdialog')).toHaveCount(0);
+    await expect(intro).toContainText('Closed right now');
+    await expect(intro).not.toContainText(/Open/);
+  });
+
+  test('uses the grey closed classes, not the green open ones', async ({ page }) => {
+    await stub(page, [{ id: 'c1', start: iso(-3600_000), end: iso(3600_000) }]);
+    await page.goto('/shops/test-shop');
+    await page.getByRole('button', { name: 'OK' }).click();
+    const badge = page.getByTestId('shop-intro').locator('span.rounded-full', { hasText: 'Closed right now' });
+    await expect(badge).toHaveClass(/bg-gray-100/);
+    await expect(badge).toHaveClass(/text-gray-700/);
+    await expect(badge).not.toHaveClass(/bg-\[#e6f3ea\]/);
+  });
+});
+
+test.describe('header pill with an active closure (German)', () => {
+  test.use({ locale: 'de-DE' });
+
+  test('says Gerade geschlossen, not Geöffnet', async ({ page }) => {
+    await stub(page, [{ id: 'c1', start: iso(-3600_000), end: iso(3600_000) }]);
+    await page.goto('/shops/test-shop');
+    const intro = page.getByTestId('shop-intro');
+    await expect(intro).toContainText('Gerade geschlossen');
+    await expect(intro).not.toContainText(/Geöffnet/);
+    await page.getByRole('button', { name: 'OK' }).click();
+    await expect(intro).toContainText('Gerade geschlossen');
+    await expect(intro).not.toContainText(/Geöffnet/);
+  });
+
+  test('control: a finished closure still shows the green Geöffnet pill', async ({ page }) => {
+    await stub(page, [{ id: 'c1', start: iso(-7200_000), end: iso(-3600_000) }]);
+    await page.goto('/shops/test-shop');
+    const intro = page.getByTestId('shop-intro');
+    await expect(intro).toContainText(/Geöffnet/);
+    await expect(intro).not.toContainText('Gerade geschlossen');
   });
 });
