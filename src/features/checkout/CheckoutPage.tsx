@@ -4,7 +4,8 @@ import { toComboChoiceDtos } from '../../utils/combo';
 import { readOtherTime } from '../../utils/otherTimeChoice';
 import { cartHasAgeRestrictedItem } from '../../utils/ageRestriction';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { Check, ChevronLeft, Lock } from 'lucide-react';
+import { Check, ChevronLeft, Lock, Phone } from 'lucide-react';
+import { telHref } from '../../utils/openingHours';
 import { Elements } from '@stripe/react-stripe-js';
 import { CheckoutPageSkeleton } from '../../shared/Skeletons';
 import NavBar from '../../shared/NavBar';
@@ -68,6 +69,11 @@ function orderPath(slug: string | undefined, orderId: string, accessToken: strin
 function isOrdersPausedError(error: unknown): boolean {
   const data = (error as { data?: { code?: string } } | undefined)?.data;
   return data?.code === ORDERS_PAUSED_CODE;
+}
+
+/** The stable `errorCode` the backend sets on 400 INVALID_INPUT refusals (SHOP_OFFLINE, SHOP_CLOSED, BELOW_MINIMUM). */
+function errorCodeOf(error: unknown): string | undefined {
+  return (error as { data?: { errorCode?: string } } | undefined)?.data?.errorCode;
 }
 
 const CheckoutPage: React.FC = () => {
@@ -223,6 +229,13 @@ const CheckoutPage: React.FC = () => {
     if (quote && !quote.orderLimitReached && !quoteFailed) setPausedBySubmit(false);
   }, [quote, quoteFailed]);
   const quotePaused = quoteFailed && isOrdersPausedError(quoteError);
+  // The shop went offline after this page loaded: refresh the shop so the full-page offline screen takes over (no retry UI)
+  const quoteShopOffline = quoteFailed && errorCodeOf(quoteError) === 'SHOP_OFFLINE';
+  useEffect(() => {
+    if (quoteShopOffline) refetchShop();
+  }, [quoteShopOffline, refetchShop]);
+  // Refusals that retrying the same basket cannot fix; shown with the restaurant's phone
+  const [fatalError, setFatalError] = useState<'closed' | 'offline' | null>(null);
   const paused = shopPaused || quote?.orderLimitReached === true || quotePaused || pausedBySubmit;
   // alert when the card just interrupted an action, status when it was already known on load
   const pausedRole: 'status' | 'alert' = quotePaused || pausedBySubmit ? 'alert' : 'status';
@@ -310,6 +323,7 @@ const CheckoutPage: React.FC = () => {
     }
     setTableNotice(null);
     setPlaceError(undefined);
+    setFatalError(null);
     const sentFee = mode === 'delivery' && data.deliveryAddress ? quote?.deliveryFeeCents ?? 0 : null;
     const sentDiscount = discount ? { code: discount.code, cents: discount.cents } : null;
     const res = await placeOrder({
@@ -349,8 +363,20 @@ const CheckoutPage: React.FC = () => {
       }
       return;
     }
-    const msg = (res.error as { data?: { error?: string } } | undefined)?.data?.error;
-    if (isOrdersPausedError(res.error)) {
+    const errData = (res.error as { data?: { error?: string; errorCode?: string; minimumCents?: number } } | undefined)?.data;
+    const msg = errData?.error;
+    if (errData?.errorCode === 'SHOP_OFFLINE') {
+      refetchShop();
+      setFatalError('offline');
+    } else if (errData?.errorCode === 'SHOP_CLOSED') {
+      setIdempotencyKey(crypto.randomUUID());
+      requote();
+      setFatalError('closed');
+    } else if (errData?.errorCode === 'BELOW_MINIMUM') {
+      setIdempotencyKey(crypto.randomUUID());
+      requote();
+      setPlaceError(copy.belowMinimum(money.cents(errData.minimumCents ?? quote?.minOrderAmountCents ?? 0)));
+    } else if (isOrdersPausedError(res.error)) {
       setIdempotencyKey(crypto.randomUUID());
       requote();
       setPausedBySubmit(true);
@@ -502,6 +528,15 @@ const CheckoutPage: React.FC = () => {
           <div className="flex w-full flex-col items-center gap-4 rounded-[20px] border border-[#efe7de] bg-white p-8 text-center" data-testid="shop-offline">
             <h1 className="font-display text-[28px] font-semibold leading-tight text-gray-900">{copy.noticeOfflineTitle}</h1>
             <p className="text-[15px] leading-relaxed text-[#5c524b]">{copy.noticeOfflineText}</p>
+            {shopPhone && (
+              <a
+                href={telHref(shopPhone)}
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-full border-[1.5px] border-gray-900 bg-white px-6 text-[15px] font-bold text-gray-900"
+              >
+                <Phone className="h-4 w-4" aria-hidden="true" />
+                {copy.noticeCallUs} {shopPhone}
+              </a>
+            )}
             <Link to={`/shops/${slug}`} className="flex h-12 items-center justify-center rounded-full bg-gray-900 px-6 text-[15px] font-bold text-white">
               {copy.backToMenu}
             </Link>
@@ -944,7 +979,7 @@ const CheckoutPage: React.FC = () => {
                   {quote && quote.belowMinimum && (
                     <p className={errorBox}>{copy.belowMinimum(money.cents(quote.minOrderAmountCents))}</p>
                   )}
-                  {quoteFailed && !quotePaused && (
+                  {quoteFailed && !quotePaused && !quoteShopOffline && (
                     <div className="flex flex-col items-start gap-2" data-testid="quote-error">
                       <p role="alert" className={errorBox}>{copy.pricesUnavailable}</p>
                       <button
@@ -959,6 +994,17 @@ const CheckoutPage: React.FC = () => {
                     </div>
                   )}
                   {submitError && <p role="alert" className={errorBox}>{submitError}</p>}
+                  {fatalError && (
+                    <div role="alert" data-testid="checkout-fatal-error" className={`${errorBox} flex flex-col items-start gap-2`}>
+                      <p>{fatalError === 'offline' ? copy.noticeOfflineText : copy.closedNow}</p>
+                      {shopPhone && (
+                        <a href={telHref(shopPhone)} className="inline-flex items-center gap-2 font-bold underline">
+                          <Phone className="h-4 w-4" aria-hidden="true" />
+                          {copy.noticeCallUs} {shopPhone}
+                        </a>
+                      )}
+                    </div>
+                  )}
 
                   {/* Phones: pinned to the bottom of the screen; from lg: in place */}
                   <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[#efe7de] bg-white px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-6px_18px_rgba(31,26,23,0.06)] lg:static lg:z-auto lg:mt-1 lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none">
