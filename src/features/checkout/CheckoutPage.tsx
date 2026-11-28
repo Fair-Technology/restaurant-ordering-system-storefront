@@ -934,7 +934,14 @@ const CheckoutPage: React.FC = () => {
                               ref={codeInputRef}
                               className={`${inputClass} h-11 uppercase`}
                               value={codeInput}
-                              onChange={(e) => setCodeInput(e.target.value)}
+                              onChange={(e) => {
+                                setCodeInput(e.target.value);
+                                // Editing after a rejected code drops it, so the guest can pay without one.
+                                if (appliedCode !== null && codeProblem !== null) {
+                                  setIdempotencyKey(crypto.randomUUID());
+                                  setAppliedCode(null);
+                                }
+                              }}
                               disabled={discountApplied}
                               aria-label={copy.codeLabel}
                               onKeyDown={(e) => {

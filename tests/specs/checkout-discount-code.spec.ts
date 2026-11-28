@@ -218,6 +218,46 @@ test.describe('Checkout discount code', () => {
     await expect(discount.getByRole('button', { name: 'Apply' })).toHaveCount(0);
   });
 
+  test('editing a rejected code drops it so the guest can pay without a code', async ({ page }) => {
+    const { orderPosts } = await setup(page);
+    await page.goto('/shops/test-shop/checkout');
+
+    const input = await openCodeBox(page);
+    await input.fill('WRONG');
+    await input.press('Enter');
+    await expect(page.getByText('This code is not valid.')).toBeVisible();
+    await expect(submit(page)).toBeDisabled();
+
+    await input.clear();
+    await expect(page.getByText('This code is not valid.')).toHaveCount(0);
+    await expect(submit(page)).toBeEnabled();
+
+    await fillDetails(page);
+    await submit(page).click();
+    await expect.poll(() => orderPosts.length).toBe(1);
+    expect(orderPosts[0].discountCode).toBeUndefined();
+  });
+
+  test.describe('de locale', () => {
+    test.use({ locale: 'de-DE' });
+
+    test('editing a rejected code clears "Dieser Code ist ungültig."', async ({ page }) => {
+      await setup(page);
+      await page.goto('/shops/test-shop/checkout');
+
+      await page.getByText('Rabattcode', { exact: false }).first().click();
+      const input = page.getByTestId('discount').locator('input');
+      await input.fill('WRONG');
+      await input.press('Enter');
+      await expect(page.getByText('Dieser Code ist ungültig.')).toBeVisible();
+      await expect(submit(page)).toBeDisabled();
+
+      await input.press('Backspace');
+      await expect(page.getByText('Dieser Code ist ungültig.')).toHaveCount(0);
+      await expect(submit(page)).toBeEnabled();
+    });
+  });
+
   test('Enter on an empty box does nothing', async ({ page }) => {
     const { quoteBodies } = await setup(page);
     await page.goto('/shops/test-shop/checkout');
