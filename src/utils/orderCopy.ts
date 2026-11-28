@@ -252,13 +252,14 @@ export interface OrderCopy {
   deliveryPostcodeInvalid: (digits: number) => string;
   collectInstead: string;
   deliveryChange: string;
-  deliverySummary: (postcode: string, fee: string, min: string, minutes: number) => string;
+  deliverySummary: (postcode: string, feeText: string | null, minText: string | null, minutes: number) => string;
   deliveryAddressTitle: string;
   deliveryStreet: string;
   deliveryCity: string;
   deliveryPostcodeFixed: (postcode: string) => string;
   itemsLine: string;
   deliveryFeeLine: string;
+  freeDelivery: string;
   deliveryNotServedNow: string;
   deliveryFeeChanged: string;
   deliveryOff: string;
@@ -586,13 +587,19 @@ const en: OrderCopy = {
   deliveryPostcodeInvalid: (d) => `Please enter a ${d}-digit postcode.`,
   collectInstead: 'Collect instead',
   deliveryChange: 'Change postcode',
-  deliverySummary: (pc, fee, min, m) => `Delivery to ${pc} · fee ${fee} · minimum order ${min} · about ${m} min`,
+  deliverySummary: (pc, feeText, minText, m) => {
+    const parts = [`Delivery to ${pc}`, feeText === null ? 'Free delivery' : `fee ${feeText}`];
+    if (minText !== null) parts.push(`minimum order ${minText}`);
+    parts.push(`about ${m} min`);
+    return parts.join(' · ');
+  },
   deliveryAddressTitle: 'Delivery address',
   deliveryStreet: 'Delivery street and number',
   deliveryCity: 'Delivery town or city',
   deliveryPostcodeFixed: (pc) => `Postcode ${pc} – change it on the menu`,
   itemsLine: 'Items',
   deliveryFeeLine: 'Delivery fee',
+  freeDelivery: 'Free delivery',
   deliveryNotServedNow:
     'The restaurant no longer delivers to this postcode. Choose collection or another postcode on the menu.',
   deliveryFeeChanged: 'The delivery fee has changed. Please check the new total.',
@@ -939,14 +946,19 @@ const de: OrderCopy = {
   deliveryPostcodeInvalid: (d) => `Bitte geben Sie eine ${d}-stellige Postleitzahl ein.`,
   collectInstead: 'Stattdessen abholen',
   deliveryChange: 'Postleitzahl ändern',
-  deliverySummary: (pc, fee, min, m) =>
-    `Lieferung nach ${pc} · Liefergebühr ${fee} · Mindestbestellwert ${min} · ca. ${m} Min.`,
+  deliverySummary: (pc, feeText, minText, m) => {
+    const parts = [`Lieferung nach ${pc}`, feeText === null ? 'Kostenlose Lieferung' : `Liefergebühr ${feeText}`];
+    if (minText !== null) parts.push(`Mindestbestellwert ${minText}`);
+    parts.push(`ca. ${m} Min.`);
+    return parts.join(' · ');
+  },
   deliveryAddressTitle: 'Lieferadresse',
   deliveryStreet: 'Lieferadresse: Straße und Hausnummer',
   deliveryCity: 'Lieferadresse: Ort',
   deliveryPostcodeFixed: (pc) => `Postleitzahl ${pc} – auf der Speisekarte ändern`,
   itemsLine: 'Artikel',
   deliveryFeeLine: 'Liefergebühr',
+  freeDelivery: 'Kostenlose Lieferung',
   deliveryNotServedNow:
     'Das Restaurant liefert nicht mehr an diese Postleitzahl. Wählen Sie auf der Speisekarte Abholung oder eine andere Postleitzahl.',
   deliveryFeeChanged: 'Die Liefergebühr hat sich geändert. Bitte prüfen Sie die neue Summe.',

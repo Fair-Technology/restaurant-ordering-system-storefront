@@ -917,6 +917,34 @@ test.describe('Ordering paused in German', () => {
 
 const ZONES = { zones: [{ postcode: '10115', feeCents: 250, minOrderCents: 1000 }] };
 const DELIVERY_MODES = ['collection', 'delivery'];
+// Zones whose fee and/or minimum is 0 (guests see "Free delivery" / no minimum)
+const ZERO_ZONES = {
+  zones: [
+    { postcode: '60386', feeCents: 200, minOrderCents: 0 },
+    { postcode: '20095', feeCents: 0, minOrderCents: 0 },
+    { postcode: '80331', feeCents: 0, minOrderCents: 1500 },
+  ],
+};
+
+function freeDeliveryQuote(body: Json): Json {
+  return body.postcode === '10115'
+    ? {
+        ...okQuote,
+        fulfilmentMode: 'delivery',
+        deliveryFeeCents: 0,
+        totalCents: 1050,
+        postcodeServed: true,
+        minOrderAmountCents: 0,
+        prepMinutes: 45,
+      }
+    : deliveryQuote(body);
+}
+
+async function chooseEnglishPostcode(page: Page, postcode: string) {
+  await page.getByRole('button', { name: 'Delivery' }).click();
+  await page.getByLabel('Your postcode').fill(postcode);
+  await page.getByRole('button', { name: 'Check' }).click();
+}
 
 function deliveryQuote(body: Json): Json {
   return body.postcode === '10115'
@@ -969,6 +997,47 @@ test.describe('Delivery order', () => {
     await expect(
       page.getByText('Delivery to 10115 · fee €2.50 · minimum order €10.00 · about 45 min'),
     ).toBeVisible();
+  });
+
+  test('a zero fee reads "Free delivery" and a zero minimum is left out', async ({ page }) => {
+    await mockBackend(page, { modes: DELIVERY_MODES, delivery: ZERO_ZONES });
+    await page.goto('/shops/test-shop');
+
+    await chooseEnglishPostcode(page, '60386');
+    await expect(page.getByText('Delivery to 60386 · fee €2.00 · about 45 min')).toBeVisible();
+
+    await page.getByRole('button', { name: 'Change postcode' }).click();
+    await page.getByLabel('Your postcode').fill('20095');
+    await page.getByRole('button', { name: 'Check' }).click();
+    await expect(page.getByText('Delivery to 20095 · Free delivery · about 45 min')).toBeVisible();
+
+    await page.getByRole('button', { name: 'Change postcode' }).click();
+    await page.getByLabel('Your postcode').fill('80331');
+    await page.getByRole('button', { name: 'Check' }).click();
+    await expect(
+      page.getByText('Delivery to 80331 · Free delivery · minimum order €15.00 · about 45 min'),
+    ).toBeVisible();
+  });
+
+  test('checkout and payment recap say "Free delivery" instead of a zero amount', async ({ page }) => {
+    await bindDelivery(page);
+    await seedCart(page);
+    await mockBackend(page, { modes: DELIVERY_MODES, delivery: ZONES, quote: freeDeliveryQuote });
+    await page.route('**/api/orders', (r) => r.fulfill(fulfil({ ...CARD_RESULT, totalCents: 1050 })));
+    await page.goto('/shops/test-shop/checkout');
+
+    const totals = page.getByTestId('delivery-totals');
+    await expect(totals).toContainText('Free delivery');
+    await expect(totals).not.toContainText('Delivery fee');
+    await expect(totals).not.toContainText('€0.00');
+
+    await fillDetails(page);
+    await fillDeliveryAddress(page);
+    await page.getByRole('button', { name: 'Continue to payment' }).click();
+    await expect(page.getByTestId('fake-card')).toBeVisible();
+    await expect(page.getByTestId('payment-totals-delivery')).toBeVisible();
+    await expect(page.getByTestId('payment-totals-delivery')).toHaveText('Free delivery');
+    await expect(page.getByTestId('payment-totals-total')).toHaveText('€10.50');
   });
 
   test('a dish that cannot be delivered is hidden for delivery', async ({ page }) => {
@@ -1130,6 +1199,33 @@ test.describe('Delivery order in German', () => {
     await page.getByRole('button', { name: 'Prüfen' }).click();
     await expect(
       page.getByText(/Lieferung nach 10115 · Liefergebühr 2,50\s€ · Mindestbestellwert 10,00\s€ · ca\. 45 Min\./),
+    ).toBeVisible();
+  });
+});
+
+test.describe('Zero fee and minimum in German', () => {
+  test.use({ locale: 'de-DE' });
+
+  test('German free delivery and omitted minimum', async ({ page }) => {
+    await mockBackend(page, { language: 'de', modes: DELIVERY_MODES, delivery: ZERO_ZONES });
+    await page.goto('/shops/test-shop');
+    await page.getByRole('button', { name: 'Lieferung' }).click();
+
+    const check = async (postcode: string) => {
+      await page.getByLabel('Ihre Postleitzahl').fill(postcode);
+      await page.getByRole('button', { name: 'Prüfen' }).click();
+    };
+    await check('60386');
+    await expect(
+      page.getByText(/^Lieferung nach 60386 · Liefergebühr 2,00\s€ · ca\. 45 Min\.$/),
+    ).toBeVisible();
+    await page.getByRole('button', { name: 'Postleitzahl ändern' }).click();
+    await check('20095');
+    await expect(page.getByText('Lieferung nach 20095 · Kostenlose Lieferung · ca. 45 Min.')).toBeVisible();
+    await page.getByRole('button', { name: 'Postleitzahl ändern' }).click();
+    await check('80331');
+    await expect(
+      page.getByText(/^Lieferung nach 80331 · Kostenlose Lieferung · Mindestbestellwert 15,00\s€ · ca\. 45 Min\.$/),
     ).toBeVisible();
   });
 });
@@ -1807,6 +1903,29 @@ test.describe('Cart in the top bar', () => {
     await expect(cart.getByText('€2.50 to go until the minimum order for delivery (€10.00)')).toBeVisible();
     await cart.getByRole('button', { name: 'One more Carbonara' }).click();
     await expect(cart.getByText('The delivery fee of €2.50 is added at checkout.')).toBeVisible();
+  });
+
+  test('on delivery a zero fee shows the free-delivery note once a postcode is chosen', async ({ page }) => {
+    await mockBackend(page, { modes: DELIVERY_MODES, delivery: ZERO_ZONES });
+    await bindDelivery(page, '20095');
+    await seedCart(page);
+    await page.goto('/shops/test-shop');
+    await page.getByRole('button', { name: 'Cart' }).click();
+    const cart = page.getByRole('dialog', { name: 'Your order' });
+    await expect(cart.getByText('Free delivery')).toBeVisible();
+    await expect(cart.getByText(/delivery fee of/)).toHaveCount(0);
+  });
+
+  test('on delivery the cart shows no fee note before a postcode is chosen', async ({ page }) => {
+    await mockBackend(page, { modes: DELIVERY_MODES, delivery: ZERO_ZONES });
+    await seedCart(page);
+    await page.goto('/shops/test-shop');
+    await page.getByRole('button', { name: 'Delivery' }).click();
+    await page.getByRole('button', { name: 'Cart' }).click();
+    const cart = page.getByRole('dialog', { name: 'Your order' });
+    await expect(cart.getByText('Carbonara')).toBeVisible();
+    await expect(cart.getByText('Free delivery')).toHaveCount(0);
+    await expect(cart.getByText(/delivery fee of/)).toHaveCount(0);
   });
 
   test('on a phone the cart is a bottom sheet that fits the screen', async ({ page }) => {

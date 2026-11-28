@@ -55,8 +55,8 @@ const DeliveryPostcodeBox: React.FC<DeliveryPostcodeBoxProps> = ({
           <span>
             {copy.deliverySummary(
               zone.postcode,
-              formatCents(zone.feeCents),
-              formatCents(zone.minOrderCents),
+              zone.feeCents === 0 ? null : formatCents(zone.feeCents),
+              zone.minOrderCents === 0 ? null : formatCents(zone.minOrderCents),
               deliveryMinutes,
             )}
           </span>

@@ -108,7 +108,10 @@ const PaymentStep: React.FC<PaymentStepProps> = ({
           <div className="flex justify-between gap-3 text-[#1d5a32]"><dt>{copy.discountLine(breakdown.discount.code)}</dt><dd data-testid="payment-totals-discount">{fmt(-breakdown.discount.cents)}</dd></div>
         )}
         {breakdown.adds && breakdown.deliveryFeeCents !== null && (
-          <div className="flex justify-between gap-3"><dt>{copy.deliveryFeeLine}</dt><dd data-testid="payment-totals-delivery">{fmt(breakdown.deliveryFeeCents)}</dd></div>
+          <div className="flex justify-between gap-3">
+            <dt>{copy.deliveryFeeLine}</dt>
+            <dd data-testid="payment-totals-delivery">{breakdown.deliveryFeeCents === 0 ? copy.freeDelivery : fmt(breakdown.deliveryFeeCents)}</dd>
+          </div>
         )}
         <div className="mt-1 flex items-baseline justify-between gap-3 border-t border-[#f1ebe4] pt-3 text-gray-900">
           <dt className="text-[17px] font-bold">{copy.total} <span className="text-xs font-normal text-[#6b6058]">{copy.inclVat}</span></dt>

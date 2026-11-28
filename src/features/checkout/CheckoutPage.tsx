@@ -866,8 +866,8 @@ const CheckoutPage: React.FC = () => {
                       )}
                       {mode === 'delivery' && quote.postcodeServed && (
                         <div className="flex justify-between gap-3">
-                          <dt>{copy.deliveryFeeLine}</dt>
-                          <dd>{money.cents(quote.deliveryFeeCents ?? 0)}</dd>
+                          <dt>{quote.deliveryFeeCents === 0 ? copy.freeDelivery : copy.deliveryFeeLine}</dt>
+                          <dd>{quote.deliveryFeeCents === 0 ? '' : money.cents(quote.deliveryFeeCents ?? 0)}</dd>
                         </div>
                       )}
                       <div className="mt-1 flex items-baseline justify-between gap-3 border-t border-[#f1ebe4] pt-3 text-gray-900">

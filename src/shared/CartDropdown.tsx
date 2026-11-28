@@ -247,8 +247,10 @@ const CartDropdown: React.FC<CartDropdownProps> = ({ dropdownRef, style, onClose
           </span>
         </div>
       )}
-      {delivery && !belowMin && (context?.fee ?? 0) > 0 && (
-        <span className="text-xs text-gray-600">{copy.cartFeeNote(money.cents(context!.fee!))}</span>
+      {delivery && !belowMin && context?.postcode && context?.fee != null && (
+        <span className="text-xs text-gray-600">
+          {context.fee > 0 ? copy.cartFeeNote(money.cents(context.fee)) : copy.freeDelivery}
+        </span>
       )}
       <button
         type="button"
