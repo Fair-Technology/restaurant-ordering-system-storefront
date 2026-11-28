@@ -1,41 +1,50 @@
 import React, { useState } from 'react';
 import type { DeliveryZoneDto } from '../../api/orderEndpoints';
 import type { OrderCopy } from '../../utils/orderCopy';
-import { normalisePostcode, zoneFor } from '../../utils/delivery';
+import { isWellFormedPostcode, normalisePostcode, postcodeFormatFor, zoneFor } from '../../utils/delivery';
 
 interface DeliveryPostcodeBoxProps {
   zones: DeliveryZoneDto[];
   postcode: string | null;
   deliveryMinutes: number;
+  countryCode: string | null;
   onChoose: (postcode: string) => void;
   onCollect: () => void;
   copy: OrderCopy;
   formatCents: (cents: number) => string;
 }
 
+type PostcodeError = { kind: 'malformed'; digits: number } | { kind: 'notServed'; postcode: string };
+
 const DeliveryPostcodeBox: React.FC<DeliveryPostcodeBoxProps> = ({
   zones,
   postcode,
   deliveryMinutes,
+  countryCode,
   onChoose,
   onCollect,
   copy,
   formatCents,
 }) => {
   const [input, setInput] = useState(postcode ?? '');
-  const [notServed, setNotServed] = useState<string | null>(null);
+  const [error, setError] = useState<PostcodeError | null>(null);
   const [editing, setEditing] = useState(postcode === null);
   const zone = postcode ? zoneFor(zones, postcode) : null;
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
+    const fmt = postcodeFormatFor(countryCode);
+    if (fmt && !isWellFormedPostcode(input, countryCode)) {
+      setError({ kind: 'malformed', digits: fmt.digits });
+      return;
+    }
     const z = zoneFor(zones, input);
     if (z) {
-      setNotServed(null);
+      setError(null);
       onChoose(z.postcode);
       setEditing(false);
     } else {
-      setNotServed(normalisePostcode(input));
+      setError({ kind: 'notServed', postcode: normalisePostcode(input) });
     }
   };
 
@@ -74,9 +83,14 @@ const DeliveryPostcodeBox: React.FC<DeliveryPostcodeBoxProps> = ({
           </button>
         </form>
       )}
-      {notServed !== null && (
+      {error?.kind === 'malformed' && (
+        <div className="mt-2 text-sm text-amber-800">
+          <p role="status">{copy.deliveryPostcodeInvalid(error.digits)}</p>
+        </div>
+      )}
+      {error?.kind === 'notServed' && (
         <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-amber-800">
-          <p role="status">{copy.deliveryNotServed(notServed)}</p>
+          <p role="status">{copy.deliveryNotServed(error.postcode)}</p>
           <button type="button" onClick={onCollect} className="underline">
             {copy.collectInstead}
           </button>
