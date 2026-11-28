@@ -634,6 +634,7 @@ const ShopView = () => {
               zones={fulfilment.delivery.zones}
               postcode={deliveryPostcode}
               deliveryMinutes={fulfilment.prepMinutes.delivery}
+              countryCode={(resolvedShopData as { countryCode?: string } | undefined)?.countryCode ?? null}
               onChoose={(p) => {
                 chooseDelivery(p);
                 setAskingPostcode(false);

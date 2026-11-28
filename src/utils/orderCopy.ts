@@ -249,6 +249,7 @@ export interface OrderCopy {
   deliveryPostcodeLabel: string;
   deliveryCheck: string;
   deliveryNotServed: (postcode: string) => string;
+  deliveryPostcodeInvalid: (digits: number) => string;
   collectInstead: string;
   deliveryChange: string;
   deliverySummary: (postcode: string, fee: string, min: string, minutes: number) => string;
@@ -582,6 +583,7 @@ const en: OrderCopy = {
   deliveryPostcodeLabel: 'Your postcode',
   deliveryCheck: 'Check',
   deliveryNotServed: (pc) => `We don't deliver to ${pc}. You can collect your order instead.`,
+  deliveryPostcodeInvalid: (d) => `Please enter a ${d}-digit postcode.`,
   collectInstead: 'Collect instead',
   deliveryChange: 'Change postcode',
   deliverySummary: (pc, fee, min, m) => `Delivery to ${pc} · fee ${fee} · minimum order ${min} · about ${m} min`,
@@ -934,6 +936,7 @@ const de: OrderCopy = {
   deliveryPostcodeLabel: 'Ihre Postleitzahl',
   deliveryCheck: 'Prüfen',
   deliveryNotServed: (pc) => `Wir liefern leider nicht nach ${pc}. Sie können Ihre Bestellung stattdessen abholen.`,
+  deliveryPostcodeInvalid: (d) => `Bitte geben Sie eine ${d}-stellige Postleitzahl ein.`,
   collectInstead: 'Stattdessen abholen',
   deliveryChange: 'Postleitzahl ändern',
   deliverySummary: (pc, fee, min, m) =>

@@ -15,6 +15,27 @@ export function zoneFor(zones: readonly DeliveryZoneDto[], raw: string): Deliver
   return p ? (zones.find((z) => z.postcode === p) ?? null) : null;
 }
 
+export interface PostcodeFormat {
+  /** How many digits the message should quote, e.g. 5 for Germany. */
+  digits: number;
+  pattern: RegExp;
+}
+
+/** One place for every country's postcode shape. Add a new entry here when a new country ships. */
+const POSTCODE_FORMATS: Record<string, PostcodeFormat> = {
+  DE: { digits: 5, pattern: /^\d{5}$/ },
+};
+
+export function postcodeFormatFor(countryCode: string | null | undefined): PostcodeFormat | null {
+  return countryCode ? (POSTCODE_FORMATS[countryCode.toUpperCase()] ?? null) : null;
+}
+
+/** True when countryCode is unknown (no format defined) or the postcode matches its format. */
+export function isWellFormedPostcode(raw: string, countryCode: string | null | undefined): boolean {
+  const fmt = postcodeFormatFor(countryCode);
+  return !fmt || fmt.pattern.test(normalisePostcode(raw));
+}
+
 export interface DeliverySession {
   slug: string;
   postcode: string;
