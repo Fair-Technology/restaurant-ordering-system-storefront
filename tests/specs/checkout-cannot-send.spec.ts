@@ -117,6 +117,23 @@ async function fillAndSubmit(page: Page) {
   await submit(page).click();
 }
 
+async function mockBelowMinimum(page: Page) {
+  await mockShop(page);
+  await seedCart(page);
+  let quotes = 0;
+  await page.route('**/api/orders/quote', (route) => {
+    quotes++;
+    return route.fulfill(
+      fulfil(quotes === 1 ? okQuote : { ...okQuote, belowMinimum: true, minOrderAmountCents: 2000 }),
+    );
+  });
+  await page.route('**/api/orders', (route) =>
+    route.fulfill(
+      fulfil({ error: 'below min (free text)', errorCode: 'BELOW_MINIMUM', minimumCents: 2000 }, 400),
+    ),
+  );
+}
+
 test.describe('Checkout cannot be sent', () => {
   test.use({ locale: 'en-US' });
 
@@ -175,26 +192,34 @@ test.describe('Checkout cannot be sent', () => {
   test('BELOW_MINIMUM on checkout shows the new minimum and disables submit after requote', async ({
     page,
   }) => {
-    await mockShop(page);
-    await seedCart(page);
-    let quotes = 0;
-    await page.route('**/api/orders/quote', (route) => {
-      quotes++;
-      return route.fulfill(
-        fulfil(quotes === 1 ? okQuote : { ...okQuote, belowMinimum: true, minOrderAmountCents: 2000 }),
-      );
-    });
-    await page.route('**/api/orders', (route) =>
-      route.fulfill(
-        fulfil({ error: 'below min (free text)', errorCode: 'BELOW_MINIMUM', minimumCents: 2000 }, 400),
-      ),
-    );
+    await mockBelowMinimum(page);
 
     await page.goto('/shops/test-shop/checkout');
     await fillAndSubmit(page);
 
-    await expect(page.getByRole('alert').filter({ hasText: 'The minimum order is €20.00.' }).first()).toBeVisible();
+    await expect(page.getByText('The minimum order is €20.00.')).toHaveCount(1);
     await expect(page.getByText(ORDER_FAILED)).toHaveCount(0);
+    await expect(submit(page)).toBeDisabled();
+  });
+
+});
+
+test.describe('Checkout cannot be sent (German)', () => {
+  test.use({ locale: 'de-DE' });
+
+  test('BELOW_MINIMUM on checkout shows the minimum once in German and disables submit', async ({ page }) => {
+    await mockBelowMinimum(page);
+
+    await page.goto('/shops/test-shop/checkout');
+    await page.getByTestId('checkout-phone-input').waitFor();
+    await page.locator('input[type="text"]').first().fill('Test Diner');
+    await page.locator('input[type="email"]').fill('diner@example.com');
+    await page.getByTestId('checkout-phone-input').fill('0301234567');
+    await expect(submit(page)).toBeEnabled();
+    await submit(page).click();
+
+    await expect(page.getByText('Der Mindestbestellwert beträgt 20,00 €.')).toHaveCount(1);
+    await expect(page.getByText('Ihre Bestellung konnte nicht gesendet werden.')).toHaveCount(0);
     await expect(submit(page)).toBeDisabled();
   });
 });
