@@ -13647,6 +13647,32 @@
           },
           "ordersPaused": {
             "type": "boolean"
+          },
+          "closures": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "start": {
+                  "type": "string"
+                },
+                "end": {
+                  "type": "string"
+                },
+                "reason": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "start",
+                "end"
+              ],
+              "additionalProperties": false
+            }
           }
         },
         "required": [
@@ -13657,7 +13683,8 @@
           "branding",
           "openingHours",
           "timezone",
-          "ordersPaused"
+          "ordersPaused",
+          "closures"
         ],
         "additionalProperties": false
       },

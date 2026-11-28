@@ -123,6 +123,22 @@ test.describe('Home Page - Status pill', () => {
     await expect(page.getByTestId('shop-card').getByText('Open now')).toBeVisible();
   });
 
+  test('an active dated closure says closed even when the hours read as open', async ({ page }) => {
+    const now = Date.now();
+    await mockShopsApi(page, {
+      shops: [{
+        ...firstMockShop,
+        openingHours: ALL_DAY,
+        ordersPaused: false,
+        closures: [{ id: 'c1', start: new Date(now - 3600_000).toISOString(), end: new Date(now + 3600_000).toISOString(), reason: 'Holiday' }],
+      }],
+    } as unknown as typeof mockShops);
+    await page.goto('/');
+    const card = page.getByTestId('shop-card');
+    await expect(card.getByText('Closed right now')).toBeVisible();
+    await expect(card.getByText(/Open now|Open until/)).toHaveCount(0);
+  });
+
   test('the old isPaused flag no longer drives the pill', async ({ page }) => {
     await mockShopsApi(page, {
       shops: [{ ...firstMockShop, openingHours: ALL_DAY, ordersPaused: false, isPaused: true }],
